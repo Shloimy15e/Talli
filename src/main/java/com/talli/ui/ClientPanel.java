@@ -1,7 +1,7 @@
-package com.dynabill.ui;
+package com.talli.ui;
 
-import com.dynabill.model.Client;
-import com.dynabill.service.ClientService;
+import com.talli.model.Client;
+import com.talli.service.ClientService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -12,7 +12,7 @@ import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static com.dynabill.ui.Colors.*;
+import static com.talli.ui.Colors.*;
 
 public class ClientPanel extends JPanel {
 

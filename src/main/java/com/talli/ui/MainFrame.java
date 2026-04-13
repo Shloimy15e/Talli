@@ -1,7 +1,7 @@
-package com.dynabill.ui;
+package com.talli.ui;
 
-import com.dynabill.App;
-import com.dynabill.service.ClientService;
+import com.talli.App;
+import com.talli.service.ClientService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -9,12 +9,12 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-import static com.dynabill.ui.Colors.*;
+import static com.talli.ui.Colors.*;
 
 public class MainFrame extends JFrame {
 
     public MainFrame() {
-        setTitle("DynaBill");
+        setTitle("Talli");
         setSize(1080, 700);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -59,7 +59,7 @@ public class MainFrame extends JFrame {
             logoPanel.add(new JLabel(new ImageIcon(scaled)));
         } catch (Exception e) {}
 
-        JLabel logoLabel = new JLabel("DynaBill");
+        JLabel logoLabel = new JLabel("Talli");
         logoLabel.setFont(new Font("Inter", Font.BOLD, 16));
         logoLabel.setForeground(new Color(240, 240, 245));
         logoPanel.add(logoLabel);

@@ -1,7 +1,7 @@
-package com.dynabill.service;
+package com.talli.service;
 
-import com.dynabill.db.Database;
-import com.dynabill.model.Client;
+import com.talli.db.Database;
+import com.talli.model.Client;
 
 import java.math.BigDecimal;
 import java.sql.*;

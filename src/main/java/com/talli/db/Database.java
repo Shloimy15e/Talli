@@ -1,4 +1,4 @@
-package com.dynabill.db;
+package com.talli.db;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -19,7 +19,7 @@ public class Database {
     private static Connection connection;
 
     // The DB file lives next to the jar. Like `database/database.sqlite` in Laravel.
-    private static final String DB_URL = "jdbc:sqlite:dynabill.db";
+    private static final String DB_URL = "jdbc:sqlite:talli.db";
 
     // Returns the single shared connection. Creates it on first call.
     // `synchronized` = thread-safe. If two threads call this at the same time,

@@ -1,4 +1,4 @@
-# DynaBill
+# Talli
 
 Internal billing and finance tracker for Dynamiq Solutions.
 
@@ -20,7 +20,7 @@ Requires JDK 21+ and Maven.
 
 ```bash
 mvn package
-java -jar target/dynabill-1.0.0.jar
+java -jar target/talli-1.0.0.jar
 ```
 
 ## Tech

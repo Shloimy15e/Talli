@@ -1,8 +1,8 @@
-package com.dynabill;
+package com.talli;
 
-import com.dynabill.db.Database;
-import com.dynabill.ui.MainFrame;
-import com.dynabill.ui.Theme;
+import com.talli.db.Database;
+import com.talli.ui.MainFrame;
+import com.talli.ui.Theme;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 

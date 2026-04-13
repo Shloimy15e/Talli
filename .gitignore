@@ -21,4 +21,7 @@ desktop.ini
 # Database (local dev data)
 *.db
 
+# Playwright
+.playwright-mcp/
+
 # Fonts are bundled but large — keep them tracked since they're required

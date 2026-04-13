@@ -1,4 +1,4 @@
-package com.dynabill.ui;
+package com.talli.ui;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -6,7 +6,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.RoundRectangle2D;
 
-import static com.dynabill.ui.Colors.*;
+import static com.talli.ui.Colors.*;
 
 public class ConfirmDialog extends JDialog {
 

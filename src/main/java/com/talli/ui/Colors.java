@@ -1,4 +1,4 @@
-package com.dynabill.ui;
+package com.talli.ui;
 
 import java.awt.Color;
 import java.awt.Font;
