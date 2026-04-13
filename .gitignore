@@ -1,0 +1,24 @@
+# Build output
+target/
+out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Maven
+dependency-reduced-pom.xml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Database (local dev data)
+*.db
+
+# Fonts are bundled but large — keep them tracked since they're required

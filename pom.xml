@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- pom.xml = composer.json for Java.
+     Declares dependencies, build plugins, and project metadata.
+     Maven reads this to download jars (like Composer downloads packages to vendor/). -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- groupId = vendor name (like "laravel/framework"). Convention: reversed domain. -->
+    <groupId>com.dynabill</groupId>
+    <!-- artifactId = package name -->
+    <artifactId>dynabill</artifactId>
+    <!-- Versioning is manual here. Maven has no `composer bump`. -->
+    <version>1.0.0</version>
+    <!-- "jar" = compile into a single .jar file (like a .phar in PHP) -->
+    <packaging>jar</packaging>
+
+    <properties>
+        <!-- Tell the compiler: "my source code uses Java 21 features" -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <!-- Dependencies = the "require" block in composer.json -->
+    <dependencies>
+        <!-- SQLite JDBC driver — like installing a PDO driver in PHP.
+             Java's JDBC is the equivalent of PHP's PDO: a database abstraction layer. -->
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+            <version>3.49.1.0</version>
+        </dependency>
+
+        <!-- FlatLaf = a modern look-and-feel for Swing.
+             Without it, Swing looks like Windows 98. This makes it look like a real app.
+             Think of it like installing Tailwind — same HTML, way better styling. -->
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <version>3.5.4</version>
+        </dependency>
+
+        <!-- FlatLaf Extras — adds SVG icon support.
+             Like installing an icon library (Lucide, Heroicons) in a web project.
+             Gives us FlatSVGIcon to load .svg files as scalable icons. -->
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf-extras</artifactId>
+            <version>3.5.4</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- This plugin bundles everything into one runnable .jar file.
+                 Like `php artisan package:discover` + building a .phar —
+                 all dependencies get packed inside so you can distribute a single file. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <!-- Which class to run when you double-click the .jar -->
+                                    <mainClass>com.dynabill.App</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
