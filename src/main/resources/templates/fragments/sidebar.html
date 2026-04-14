@@ -113,27 +113,14 @@
           Time
         </a>
 
-        <a
-          th:href="@{/invoices}"
-          th:classappend="${active == 'invoices'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
-          class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-            th:style="${active == 'invoices'} ? 'color: #ea7c28'"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
+        <span class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 cursor-not-allowed">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Invoices
-        </a>
+          <span class="ml-auto text-[9px] font-semibold uppercase tracking-wider text-slate-600 bg-[#222a3c] px-1.5 py-0.5 rounded">Soon</span>
+        </span>
 
         <a
           th:href="@{/expenses}"
@@ -202,10 +189,36 @@
         </a>
       </nav>
 
-      <!-- Spacer pushes version to bottom -->
+      <!-- Spacer pushes account section to bottom -->
       <div class="flex-1"></div>
 
-      <p class="text-[10px] text-slate-600 px-2">v1.0.0</p>
+      <!-- Divider -->
+      <div class="border-t border-[#222a3c] my-2"></div>
+
+      <!-- Account -->
+      <a th:href="@{/profile}"
+         th:classappend="${active == 'profile'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
+         class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+             th:style="${active == 'profile'} ? 'color: #ea7c28'">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+        Profile
+      </a>
+
+      <form th:action="@{/logout}" method="post" class="w-full">
+        <button type="submit"
+                class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-[#1c2434] hover:text-slate-200 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Sign out
+        </button>
+      </form>
+
+      <p class="text-[10px] text-slate-600 px-2 mt-2">v1.0.0</p>
     </aside>
   </body>
 </html>
