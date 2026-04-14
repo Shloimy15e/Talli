@@ -1,28 +1,59 @@
 # Talli
 
-Internal billing and finance tracker for Dynamiq Solutions.
+Internal PSA (Professional Services Automation) tool for Dynamiq Solutions — tracks clients, projects, time, invoices, and expenses in one place.
 
-Tracks clients, rates, invoices, and payments in one place — no more spreadsheets.
+No more spreadsheets.
+
+## Core concepts
+
+- **Clients** — the businesses we work with
+- **Projects** — scoped engagements under a client, with their own billing terms
+- **Rates** — live on projects, with full history (so rate changes are never lost)
+- **Time entries** — logged against projects whether they're billed hourly or not
+- **Invoices** — auto-generated based on each project's billing schedule
+
+## Billing models
+
+Each project defines how it bills:
+
+- **Hourly** — invoice every N days/weeks/months, based on logged time
+- **Fixed rate** — invoice on milestones or a configured schedule
 
 ## Features
 
-- Client management with rate tracking (hourly / project / retainer)
-- Rate change history so nothing gets missed
-- Light and dark mode
-- Local SQLite database — no cloud, no accounts
-- PDF invoice generation (coming soon)
-- Email integration (coming soon)
-- Payment tracking and overdue alerts (coming soon)
+**Shipping:**
+- Client management
+- Project management with rate history
+- Time tracking (manual entry for now)
+
+**Coming soon:**
+- Auto-generated invoices per project billing rules
+- PDF invoice generation
+- Email invoices directly from the app
+- Payment tracking and overdue alerts
+- Expense tracking (quick-add on the fly, assignable to clients/projects)
+- Revenue, expense, and income dashboard
+- Chrome extension for time tracking + quick expense entry
+- Raycast extension for quick time logging, expense entry, and client lookup
+
+## Stack
+
+- Java 21
+- Spring Boot
+- Thymeleaf + Tailwind + HTMX + Alpine.js
+- PostgreSQL
+- Flyway migrations
 
 ## Setup
 
-Requires JDK 21+ and Maven.
+Requires JDK 21+, Maven, and PostgreSQL.
 
 ```bash
-mvn package
-java -jar target/talli-1.0.0.jar
+# Create the database
+createdb talli
+
+# Run the app (dev mode with hot reload)
+mvn spring-boot:run
 ```
 
-## Tech
-
-Java 21, Swing, FlatLaf, SQLite, Lucide icons, Inter font.
+App runs at `http://localhost:8080`.

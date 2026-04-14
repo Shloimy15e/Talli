@@ -1,0 +1,162 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Projects')}"></head>
+  <body th:replace="~{layout :: page('projects', ~{::section})}">
+    <section>
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">Projects</h1>
+          <p
+            class="text-sm text-slate-500 mt-1"
+            th:text="${#lists.size(projects)} + ' project' + (${#lists.size(projects)} == 1 ? '' : 's')"
+          >
+            0 projects
+          </p>
+        </div>
+        <button
+          hx-get="/projects/new"
+          hx-target="#modal"
+          hx-swap="innerHTML"
+          class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M12 5v14M5 12h14"
+            />
+          </svg>
+          New Project
+        </button>
+      </div>
+
+      <div
+        th:if="${#lists.isEmpty(projects)}"
+        class="bg-white rounded-xl border border-slate-200 p-12 text-center"
+      >
+        <p class="text-slate-500">No projects yet.</p>
+        <button
+          hx-get="/projects/new"
+          hx-target="#modal"
+          class="text-[#ea7c28] hover:underline mt-2"
+        >
+          Add your first project
+        </button>
+      </div>
+
+      <div
+        th:unless="${#lists.isEmpty(projects)}"
+        class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm"
+      >
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-slate-200">
+              <th
+                class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3"
+              >
+                Project
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3"
+              >
+                Client
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3"
+              >
+                Rate
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3"
+              >
+                Billing
+              </th>
+              <th
+                class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3"
+              >
+                Status
+              </th>
+              <th class="px-6 py-3 w-32"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              th:each="project : ${projects}"
+              class="border-b border-slate-100 hover:bg-slate-50 transition group"
+            >
+              <td class="px-6 py-4 font-medium" th:text="${project.name}">
+                Name
+              </td>
+              <td
+                class="px-6 py-4 text-slate-600"
+                th:text="${project.client.name}"
+              >
+                Client
+              </td>
+              <td class="px-6 py-4 font-mono text-sm text-[#ea7c28]">
+                <span th:text="${project.currentRate}">0</span>
+                <span
+                  class="text-slate-500 text-xs ml-1"
+                  th:text="${project.currency}"
+                  >USD</span
+                >
+                <span
+                  class="text-slate-400 text-xs"
+                  th:text="${project.rateType == 'hourly'} ? '/hr' : ''"
+                  >/hr</span
+                >
+              </td>
+
+              <td
+                class="px-6 py-4 text-slate-600 text-sm"
+                th:text="${project.rateType}"
+              >
+                type
+              </td>
+              <td class="px-6 py-4">
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                  th:classappend="${project.status == 'active' ? 'bg-green-100 text-green-700' : (project.status == 'paused' ? 'bg-amber-100 text-amber-700' : (project.status == 'completed' ? 'bg-slate-100 text-slate-600' : 'bg-red-100 text-red-700'))}"
+                  th:text="${project.status}"
+                  >status</span
+                >
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div
+                  class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2 justify-end"
+                >
+                  <button
+                    th:hx-get="@{/projects/{id}/edit(id=${project.id})}"
+                    hx-target="#modal"
+                    class="text-xs text-slate-500 hover:text-slate-900"
+                  >
+                    Edit
+                  </button>
+                  <form
+                    th:action="@{/projects/{id}/delete(id=${project.id})}"
+                    method="post"
+                    class="inline"
+                    onsubmit="return confirm('Delete this project?');"
+                  >
+                    <button
+                      type="submit"
+                      class="text-xs text-red-500 hover:text-red-700"
+                    >
+                      Delete
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </body>
+</html>

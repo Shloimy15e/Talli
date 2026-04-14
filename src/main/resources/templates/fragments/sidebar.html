@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Fragment: sidebar(active)
+     Pass the active section name from the page so we can highlight it.
+     Usage: <aside th:replace="~{fragments/sidebar :: sidebar('clients')}"></aside>
+-->
+<aside th:fragment="sidebar(active)"
+       class="w-56 h-screen bg-[#121826] text-slate-300 flex flex-col px-3 py-5 fixed left-0 top-0">
+
+    <!-- Logo -->
+    <div class="flex items-center gap-2 px-2 mb-1">
+        <img src="/logo.svg" alt="Talli" class="w-6 h-6">
+        <span class="text-white font-bold text-base">Talli</span>
+    </div>
+    <p class="text-xs text-slate-500 px-2 mb-8">Internal PSA</p>
+
+    <!-- Section header -->
+    <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2 mb-2">Workspace</p>
+
+    <!-- Nav items -->
+    <nav class="space-y-0.5">
+        <!-- th:classappend adds classes conditionally — like :class in Vue -->
+        <a th:href="@{/clients}"
+           th:classappend="${active == 'clients'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" th:style="${active == 'clients'} ? 'color: #ea7c28'">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 3a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            Clients
+        </a>
+
+        <a th:href="@{/projects}"
+           th:classappend="${active == 'projects'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" th:style="${active == 'projects'} ? 'color: #ea7c28'">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Projects
+        </a>
+
+        <a th:href="@{/time}"
+           th:classappend="${active == 'time'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" th:style="${active == 'time'} ? 'color: #ea7c28'">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Time
+        </a>
+
+        <a th:href="@{/invoices}"
+           th:classappend="${active == 'invoices'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" th:style="${active == 'invoices'} ? 'color: #ea7c28'">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            Invoices
+        </a>
+
+        <a th:href="@{/dashboard}"
+           th:classappend="${active == 'dashboard'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" th:style="${active == 'dashboard'} ? 'color: #ea7c28'">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h4a2 2 0 012 2v4a2 2 0 01-2 2h-4a2 2 0 01-2-2v-4z"/>
+            </svg>
+            Dashboard
+        </a>
+    </nav>
+
+    <!-- Spacer pushes version to bottom -->
+    <div class="flex-1"></div>
+
+    <p class="text-[10px] text-slate-600 px-2">v1.0.0</p>
+</aside>
+
+</body>
+</html>

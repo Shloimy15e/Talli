@@ -1,0 +1,56 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <!-- Fragment 1: head (just the <head>) -->
+  <head th:fragment="head(title)">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${title}">Talli</title>
+    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@2.0.3"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+
+    <style>
+      html {
+        font-family: "Inter", sans-serif;
+      }
+      @supports (font-variation-settings: normal) {
+        html {
+          font-family: "Inter var", sans-serif;
+        }
+      }
+      [x-cloak] {
+        display: none !important;
+      }
+    </style>
+  </head>
+
+  <!-- Fragment 2: page — the full body shell with sidebar + content slot
+     Pass (active, content) and the page's content gets injected where we put ${content} -->
+  <body
+    th:fragment="page(active, content)"
+    class="bg-slate-50 text-slate-900 antialiased"
+    x-data="{ modalOpen: false }"
+    @close-modal.window="modalOpen = false; document.getElementById('modal').innerHTML = ''"
+    @htmx:after-swap.window="modalOpen = true"
+  >
+    <aside th:replace="~{fragments/sidebar :: sidebar(${active})}"></aside>
+
+    <div class="ml-56">
+      <main class="max-w-5xl mx-auto px-8 py-12">
+        <!-- The page's content is slotted here -->
+        <div th:replace="${content}"></div>
+      </main>
+    </div>
+
+    <!-- Modal mount point — shared across all pages -->
+    <div id="modal" x-show="modalOpen" x-cloak></div>
+  </body>
+</html>

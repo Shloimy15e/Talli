@@ -1,0 +1,275 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+    <!-- Fragment: project-form
+     Expects: project, action, title, clients (list for dropdown) -->
+    <div
+      th:fragment="form(project, action, title, clients)"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
+      @click.self="$dispatch('close-modal')"
+    >
+      <div
+        class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4"
+        th:attr="x-data='{ rateType: ' + '&quot;' + (${project.rateType} ?: 'hourly') + '&quot;' + ' }'"
+        x-transition:enter="ease-out duration-200"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+      >
+        <div
+          class="flex items-center justify-between px-6 py-4 border-b border-slate-200"
+        >
+          <h2 class="text-lg font-semibold" th:text="${title}">Project</h2>
+          <button
+            type="button"
+            @click="$dispatch('close-modal')"
+            class="text-slate-400 hover:text-slate-700 text-xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        <form
+          th:action="${action}"
+          th:object="${project}"
+          method="post"
+          class="p-6 space-y-5"
+        >
+          <!-- Client dropdown -->
+          <div>
+            <label
+              for="client"
+              class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2"
+              >Client</label
+            >
+            <select
+              id="client"
+              name="clientId"
+              required
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"
+            >
+              <option value="" disabled th:selected="${project.client == null}">
+                Select a client…
+              </option>
+              <option
+                th:each="c : ${clients}"
+                th:value="${c.id}"
+                th:text="${c.name}"
+                th:selected="${project.client != null and project.client.id == c.id}"
+              >
+                Client
+              </option>
+            </select>
+          </div>
+
+          <!-- Name -->
+          <div>
+            <label
+              for="name"
+              class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2"
+              >Project Name</label
+            >
+            <input
+              type="text"
+              id="name"
+              th:field="*{name}"
+              required
+              autofocus
+              placeholder="e.g. Website redesign"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"
+            />
+          </div>
+
+          <!-- Rate type + current rate -->
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label
+                for="rateType"
+                class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2"
+                >Rate Type</label
+              >
+              <select
+                id="rateType"
+                th:field="*{rateType}"
+                x-model="rateType"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"
+              >
+                <option value="hourly">Hourly</option>
+                <option value="fixed">Fixed</option>
+                <option value="retainer">Retainer</option>
+              </select>
+            </div>
+            <div>
+              <label
+                for="currency"
+                class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2"
+                >Currency</label
+              >
+              <select
+                id="currency"
+                th:field="*{currency}"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"
+              >
+                <option value="USD">USD $</option>
+                <option value="ILS">ILS ₪</option>
+                <option value="EUR">EUR €</option>
+                <option value="GBP">GBP £</option>
+              </select>
+            </div>
+            <div>
+              <label
+                for="currentRate"
+                class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2"
+                >Rate</label
+              >
+              <input
+                type="number"
+                step="0.01"
+                id="currentRate"
+                th:field="*{currentRate}"
+                required
+                placeholder="0.00"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"
+              />
+            </div>
+          </div>
+
+          <!-- Billing — same slot, contents swap without layout jump. -->
+          <div class="relative h-[70px]">
+            <!-- Hourly / retainer options -->
+            <div
+              x-show="rateType !== 'fixed'"
+              class="absolute inset-0"
+              x-transition:enter="ease-out duration-150"
+              x-transition:enter-start="opacity-0"
+              x-transition:enter-end="opacity-100"
+              x-transition:leave="ease-in duration-75"
+              x-transition:leave-start="opacity-100"
+              x-transition:leave-end="opacity-0"
+            >
+              <label
+                class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2"
+                >Invoice Every</label
+              >
+              <select
+                name="billingFrequency"
+                :disabled="rateType === 'fixed'"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"
+              >
+                <option
+                  value="weekly"
+                  th:selected="${project.billingFrequency == 'weekly'}"
+                >
+                  Week
+                </option>
+                <option
+                  value="biweekly"
+                  th:selected="${project.billingFrequency == 'biweekly'}"
+                >
+                  Two Weeks
+                </option>
+                <option
+                  value="monthly"
+                  th:selected="${project.billingFrequency == 'monthly'}"
+                >
+                  Month
+                </option>
+              </select>
+            </div>
+
+            <!-- Fixed options — absolutely positioned over the same spot -->
+            <div
+              x-show="rateType === 'fixed'"
+              x-cloak
+              class="absolute inset-0"
+              x-transition:enter="ease-out duration-150"
+              x-transition:enter-start="opacity-0"
+              x-transition:enter-end="opacity-100"
+              x-transition:leave="ease-in duration-75"
+              x-transition:leave-start="opacity-100"
+              x-transition:leave-end="opacity-0"
+            >
+              <label
+                class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2"
+                >Invoice</label
+              >
+              <select
+                name="billingFrequency"
+                :disabled="rateType !== 'fixed'"
+                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"
+              >
+                <option
+                  value="upfront"
+                  th:selected="${project.billingFrequency == 'upfront'}"
+                >
+                  Upfront (one-time at start)
+                </option>
+                <option
+                  value="delivery"
+                  th:selected="${project.billingFrequency == 'delivery'}"
+                >
+                  On delivery (one-time at end)
+                </option>
+                <option
+                  value="milestone"
+                  th:selected="${project.billingFrequency == 'milestone'}"
+                >
+                  By milestone
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Status -->
+          <div>
+            <label
+              for="status"
+              class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2"
+              >Status</label
+            >
+            <select
+              id="status"
+              th:field="*{status}"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"
+            >
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label
+              for="notes"
+              class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2"
+              >Notes</label
+            >
+            <textarea
+              id="notes"
+              th:field="*{notes}"
+              rows="3"
+              class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"
+            ></textarea>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              @click="$dispatch('close-modal')"
+              class="text-sm text-slate-600 hover:text-slate-900 px-4 py-2"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition"
+            >
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>
