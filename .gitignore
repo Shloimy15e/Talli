@@ -25,3 +25,5 @@ desktop.ini
 .playwright-mcp/
 
 # Fonts are bundled but large — keep them tracked since they're required
+
+dist/

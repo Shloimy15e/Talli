@@ -1,6 +1,6 @@
-package com.talli.ui;
+package dev.dynamiq.talli.ui;
 
-import com.talli.model.Client;
+import dev.dynamiq.talli.model.Client;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -8,7 +8,7 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.geom.RoundRectangle2D;
 
-import static com.talli.ui.Colors.*;
+import static dev.dynamiq.talli.ui.Colors.*;
 
 public class ClientDialog extends JDialog {
 

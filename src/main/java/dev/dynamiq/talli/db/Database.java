@@ -1,4 +1,4 @@
-package com.talli.db;
+package dev.dynamiq.talli.db;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

@@ -1,8 +1,8 @@
-package com.talli;
+package dev.dynamiq.talli;
 
-import com.talli.db.Database;
-import com.talli.ui.MainFrame;
-import com.talli.ui.Theme;
+import dev.dynamiq.talli.db.Database;
+import dev.dynamiq.talli.ui.MainFrame;
+import dev.dynamiq.talli.ui.Theme;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 

@@ -1,4 +1,4 @@
-package com.talli.ui;
+package dev.dynamiq.talli.ui;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import javax.swing.Icon;

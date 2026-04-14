@@ -1,7 +1,7 @@
-package com.talli.ui;
+package dev.dynamiq.talli.ui;
 
-import com.talli.App;
-import com.talli.service.ClientService;
+import dev.dynamiq.talli.App;
+import dev.dynamiq.talli.service.ClientService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -9,7 +9,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-import static com.talli.ui.Colors.*;
+import static dev.dynamiq.talli.ui.Colors.*;
 
 public class MainFrame extends JFrame {
 

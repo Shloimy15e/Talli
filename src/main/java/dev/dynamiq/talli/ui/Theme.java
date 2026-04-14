@@ -1,4 +1,4 @@
-package com.talli.ui;
+package dev.dynamiq.talli.ui;
 
 import java.awt.Color;
 import java.util.prefs.Preferences;

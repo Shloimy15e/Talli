@@ -1,4 +1,4 @@
-package com.talli.model;
+package dev.dynamiq.talli.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
