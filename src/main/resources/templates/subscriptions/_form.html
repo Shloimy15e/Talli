@@ -1,0 +1,149 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+
+    <div th:fragment="form(subscription, action, title, clients, projects)"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
+         @click.self="$dispatch('close-modal')">
+
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl mx-4 max-h-[90vh] flex flex-col overflow-hidden"
+           x-transition:enter="ease-out duration-200"
+           x-transition:enter-start="opacity-0 scale-95"
+           x-transition:enter-end="opacity-100 scale-100">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white shrink-0">
+          <h2 class="text-lg font-semibold" th:text="${title}">Subscription</h2>
+          <button type="button" @click="$dispatch('close-modal')"
+                  class="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
+        </div>
+
+        <form th:action="${action}" method="post" class="p-6 space-y-5 overflow-y-auto">
+
+          <!-- Vendor + category -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="vendor" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Vendor</label>
+              <input type="text" id="vendor" name="vendor" required
+                     th:value="${subscription.vendor}" placeholder="e.g., GitHub, Figma"
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+            </div>
+            <div>
+              <label for="category" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Category</label>
+              <select id="category" name="category" required
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                <option th:each="c : ${ {'software', 'hardware', 'travel', 'meals', 'contractors', 'office', 'marketing', 'taxes', 'other'} }"
+                        th:value="${c}" th:text="${c}" th:selected="${subscription.category == c}">software</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Amount + currency + cycle -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="col-span-1">
+              <label for="amount" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Amount</label>
+              <input type="number" id="amount" name="amount" step="0.01" min="0" required
+                     th:value="${subscription.amount}" placeholder="0.00"
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+            </div>
+            <div>
+              <label for="currency" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Currency</label>
+              <input type="text" id="currency" name="currency" maxlength="3"
+                     th:value="${subscription.currency ?: 'USD'}" placeholder="USD"
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+            </div>
+            <div>
+              <label for="cycle" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Cycle</label>
+              <select id="cycle" name="cycle" required
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                <option value="monthly" th:selected="${subscription.cycle == 'monthly'}">monthly</option>
+                <option value="yearly" th:selected="${subscription.cycle == 'yearly'}">yearly</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Started / next due -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="startedOn" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Started on</label>
+              <input type="date" id="startedOn" name="startedOn" required
+                     th:value="${subscription.startedOn}"
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+            </div>
+            <div>
+              <label for="nextDueOn" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Next charge</label>
+              <input type="date" id="nextDueOn" name="nextDueOn"
+                     th:value="${subscription.nextDueOn}"
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+              <p class="text-xs text-slate-400 mt-1">Leave blank to use start date</p>
+            </div>
+          </div>
+
+          <!-- Management links -->
+          <div>
+            <label for="manageUrl" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Manage URL</label>
+            <input type="url" id="manageUrl" name="manageUrl"
+                   th:value="${subscription.manageUrl}" placeholder="https://github.com/settings/billing"
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+          </div>
+          <div>
+            <label for="cancelUrl" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Cancel URL</label>
+            <input type="url" id="cancelUrl" name="cancelUrl"
+                   th:value="${subscription.cancelUrl}" placeholder="Direct link to cancel flow"
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+          </div>
+
+          <!-- Payment method -->
+          <div>
+            <label for="paymentMethod" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Payment method</label>
+            <input type="text" id="paymentMethod" name="paymentMethod"
+                   th:value="${subscription.paymentMethod}" placeholder="e.g., Amex 1234"
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+          </div>
+
+          <!-- Optional tagging -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="clientId" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Client (optional)</label>
+              <select id="clientId" name="clientId"
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                <option value="" th:selected="${subscription.client == null}">—</option>
+                <option th:each="c : ${clients}" th:value="${c.id}"
+                        th:selected="${subscription.client != null and subscription.client.id == c.id}"
+                        th:text="${c.name}">Client</option>
+              </select>
+            </div>
+            <div>
+              <label for="projectId" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Project (optional)</label>
+              <select id="projectId" name="projectId"
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                <option value="" th:selected="${subscription.project == null}">—</option>
+                <option th:each="p : ${projects}" th:value="${p.id}"
+                        th:selected="${subscription.project != null and subscription.project.id == p.id}"
+                        th:text="${p.name} + ' · ' + ${p.client.name}">Project</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label for="description" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Notes</label>
+            <textarea id="description" name="description" rows="2"
+                      placeholder="What's this for?"
+                      th:text="${subscription.description}"
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <button type="button" @click="$dispatch('close-modal')"
+                    class="text-sm text-slate-600 hover:text-slate-900 px-4 py-2">Cancel</button>
+            <button type="submit"
+                    class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+              Save
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </body>
+</html>

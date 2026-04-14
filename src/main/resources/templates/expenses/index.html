@@ -1,0 +1,77 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Expenses')}"></head>
+  <body th:replace="~{layout :: page('expenses', ~{::section})}">
+    <section>
+
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">Expenses</h1>
+          <p class="text-sm text-slate-500 mt-1">
+            <span th:text="${#temporals.format(monthLabel, 'MMMM yyyy')}">This month</span>
+            <span class="text-slate-300 mx-1">·</span>
+            <span class="font-mono" th:text="'$' + ${#numbers.formatDecimal(monthTotal, 0, 'COMMA', 2, 'POINT')}">$0.00</span>
+          </p>
+        </div>
+        <button hx-get="/expenses/new" hx-target="#modal" hx-swap="innerHTML"
+                class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          Log Expense
+        </button>
+      </div>
+
+      <!-- Empty state -->
+      <div th:if="${#lists.isEmpty(expenses)}" class="bg-white rounded-xl border border-slate-200 p-12 text-center">
+        <p class="text-slate-500">No expenses logged yet.</p>
+        <button hx-get="/expenses/new" hx-target="#modal" class="text-[#ea7c28] hover:underline mt-2">Log your first expense</button>
+      </div>
+
+      <!-- List -->
+      <div th:unless="${#lists.isEmpty(expenses)}" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-slate-200">
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Date</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Vendor</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Category</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Amount</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Source</th>
+              <th class="px-6 py-3 w-20"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="e : ${expenses}" class="border-b border-slate-100 hover:bg-slate-50 transition group">
+              <td class="px-6 py-4 text-sm text-slate-600 tabular-nums"
+                  th:text="${#temporals.format(e.incurredOn, 'MMM d, yyyy')}">Apr 14, 2026</td>
+              <td class="px-6 py-4 text-sm">
+                <div class="font-medium" th:text="${e.vendor} ?: '—'">Vendor</div>
+                <div th:if="${e.description}" class="text-xs text-slate-500" th:text="${e.description}">description</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-slate-600 capitalize" th:text="${e.category}">software</td>
+              <td class="px-6 py-4 font-mono text-sm tabular-nums"
+                  th:text="${e.currency} + ' ' + ${#numbers.formatDecimal(e.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+              <td class="px-6 py-4 text-xs">
+                <span th:if="${e.subscription != null}"
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#ea7c28]/10 text-[#ea7c28]">
+                  Subscription
+                </span>
+                <span th:if="${e.subscription == null}" class="text-slate-400">Manual</span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2 justify-end">
+                  <button th:hx-get="@{/expenses/{id}/edit(id=${e.id})}" hx-target="#modal"
+                          class="text-xs text-slate-500 hover:text-slate-900">Edit</button>
+                  <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post" class="inline"
+                        onsubmit="return confirm('Delete this expense?')">
+                    <button type="submit" class="text-xs text-red-500 hover:text-red-700">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+  </body>
+</html>

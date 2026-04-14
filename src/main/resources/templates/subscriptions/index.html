@@ -1,0 +1,125 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Subscriptions')}"></head>
+  <body th:replace="~{layout :: page('subscriptions', ~{::section})}">
+    <section>
+
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">Subscriptions</h1>
+          <p class="text-sm text-slate-500 mt-1">
+            <span th:text="${#lists.size(active)}">0</span> active
+            <span class="text-slate-300 mx-1">·</span>
+            <span class="font-mono" th:text="'$' + ${#numbers.formatDecimal(monthlyTotal, 0, 'COMMA', 2, 'POINT')} + '/mo'">$0.00/mo</span>
+          </p>
+        </div>
+        <button hx-get="/subscriptions/new" hx-target="#modal" hx-swap="innerHTML"
+                class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          New Subscription
+        </button>
+      </div>
+
+      <!-- Empty state -->
+      <div th:if="${#lists.isEmpty(active) and #lists.isEmpty(cancelled)}" class="bg-white rounded-xl border border-slate-200 p-12 text-center">
+        <p class="text-slate-500">No subscriptions yet.</p>
+        <button hx-get="/subscriptions/new" hx-target="#modal" class="text-[#ea7c28] hover:underline mt-2">Add your first one</button>
+      </div>
+
+      <!-- Active subscriptions -->
+      <div th:unless="${#lists.isEmpty(active)}" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-slate-200">
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Vendor</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Amount</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Cycle</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Next due</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Links</th>
+              <th class="px-6 py-3 w-64"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="s : ${activeSubs}" class="border-b border-slate-100 hover:bg-slate-50 transition group">
+              <td class="px-6 py-4">
+                <div class="font-medium text-sm" th:text="${s.vendor}">Vendor</div>
+                <div class="text-xs text-slate-500" th:text="${s.category}">category</div>
+              </td>
+              <td class="px-6 py-4 font-mono text-sm tabular-nums"
+                  th:text="${s.currency} + ' ' + ${#numbers.formatDecimal(s.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+              <td class="px-6 py-4 text-sm text-slate-600 capitalize" th:text="${s.cycle}">monthly</td>
+              <td class="px-6 py-4 text-sm">
+                <span th:if="${s.nextDueOn != null and !s.nextDueOn.isAfter(today)}"
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700"
+                      th:text="${#temporals.format(s.nextDueOn, 'MMM d')}">Apr 14</span>
+                <span th:if="${s.nextDueOn != null and s.nextDueOn.isAfter(today)}"
+                      class="text-slate-600"
+                      th:text="${#temporals.format(s.nextDueOn, 'MMM d, yyyy')}">Apr 14, 2026</span>
+                <span th:if="${s.nextDueOn == null}" class="text-slate-400">—</span>
+              </td>
+              <td class="px-6 py-4 text-sm">
+                <div class="flex items-center gap-2">
+                  <a th:if="${s.manageUrl != null}" th:href="${s.manageUrl}" target="_blank" rel="noopener"
+                     class="text-xs text-slate-500 hover:text-slate-900 underline decoration-dotted">Manage</a>
+                  <a th:if="${s.cancelUrl != null}" th:href="${s.cancelUrl}" target="_blank" rel="noopener"
+                     class="text-xs text-red-500 hover:text-red-700 underline decoration-dotted">Cancel link</a>
+                  <span th:if="${s.manageUrl == null and s.cancelUrl == null}" class="text-slate-400 text-xs">—</span>
+                </div>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex items-center gap-2 justify-end">
+                  <!-- Record charge is always visible — this is the primary action -->
+                  <form th:action="@{/subscriptions/{id}/record-charge(id=${s.id})}" method="post" class="inline">
+                    <button type="submit"
+                            class="inline-flex items-center gap-1.5 bg-[#ea7c28]/10 hover:bg-[#ea7c28]/20 text-[#ea7c28] text-xs font-medium px-3 py-1.5 rounded-lg transition"
+                            title="Log today's charge and advance next due date">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      Record charge
+                    </button>
+                  </form>
+                  <!-- Secondary actions on hover -->
+                  <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2">
+                    <button th:hx-get="@{/subscriptions/{id}/edit(id=${s.id})}" hx-target="#modal"
+                            class="text-xs text-slate-500 hover:text-slate-900">Edit</button>
+                    <form th:action="@{/subscriptions/{id}/cancel(id=${s.id})}" method="post" class="inline"
+                          onsubmit="return confirm('Cancel this subscription? (You can reactivate later.)')">
+                      <button type="submit" class="text-xs text-red-500 hover:text-red-700">Cancel</button>
+                    </form>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Cancelled subscriptions (collapsible) -->
+      <div th:unless="${#lists.isEmpty(cancelled)}" class="mt-10" x-data="{ open: false }">
+        <button @click="open = !open" class="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition">
+          <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': open }" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          Cancelled (<span th:text="${#lists.size(cancelled)}">0</span>)
+        </button>
+        <div x-show="open" x-cloak class="mt-4 bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <table class="w-full">
+            <tbody>
+              <tr th:each="s : ${cancelledSubs}" class="border-b border-slate-100 last:border-0">
+                <td class="px-6 py-3">
+                  <div class="font-medium text-sm text-slate-600" th:text="${s.vendor}">Vendor</div>
+                  <div class="text-xs text-slate-400" th:text="'Cancelled ' + ${#temporals.format(s.cancelledOn, 'MMM d, yyyy')}">Cancelled</div>
+                </td>
+                <td class="px-6 py-3 font-mono text-sm text-slate-500 tabular-nums"
+                    th:text="${s.currency} + ' ' + ${#numbers.formatDecimal(s.amount, 0, 'COMMA', 2, 'POINT')} + ' / ' + ${s.cycle}">USD 0.00 / monthly</td>
+                <td class="px-6 py-3 text-right">
+                  <form th:action="@{/subscriptions/{id}/reactivate(id=${s.id})}" method="post" class="inline">
+                    <button type="submit" class="text-xs text-[#ea7c28] hover:underline">Reactivate</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+  </body>
+</html>

@@ -14,6 +14,25 @@
       src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
     ></script>
 
+    <!-- Tippy.js for tooltips -->
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/light-border.css" />
+    <script>
+      function initTooltips() {
+        if (window.tippy) {
+          tippy('[data-tippy-content]', {
+            theme: 'light-border',
+            arrow: true,
+            animation: 'shift-away',
+            delay: [200, 0],
+          });
+        }
+      }
+      document.addEventListener('DOMContentLoaded', initTooltips);
+      document.addEventListener('htmx:afterSwap', initTooltips);
+    </script>
+
     <link rel="preconnect" href="https://rsms.me/" />
     <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
 

@@ -1,0 +1,128 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Time')}"></head>
+  <body th:replace="~{layout :: page('time', ~{::section})}">
+    <section>
+
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">Time</h1>
+          <p class="text-sm text-slate-500 mt-1" th:text="${#lists.size(entries)} + ' entr' + (${#lists.size(entries)} == 1 ? 'y' : 'ies')">0 entries</p>
+        </div>
+        <button hx-get="/time/new" hx-target="#modal" hx-swap="innerHTML"
+                class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          Log Time
+        </button>
+      </div>
+
+      <!-- Running timer banner with live counter -->
+      <div th:if="${running != null}"
+           th:attr="data-started=${#temporals.format(running.startedAt, 'yyyy-MM-dd''T''HH:mm:ss')}"
+           x-data="{
+             elapsed: '00:00:00',
+             tick() {
+               const started = new Date(this.$el.dataset.started);
+               const diff = Math.floor((Date.now() - started.getTime()) / 1000);
+               const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+               const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+               const s = String(diff % 60).padStart(2, '0');
+               this.elapsed = h + ':' + m + ':' + s;
+             }
+           }"
+           x-init="tick(); setInterval(() => tick(), 1000)"
+           class="mb-6 p-4 bg-[#ea7c28]/10 border border-[#ea7c28]/30 rounded-xl flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <div class="w-2.5 h-2.5 bg-[#ea7c28] rounded-full animate-pulse"></div>
+          <div>
+            <p class="text-sm font-medium text-slate-900">
+              <span th:text="${running.project.name}">Project</span>
+              <span class="text-slate-400">·</span>
+              <span class="text-slate-500 text-xs" th:text="${running.project.client.name}">Client</span>
+            </p>
+            <p class="text-xs text-slate-500 mt-0.5" th:text="${running.description} ?: 'No description'">description</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="font-mono text-2xl font-semibold text-slate-900 tabular-nums" x-text="elapsed">00:00:00</span>
+          <form th:action="@{/time/{id}/stop(id=${running.id})}" method="post">
+            <button type="submit"
+                    class="bg-slate-900 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition">Stop</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Quick-start form when no timer is running -->
+      <div th:if="${running == null and !#lists.isEmpty(projects)}" class="mb-6 p-4 bg-white border border-slate-200 rounded-xl">
+        <form th:action="@{/time/start}" method="post" class="flex items-center gap-3">
+          <select name="projectId" required
+                  class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+            <option value="" disabled selected>Pick a project…</option>
+            <option th:each="p : ${projects}" th:value="${p.id}" th:text="${p.name} + ' · ' + ${p.client.name}">Project</option>
+          </select>
+          <input type="text" name="description" placeholder="What are you working on?"
+                 class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+          <button type="submit" class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">Start Timer</button>
+        </form>
+      </div>
+
+      <!-- Empty state -->
+      <div th:if="${#lists.isEmpty(entries)}" class="bg-white rounded-xl border border-slate-200 p-12 text-center">
+        <p class="text-slate-500">No time logged yet.</p>
+        <button hx-get="/time/new" hx-target="#modal" class="text-[#ea7c28] hover:underline mt-2">Log your first entry</button>
+      </div>
+
+      <!-- List -->
+      <div th:unless="${#lists.isEmpty(entries)}" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-slate-200">
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Started</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Project</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Description</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Duration</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Status</th>
+              <th class="px-6 py-3 w-32"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="e : ${entries}" class="border-b border-slate-100 hover:bg-slate-50 transition group">
+              <td class="px-6 py-4 text-sm text-slate-600"
+                  th:text="${#temporals.format(e.startedAt, 'MMM d, HH:mm')}">Mar 12, 14:30</td>
+              <td class="px-6 py-4 text-sm">
+                <div class="font-medium" th:text="${e.project.name}">Project</div>
+                <div class="text-xs text-slate-500" th:text="${e.project.client.name}">Client</div>
+              </td>
+              <td class="px-6 py-4 text-slate-500 text-sm" th:text="${e.description}">description</td>
+              <td class="px-6 py-4 font-mono text-sm text-[#ea7c28]">
+                <span th:if="${e.durationMinutes != null}"
+                      th:text="${e.durationMinutes / 60} + 'h ' + ${e.durationMinutes % 60} + 'm'">1h 30m</span>
+                <span th:if="${e.durationMinutes == null}" class="text-slate-400">—</span>
+              </td>
+              <td class="px-6 py-4">
+                <span th:if="${e.running}" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                  Running
+                </span>
+                <span th:if="${!e.running and e.billed}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">Billed</span>
+                <span th:if="${!e.running and !e.billed and e.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Unbilled</span>
+                <span th:if="${!e.running and !e.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Non-billable</span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2 justify-end">
+                  <button th:hx-get="@{/time/{id}/edit(id=${e.id})}" hx-target="#modal"
+                          class="text-xs text-slate-500 hover:text-slate-900">Edit</button>
+                  <form th:action="@{/time/{id}/delete(id=${e.id})}" method="post" class="inline"
+                        onsubmit="return confirm('Delete this entry?')">
+                    <button type="submit" class="text-xs text-red-500 hover:text-red-700">Delete</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </section>
+  </body>
+</html>

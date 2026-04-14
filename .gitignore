@@ -27,3 +27,5 @@ desktop.ini
 # Fonts are bundled but large — keep them tracked since they're required
 
 dist/
+
+.env
