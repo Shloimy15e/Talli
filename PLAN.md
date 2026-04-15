@@ -31,25 +31,28 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Clients, Projects, Time entries, Expenses, Subscriptions, Emails — CRUD + scaffolding
 - ✅ Projects: client FK, rate type, currency, billing schedule
 - ✅ Time entries: running timer with live counter, live duration in form
-- ✅ Dashboard: counts, time this week, unbilled, running timer, recent activity, monthly burn
+- ✅ Dashboard: counts, time this week, unbilled, running timer, recent activity, monthly burn, charts
 - ✅ Emails: send + log via Gmail SMTP, Tippy tooltips for failure messages
 - ✅ Auth: Spring Security form login, BCrypt, roles (ADMIN/CLIENT), remember-me
 - ✅ User profile page (edit name/email, change password)
 - ✅ Flyway migrations, PostgreSQL, spring-dotenv
 - ✅ Dockerfile + Railway deployment
 - ✅ Thymeleaf + Tailwind + HTMX + Alpine + Inter font + Dynamiq branding
+- ✅ Service layer: `TimeEntryService`, `DashboardService` (with unit tests)
+- ✅ Media library Phase A: `Media` entity, `HasMedia` interface, `MediaStorage` contract + `LocalMediaStorage`, `MediaService`
 
 ## Now
 
-**Service layer refactor.** Extract business logic out of controllers into services (`TimeEntryService`, `InvoiceService`, etc.) — controllers should only handle HTTP. Pays off as invoicing logic grows.
+**Media library Phase B — expense receipts.** Wire `MediaService` into expenses end-to-end: multipart upload on the expense form, list attached receipts on the edit page, add `MediaController` for download/delete. Proves the abstraction before invoicing depends on it.
 
 ## Next up (ordered)
 
-1. **Service layer refactor (above)**
-2. **Invoices** — auto-generate per project billing schedule; PDF output; mark time entries as billed
-3. **Email invoices** — send generated PDFs via Gmail SMTP
-4. **Client detail page** — drill into one client: projects, time, invoices, revenue
-5. **Project detail page** — same for one project
+1. **Media Phase B (above)** — expense receipts as the first consumer of `MediaService`
+2. **Media Phase C** — S3/R2 driver (`S3MediaStorage`) + profile-based switching
+3. **Invoices** — auto-generate per project billing schedule; PDF output stored via MediaService; mark time entries as billed
+4. **Email invoices** — send generated PDFs via Gmail SMTP with PDF attached
+5. **Client detail page** — drill into one client: projects, time, invoices, revenue
+6. **Project detail page** — same for one project
 
 ## Later / extensions
 
