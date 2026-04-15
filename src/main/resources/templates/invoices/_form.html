@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
   <body>
 
-    <div th:fragment="form(form, action, title, projects)"
+    <div th:fragment="form(form, action, title, clients, projects)"
          class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
          @click.self="$dispatch('close-modal')">
 
@@ -31,13 +31,13 @@
                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28] font-mono">
             </div>
             <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Project</label>
-              <select name="projectId" required
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Client</label>
+              <select name="clientId" required
                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
                 <option value="">—</option>
-                <option th:each="p : ${projects}" th:value="${p.id}"
-                        th:selected="${form.projectId != null and form.projectId == p.id}"
-                        th:text="${p.name} + ' · ' + ${p.client.name}">Project · Client</option>
+                <option th:each="c : ${clients}" th:value="${c.id}"
+                        th:selected="${form.clientId != null and form.clientId == c.id}"
+                        th:text="${c.name}">Client</option>
               </select>
             </div>
           </div>
@@ -92,10 +92,15 @@
 
             <template x-for="(_, idx) in rows" :key="idx">
               <div class="grid grid-cols-12 gap-2 mb-2 items-start">
+                <select :name="`items[${idx}].projectId`"
+                        class="col-span-3 px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
+                  <option value="">—</option>
+                  <option th:each="p : ${projects}" th:value="${p.id}" th:text="${p.name}">Project</option>
+                </select>
                 <input type="text" :name="`items[${idx}].description`" placeholder="Description"
-                       class="col-span-6 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
+                       class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
                 <input type="number" step="0.01" :name="`items[${idx}].unitCount`" placeholder="Qty"
-                       class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
+                       class="col-span-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
                 <input type="text" :name="`items[${idx}].unit`" placeholder="hr"
                        class="col-span-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
                 <input type="number" step="0.01" :name="`items[${idx}].unitPrice`" placeholder="Price"

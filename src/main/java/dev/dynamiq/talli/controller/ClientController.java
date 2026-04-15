@@ -1,19 +1,38 @@
 package dev.dynamiq.talli.controller;
 
 import dev.dynamiq.talli.model.Client;
+import dev.dynamiq.talli.model.Invoice;
+import dev.dynamiq.talli.model.Project;
+import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
+import dev.dynamiq.talli.repository.InvoiceRepository;
+import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.repository.TimeEntryRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.List;
 
 @Controller
 @RequestMapping("/clients")
 public class ClientController {
 
     private final ClientRepository clientRepository;
+    private final ProjectRepository projectRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final TimeEntryRepository timeEntryRepository;
 
-    public ClientController(ClientRepository clientRepository) {
+    public ClientController(ClientRepository clientRepository,
+                            ProjectRepository projectRepository,
+                            InvoiceRepository invoiceRepository,
+                            TimeEntryRepository timeEntryRepository) {
         this.clientRepository = clientRepository;
+        this.projectRepository = projectRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.timeEntryRepository = timeEntryRepository;
     }
 
     // List page
@@ -21,6 +40,62 @@ public class ClientController {
     public String index(Model model) {
         model.addAttribute("clients", clientRepository.findAll());
         return "clients/index";
+    }
+
+    // Detail page — projects, time, invoices, revenue for one client
+    @GetMapping("/{id}")
+    public String show(@PathVariable Long id, Model model) {
+        Client client = clientRepository.findById(id).orElseThrow();
+        List<Project> projects = projectRepository.findByClientId(id);
+        List<Invoice> invoices = invoiceRepository.findByClientIdOrderByIssuedAtDescIdDesc(id);
+
+        // Time entries: pull per-project, flatten, sort newest first
+        List<TimeEntry> timeEntries = projects.stream()
+                .flatMap(p -> timeEntryRepository.findByProjectIdOrderByStartedAtDesc(p.getId()).stream())
+                .sorted(Comparator.comparing(TimeEntry::getStartedAt).reversed())
+                .toList();
+
+        // Revenue totals: sum of invoice amounts (billed) and amountPaid (collected).
+        // Naive sum across currencies — fine while this client is single-currency in practice.
+        BigDecimal totalBilled = invoices.stream()
+                .map(Invoice::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalPaid = invoices.stream()
+                .map(Invoice::getAmountPaid)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal outstanding = totalBilled.subtract(totalPaid);
+
+        // Unbilled time: minutes of billable, ended, not-yet-billed entries across this client's projects
+        long unbilledMinutes = timeEntries.stream()
+                .filter(t -> Boolean.TRUE.equals(t.getBillable())
+                        && Boolean.FALSE.equals(t.getBilled())
+                        && t.getEndedAt() != null
+                        && t.getDurationMinutes() != null)
+                .mapToLong(TimeEntry::getDurationMinutes)
+                .sum();
+
+        long totalMinutes = timeEntries.stream()
+                .filter(t -> t.getDurationMinutes() != null)
+                .mapToLong(TimeEntry::getDurationMinutes)
+                .sum();
+
+        String currency = projects.stream()
+                .map(Project::getCurrency)
+                .filter(c -> c != null && !c.isBlank())
+                .findFirst()
+                .orElse("USD");
+
+        model.addAttribute("client", client);
+        model.addAttribute("projects", projects);
+        model.addAttribute("invoices", invoices);
+        model.addAttribute("timeEntries", timeEntries);
+        model.addAttribute("totalBilled", totalBilled);
+        model.addAttribute("totalPaid", totalPaid);
+        model.addAttribute("outstanding", outstanding);
+        model.addAttribute("unbilledMinutes", unbilledMinutes);
+        model.addAttribute("totalMinutes", totalMinutes);
+        model.addAttribute("currency", currency);
+        return "clients/show";
     }
 
     // Returns just the form fragment — loaded into modal via HTMX

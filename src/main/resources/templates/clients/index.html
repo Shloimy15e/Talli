@@ -36,7 +36,10 @@
             </thead>
             <tbody>
                 <tr th:each="client : ${clients}" class="border-b border-slate-100 hover:bg-slate-50 transition group">
-                    <td class="px-6 py-4 font-medium" th:text="${client.name}">Name</td>
+                    <td class="px-6 py-4 font-medium">
+                        <a th:href="@{/clients/{id}(id=${client.id})}"
+                           class="hover:text-[#ea7c28]" th:text="${client.name}">Name</a>
+                    </td>
                     <td class="px-6 py-4 text-slate-600" th:text="${client.email}">email</td>
                     <td class="px-6 py-4 text-slate-500 text-sm" th:text="${client.notes}">notes</td>
                     <td class="px-6 py-4 text-right">

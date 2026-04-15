@@ -33,6 +33,14 @@ public class TimeEntry {
     @Column(nullable = false)
     private Boolean billed = false;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id")
+    private Invoice invoice;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_item_id")
+    private InvoiceItem invoiceItem;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -123,6 +131,22 @@ public class TimeEntry {
 
     public void setBilled(Boolean billed) {
         this.billed = billed;
+    }
+
+    public Invoice getInvoice() {
+        return invoice;
+    }
+
+    public void setInvoice(Invoice invoice) {
+        this.invoice = invoice;
+    }
+
+    public InvoiceItem getInvoiceItem() {
+        return invoiceItem;
+    }
+
+    public void setInvoiceItem(InvoiceItem invoiceItem) {
+        this.invoiceItem = invoiceItem;
     }
 
     public LocalDateTime getCreatedAt() {

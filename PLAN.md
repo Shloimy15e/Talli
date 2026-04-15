@@ -38,24 +38,36 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Flyway migrations, PostgreSQL, spring-dotenv
 - ✅ Dockerfile + Railway deployment
 - ✅ Thymeleaf + Tailwind + HTMX + Alpine + Inter font + Dynamiq branding
-- ✅ Service layer: `TimeEntryService`, `DashboardService` (with unit tests)
+- ✅ Service layer: `TimeEntryService` (with `indexView` aggregation + public static helpers shared with `InvoiceService`), `DashboardService` (with unit tests)
 - ✅ Media library Phase A: `Media` entity, `HasMedia` interface, `MediaStorage` contract + `LocalMediaStorage`, `MediaService`
 - ✅ Media library Phase B: `MediaController` (download/delete), expense receipts upload, custom error page with copy buttons
-- ✅ Invoices Phase A: `Invoice` + `InvoiceItem` entities, repos, manual CRUD controller (index/show/new/create/delete), dynamic line-item form, attachments per invoice (documents + payment_proofs), `time_entries.invoice_id` FK ready for generation
+- ✅ Invoices: `Invoice` + `InvoiceItem` entities + repos, `InvoiceService` with manual CRUD and `generateForClient(clientId, periodStart, periodEnd)` (hourly projects only — one line per project per period, atomically marks time entries billed). Controller + UI: index/show/new/create/delete/generate, attachments (documents + payment_proofs), generate-from-client modal.
+- ✅ QB-style sequential invoice references (`INV-1001`+), per-client invoice model (V11).
+- ✅ Time index page: summary tiles (today/week/month/unbilled), per-day grouping with totals, per-entry $ values, link from "Billed" badge to the invoice.
 
 ## Now
 
-**`InvoiceService` extraction + generation logic.** Pull manual CRUD out of the controller into `InvoiceService`, then add the real business logic on top: `generateForProject(project, periodStart, periodEnd)` (group billable unbilled time entries → invoice + items, mark billed), `recordPayment(invoice, amount, ...)` with cached `amount_paid`, state transitions (`paid` / `overdue` / `void`).
+**Phase A — fixed-project supporting infrastructure (QB-grade basics).** Add `Client.paymentTermsDays` (default 30, Net 30 standard), use it in invoice generation. Project implements `HasMedia` with SOW attachment. Neutral helper methods on Project for contract-amount vs. hourly-rate naming without schema churn.
 
 ## Next up (ordered)
 
-1. **`InvoiceService`** — extract CRUD, then add generation, payments, state transitions
-2. **PDF generation** — render invoice as PDF, store via `MediaService` in `documents` collection
-3. **Email invoices** — send generated PDF via Gmail SMTP, set `sentAt`
-4. **Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
-5. **Payments** — separate `payments` table, `PaymentService` updates `invoice.amount_paid` cache + transitions status to `paid`
-6. **Client detail page** — drill into one client: projects, time, invoices, revenue
-7. **Project detail page** — same for one project, with "Generate invoice" button wired to `InvoiceService.generateForProject`
+1. **Phase A — client payment terms + SOW attachment** (now) — `Client.paymentTermsDays`, Project `HasMedia` + SOW upload, `generateForClient` honors per-client Net terms.
+2. **Phase B — project detail page** — list time entries, linked invoices, SOW, running balance (`SUM(invoice_items WHERE project_id)`), editable contract amount (lightweight change-order workflow).
+3. **Phase C — scheduled jobs** — daily `markOverdue` (`@Scheduled`), monthly retainer auto-generation for active retainer projects.
+4. **PDF generation** — render invoice as PDF, store via `MediaService` in `documents` collection at generation time.
+5. **Email invoices** — send generated PDF via Gmail SMTP, set `sentAt`, transition nothing (status stays `unpaid` until payment).
+6. **Payments** — separate `payments` table, `PaymentService` updates `invoice.amount_paid` cache + transitions status to `paid` when balance ≤ 0.
+7. **Customer statements** — per-client statement showing open invoices, totals, aging buckets. Optional PDF export.
+8. **Client detail page** — drill into one client: projects, time, invoices, revenue, payment terms.
+9. **Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
+
+## Deliberately skipped for Dynamiq's shape
+
+- **Estimate entity / quote workflow** — SOW lives as an attachment on the project; contract amount on the project itself. No need for a separate estimates system.
+- **Tax line items** — US B2B services consulting, no sales tax nexus.
+- **Credit memos** — rare at solo/small-agency volume; use void + new invoice.
+- **Stripe / payment links** — defer until a client specifically asks.
+- **Client portal** — scaffolded via Spring Security CLIENT role, actual pages deferred.
 
 ## Later / extensions
 

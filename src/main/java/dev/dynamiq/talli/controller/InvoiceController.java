@@ -2,6 +2,7 @@ package dev.dynamiq.talli.controller;
 
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
+import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.service.InvoiceService;
 import dev.dynamiq.talli.service.MediaService;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -21,13 +23,16 @@ import java.util.List;
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
+    private final ClientRepository clientRepository;
     private final ProjectRepository projectRepository;
     private final MediaService mediaService;
 
     public InvoiceController(InvoiceService invoiceService,
+                             ClientRepository clientRepository,
                              ProjectRepository projectRepository,
                              MediaService mediaService) {
         this.invoiceService = invoiceService;
+        this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.mediaService = mediaService;
     }
@@ -47,6 +52,7 @@ public class InvoiceController {
         form.setReference(invoiceService.nextReference());
         form.setItems(new ArrayList<>(List.of(new InvoiceItemForm())));
         model.addAttribute("form", form);
+        model.addAttribute("clients", clientRepository.findAll());
         model.addAttribute("projects", projectRepository.findAll());
         model.addAttribute("action", "/invoices");
         model.addAttribute("title", "New Invoice");
@@ -56,12 +62,12 @@ public class InvoiceController {
     @PostMapping
     public String create(@ModelAttribute InvoiceForm form) {
         Invoice invoice = new Invoice();
-        form.applyTo(invoice, projectRepository);
+        form.applyTo(invoice, clientRepository);
 
         List<InvoiceItem> items = form.nonEmptyItems().stream()
                 .map(itemForm -> {
                     InvoiceItem item = new InvoiceItem();
-                    itemForm.applyTo(item);
+                    itemForm.applyTo(item, projectRepository);
                     return item;
                 })
                 .toList();
@@ -83,7 +89,7 @@ public class InvoiceController {
         Invoice invoice = invoiceService.get(id);
         model.addAttribute("invoice", invoice);
         model.addAttribute("items", invoiceService.itemsFor(id));
-        model.addAttribute("balance", invoiceService.balance(invoice));
+        model.addAttribute("balance", invoice.balance());
         model.addAttribute("invoiceDocs", mediaService.forOwner(invoice, "documents"));
         model.addAttribute("paymentProofs", mediaService.forOwner(invoice, "payment_proofs"));
         return "invoices/show";
@@ -106,11 +112,35 @@ public class InvoiceController {
         return "redirect:/invoices/" + id;
     }
 
+    @GetMapping("/generate")
+    public String generateForm(Model model) {
+        LocalDate today = LocalDate.now();
+        model.addAttribute("clients", clientRepository.findAll());
+        model.addAttribute("periodStart", today.withDayOfMonth(1).toString());
+        model.addAttribute("periodEnd", today.toString());
+        return "invoices/_generate :: form";
+    }
+
+    @PostMapping("/generate")
+    public String generate(@RequestParam("clientId") Long clientId,
+                           @RequestParam("periodStart") String periodStart,
+                           @RequestParam("periodEnd") String periodEnd,
+                           RedirectAttributes flash) {
+        try {
+            Invoice invoice = invoiceService.generateForClient(
+                    clientId, LocalDate.parse(periodStart), LocalDate.parse(periodEnd));
+            return "redirect:/invoices/" + invoice.getId();
+        } catch (IllegalStateException e) {
+            flash.addFlashAttribute("generateError", e.getMessage());
+            return "redirect:/invoices";
+        }
+    }
+
     // --- Form beans ---
 
     public static class InvoiceForm {
         private String reference;
-        private Long projectId;
+        private Long clientId;
         private String currency;
         private String status;
         private String issuedAt;
@@ -122,9 +152,9 @@ public class InvoiceController {
         private MultipartFile invoiceDoc;
         private MultipartFile paymentProof;
 
-        public void applyTo(Invoice inv, ProjectRepository projects) {
+        public void applyTo(Invoice inv, ClientRepository clients) {
             inv.setReference(reference);
-            inv.setProject(projectId == null ? null : projects.findById(projectId).orElseThrow());
+            inv.setClient(clientId == null ? null : clients.findById(clientId).orElseThrow());
             inv.setCurrency(currency == null || currency.isBlank() ? "USD" : currency);
             inv.setStatus(status == null || status.isBlank() ? "unpaid" : status);
             inv.setIssuedAt(parseDate(issuedAt));
@@ -142,8 +172,8 @@ public class InvoiceController {
 
         public String getReference() { return reference; }
         public void setReference(String reference) { this.reference = reference; }
-        public Long getProjectId() { return projectId; }
-        public void setProjectId(Long projectId) { this.projectId = projectId; }
+        public Long getClientId() { return clientId; }
+        public void setClientId(Long clientId) { this.clientId = clientId; }
         public String getCurrency() { return currency; }
         public void setCurrency(String currency) { this.currency = currency; }
         public String getStatus() { return status; }
@@ -167,12 +197,14 @@ public class InvoiceController {
     }
 
     public static class InvoiceItemForm {
+        private Long projectId;
         private String description;
         private String unit;
         private BigDecimal unitPrice;
         private BigDecimal unitCount;
 
-        public void applyTo(InvoiceItem item) {
+        public void applyTo(InvoiceItem item, ProjectRepository projects) {
+            item.setProject(projectId == null ? null : projects.findById(projectId).orElse(null));
             item.setDescription(emptyToNull(description));
             item.setUnit(emptyToNull(unit));
             item.setUnitPrice(unitPrice == null ? BigDecimal.ZERO : unitPrice);
@@ -180,6 +212,8 @@ public class InvoiceController {
             item.setTotal(item.getUnitPrice().multiply(item.getUnitCount()).setScale(2, RoundingMode.HALF_UP));
         }
 
+        public Long getProjectId() { return projectId; }
+        public void setProjectId(Long projectId) { this.projectId = projectId; }
         public String getDescription() { return description; }
         public void setDescription(String description) { this.description = description; }
         public String getUnit() { return unit; }

@@ -32,9 +32,17 @@ public class Invoice implements HasMedia {
     @Column(unique = true, nullable = false)
     private String reference;
 
+    public Client getClient() {
+        return client;
+    }
+
+    public void setClient(Client client) {
+        this.client = client;
+    }
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", nullable = false)
-    private Project project;
+    @JoinColumn(name = "client_id", nullable = false)
+    private Client client;
 
     @Column(nullable = false)
     private BigDecimal amount = BigDecimal.ZERO;
@@ -102,14 +110,6 @@ public class Invoice implements HasMedia {
         this.reference = reference;
     }
 
-    public Project getProject() {
-        return project;
-    }
-
-    public void setProject(Project project) {
-        this.project = project;
-    }
-
     public BigDecimal getAmount() {
         return amount;
     }
@@ -124,6 +124,11 @@ public class Invoice implements HasMedia {
 
     public void setAmountPaid(BigDecimal amountPaid) {
         this.amountPaid = amountPaid;
+    }
+
+    /** Outstanding amount — amount minus what's been paid. */
+    public BigDecimal balance() {
+        return amount.subtract(amountPaid);
     }
 
     public String getCurrency() {

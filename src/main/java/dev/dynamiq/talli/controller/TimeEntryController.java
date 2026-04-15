@@ -28,7 +28,7 @@ public class TimeEntryController {
 
     @GetMapping
     public String index(Model model) {
-        model.addAttribute("entries", timeEntryRepository.findAllByOrderByStartedAtDesc());
+        model.addAttribute("view", timeEntryService.indexView());
         model.addAttribute("running", timeEntryRepository.findFirstByEndedAtIsNullOrderByStartedAtDesc().orElse(null));
         model.addAttribute("projects", projectRepository.findAll());
         return "time/index";
@@ -82,7 +82,6 @@ public class TimeEntryController {
         return "redirect:/time";
     }
 
-    // Quick-start a running timer (no end time yet)
     @PostMapping("/start")
     public String start(@RequestParam("projectId") Long projectId,
             @RequestParam(value = "description", required = false) String description) {
@@ -90,7 +89,6 @@ public class TimeEntryController {
         return "redirect:/time";
     }
 
-    // Stop the running timer
     @PostMapping("/{id}/stop")
     public String stop(@PathVariable("id") Long id) {
         timeEntryService.endTimer(id);
@@ -100,7 +98,6 @@ public class TimeEntryController {
     private LocalDateTime parseDateTime(String value) {
         if (value == null || value.isBlank())
             return null;
-        // Browser's datetime-local input sends "2026-04-14T22:30" — ISO without seconds
         return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 }
