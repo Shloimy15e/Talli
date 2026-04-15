@@ -130,6 +130,21 @@ public class TimeEntryService {
                 todayMinutes, weekMinutes, monthMinutes, unbilledMinutes, unbilledValue);
     }
 
+    /** Unbilled dollar value + entry count for a single project's time entries. */
+    public ProjectTimeTotals totalsForProject(Long projectId, BigDecimal rate) {
+        List<TimeEntry> entries = timeEntryRepository.findByProjectIdOrderByStartedAtDesc(projectId);
+        LocalDateTime now = LocalDateTime.now();
+        int unbilledMinutes = entries.stream()
+                .filter(e -> Boolean.TRUE.equals(e.getBillable()))
+                .filter(e -> !Boolean.TRUE.equals(e.getBilled()))
+                .filter(e -> e.getEndedAt() != null)
+                .mapToInt(e -> minutesFor(e, now))
+                .sum();
+        return new ProjectTimeTotals(valueOf(unbilledMinutes, rate), entries.size());
+    }
+
+    public record ProjectTimeTotals(BigDecimal unbilledValue, long entryCount) {}
+
     /** Elapsed minutes for a time entry at a given instant. Handles running entries. */
     public static int minutesFor(TimeEntry e, LocalDateTime now) {
         if (e.getDurationMinutes() != null) return e.getDurationMinutes();

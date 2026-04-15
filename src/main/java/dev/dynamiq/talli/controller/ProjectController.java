@@ -3,12 +3,17 @@ package dev.dynamiq.talli.controller;
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.repository.ClientRepository;
+import dev.dynamiq.talli.repository.InvoiceItemRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.repository.TimeEntryRepository;
 import dev.dynamiq.talli.service.MediaService;
+import dev.dynamiq.talli.service.ProjectService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.math.BigDecimal;
 
 @Controller
 @RequestMapping("/projects")
@@ -17,19 +22,39 @@ public class ProjectController {
     private final ProjectRepository projectRepository;
     private final ClientRepository clientRepository;
     private final MediaService mediaService;
+    private final TimeEntryRepository timeEntryRepository;
+    private final InvoiceItemRepository invoiceItemRepository;
+    private final ProjectService projectService;
 
     public ProjectController(ProjectRepository projectRepository,
                              ClientRepository clientRepository,
-                             MediaService mediaService) {
+                             MediaService mediaService,
+                             TimeEntryRepository timeEntryRepository,
+                             InvoiceItemRepository invoiceItemRepository,
+                             ProjectService projectService) {
         this.projectRepository = projectRepository;
         this.clientRepository = clientRepository;
         this.mediaService = mediaService;
+        this.timeEntryRepository = timeEntryRepository;
+        this.invoiceItemRepository = invoiceItemRepository;
+        this.projectService = projectService;
     }
 
     @GetMapping
     public String index(Model model) {
         model.addAttribute("projects", projectRepository.findAll());
         return "projects/index";
+    }
+
+    @GetMapping("/{id}")
+    public String show(@PathVariable Long id, Model model) {
+        Project project = projectRepository.findById(id).orElseThrow();
+        model.addAttribute("project", project);
+        model.addAttribute("timeEntries", timeEntryRepository.findByProjectIdOrderByStartedAtDesc(id));
+        model.addAttribute("invoices", invoiceItemRepository.findInvoicesByProjectId(id));
+        model.addAttribute("sows", mediaService.forOwner(project, "sow"));
+        model.addAttribute("summary", projectService.summary(id));
+        return "projects/show";
     }
 
     @GetMapping("/new")
@@ -92,5 +117,13 @@ public class ProjectController {
     public String delete(@PathVariable Long id) {
         projectRepository.deleteById(id);
         return "redirect:/projects";
+    }
+
+    @PostMapping("/{id}/change-contract")
+    public String changeContract(@PathVariable Long id,
+                                 @RequestParam BigDecimal newAmount,
+                                 @RequestParam(required = false) String reason) {
+        projectService.changeContractAmount(id, newAmount, reason);
+        return "redirect:/projects/" + id;
     }
 }
