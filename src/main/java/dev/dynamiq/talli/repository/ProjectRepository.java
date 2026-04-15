@@ -10,4 +10,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     //   "find all projects where project.client.id = ?"
     // and generates the SQL automatically. No implementation needed.
     List<Project> findByClientId(Long clientId);
+
+    List<Project> findByStatusAndRateType(String status, String rateType);
 }
