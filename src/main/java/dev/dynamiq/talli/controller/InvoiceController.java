@@ -2,12 +2,10 @@ package dev.dynamiq.talli.controller;
 
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
-import dev.dynamiq.talli.repository.InvoiceItemRepository;
-import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.service.InvoiceService;
 import dev.dynamiq.talli.service.MediaService;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,24 +20,21 @@ import java.util.List;
 @RequestMapping("/invoices")
 public class InvoiceController {
 
-    private final InvoiceRepository invoiceRepository;
-    private final InvoiceItemRepository invoiceItemRepository;
+    private final InvoiceService invoiceService;
     private final ProjectRepository projectRepository;
     private final MediaService mediaService;
 
-    public InvoiceController(InvoiceRepository invoiceRepository,
-                             InvoiceItemRepository invoiceItemRepository,
+    public InvoiceController(InvoiceService invoiceService,
                              ProjectRepository projectRepository,
                              MediaService mediaService) {
-        this.invoiceRepository = invoiceRepository;
-        this.invoiceItemRepository = invoiceItemRepository;
+        this.invoiceService = invoiceService;
         this.projectRepository = projectRepository;
         this.mediaService = mediaService;
     }
 
     @GetMapping
     public String index(Model model) {
-        model.addAttribute("invoices", invoiceRepository.findAllByOrderByIssuedAtDescIdDesc());
+        model.addAttribute("invoices", invoiceService.listAll());
         return "invoices/index";
     }
 
@@ -49,7 +44,7 @@ public class InvoiceController {
         form.setIssuedAt(LocalDate.now().toString());
         form.setDueAt(LocalDate.now().plusDays(30).toString());
         form.setCurrency("USD");
-        form.setReference(nextReference());
+        form.setReference(invoiceService.nextReference());
         form.setItems(new ArrayList<>(List.of(new InvoiceItemForm())));
         model.addAttribute("form", form);
         model.addAttribute("projects", projectRepository.findAll());
@@ -59,22 +54,19 @@ public class InvoiceController {
     }
 
     @PostMapping
-    @Transactional
     public String create(@ModelAttribute InvoiceForm form) {
         Invoice invoice = new Invoice();
         form.applyTo(invoice, projectRepository);
-        invoice = invoiceRepository.save(invoice);
 
-        BigDecimal total = BigDecimal.ZERO;
-        for (InvoiceItemForm itemForm : form.nonEmptyItems()) {
-            InvoiceItem item = new InvoiceItem();
-            itemForm.applyTo(item);
-            item.setInvoice(invoice);
-            invoiceItemRepository.save(item);
-            total = total.add(item.getTotal());
-        }
+        List<InvoiceItem> items = form.nonEmptyItems().stream()
+                .map(itemForm -> {
+                    InvoiceItem item = new InvoiceItem();
+                    itemForm.applyTo(item);
+                    return item;
+                })
+                .toList();
 
-        invoice.setAmount(total);
+        invoice = invoiceService.create(invoice, items);
 
         if (form.getInvoiceDoc() != null && !form.getInvoiceDoc().isEmpty()) {
             mediaService.attach(invoice, form.getInvoiceDoc(), "documents");
@@ -88,12 +80,10 @@ public class InvoiceController {
 
     @GetMapping("/{id}")
     public String show(@PathVariable("id") Long id, Model model) {
-        Invoice invoice = invoiceRepository.findById(id).orElseThrow();
-        List<InvoiceItem> items = invoiceItemRepository.findByInvoiceIdOrderByIdAsc(id);
-        BigDecimal balance = invoice.getAmount().subtract(invoice.getAmountPaid());
+        Invoice invoice = invoiceService.get(id);
         model.addAttribute("invoice", invoice);
-        model.addAttribute("items", items);
-        model.addAttribute("balance", balance);
+        model.addAttribute("items", invoiceService.itemsFor(id));
+        model.addAttribute("balance", invoiceService.balance(invoice));
         model.addAttribute("invoiceDocs", mediaService.forOwner(invoice, "documents"));
         model.addAttribute("paymentProofs", mediaService.forOwner(invoice, "payment_proofs"));
         return "invoices/show";
@@ -101,7 +91,7 @@ public class InvoiceController {
 
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable("id") Long id) {
-        invoiceRepository.deleteById(id);
+        invoiceService.delete(id);
         return "redirect:/invoices";
     }
 
@@ -109,16 +99,11 @@ public class InvoiceController {
     public String upload(@PathVariable("id") Long id,
                          @RequestParam("file") MultipartFile file,
                          @RequestParam(value = "collection", defaultValue = "documents") String collection) {
-        Invoice invoice = invoiceRepository.findById(id).orElseThrow();
+        Invoice invoice = invoiceService.get(id);
         if (file != null && !file.isEmpty()) {
             mediaService.attach(invoice, file, collection);
         }
         return "redirect:/invoices/" + id;
-    }
-
-    private String nextReference() {
-        long next = invoiceRepository.count() + 1;
-        return String.format("INV-%d-%04d", LocalDate.now().getYear(), next);
     }
 
     // --- Form beans ---
