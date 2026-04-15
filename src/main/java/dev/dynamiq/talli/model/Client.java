@@ -16,6 +16,14 @@ public class Client {
 
     private String email;
 
+    private String phone;
+
+    @Column(name = "billing_address", columnDefinition = "TEXT")
+    private String billingAddress;
+
+    @Column(name = "tax_id")
+    private String taxId;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -63,6 +71,30 @@ public class Client {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getBillingAddress() {
+        return billingAddress;
+    }
+
+    public void setBillingAddress(String billingAddress) {
+        this.billingAddress = billingAddress;
+    }
+
+    public String getTaxId() {
+        return taxId;
+    }
+
+    public void setTaxId(String taxId) {
+        this.taxId = taxId;
     }
 
     public String getNotes() {

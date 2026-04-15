@@ -13,9 +13,30 @@
                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
           </div>
 
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Email</label>
+              <input type="email" id="email" th:field="*{email}"
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+            </div>
+            <div>
+              <label for="phone" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Phone</label>
+              <input type="text" id="phone" th:field="*{phone}"
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+            </div>
+          </div>
+
           <div>
-            <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Email</label>
-            <input type="email" id="email" th:field="*{email}"
+            <label for="billingAddress" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Billing Address</label>
+            <textarea id="billingAddress" th:field="*{billingAddress}" rows="3"
+                      placeholder="Street, city, state, postal code, country"
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+          </div>
+
+          <div>
+            <label for="taxId" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Tax ID</label>
+            <input type="text" id="taxId" th:field="*{taxId}"
+                   placeholder="EIN, VAT, or company registration number"
                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
           </div>
 

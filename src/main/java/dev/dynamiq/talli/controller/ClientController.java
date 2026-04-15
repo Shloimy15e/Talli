@@ -130,6 +130,9 @@ public class ClientController {
         Client existing = clientRepository.findById(id).orElseThrow();
         existing.setName(client.getName());
         existing.setEmail(client.getEmail());
+        existing.setPhone(client.getPhone());
+        existing.setBillingAddress(client.getBillingAddress());
+        existing.setTaxId(client.getTaxId());
         existing.setNotes(client.getNotes());
         existing.setPaymentTermsDays(client.getPaymentTermsDays());
         clientRepository.save(existing);
