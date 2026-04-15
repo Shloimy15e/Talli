@@ -1,0 +1,182 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Invoice ' + ${invoice.reference})}"></head>
+  <body th:replace="~{layout :: page('invoices', ~{::section})}">
+    <section>
+
+      <div class="mb-6">
+        <a th:href="@{/invoices}" class="text-sm text-slate-500 hover:text-slate-900">← Invoices</a>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+
+        <!-- Header band -->
+        <div class="px-8 py-6 border-b border-slate-200 flex items-start justify-between">
+          <div>
+            <div class="flex items-center gap-3 mb-2">
+              <h1 class="font-mono text-2xl font-semibold tracking-tight" th:text="${invoice.reference}">INV-2026-0001</h1>
+              <span th:switch="${invoice.status}"
+                    class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
+                    th:classappend="${invoice.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${invoice.status == 'overdue'} ? 'bg-red-50 text-red-700' : (${invoice.status == 'void'} ? 'bg-slate-100 text-slate-500' : 'bg-[#ea7c28]/10 text-[#ea7c28]'))">
+                <span th:text="${invoice.status}">unpaid</span>
+              </span>
+            </div>
+            <p class="text-sm text-slate-600">
+              <span class="font-medium" th:text="${invoice.project.name}">Project</span>
+              <span class="text-slate-400 mx-1">·</span>
+              <span class="text-slate-500" th:text="${invoice.project.client.name}">Client</span>
+            </p>
+          </div>
+          <div class="text-right">
+            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total</p>
+            <p class="font-mono text-3xl font-semibold tabular-nums mt-1"
+               th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(invoice.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+          </div>
+        </div>
+
+        <!-- Meta grid -->
+        <div class="px-8 py-5 border-b border-slate-200 grid grid-cols-4 gap-6 text-sm">
+          <div>
+            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Issued</p>
+            <p class="tabular-nums" th:text="${#temporals.format(invoice.issuedAt, 'MMM d, yyyy')}">Apr 14, 2026</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Due</p>
+            <p class="tabular-nums" th:text="${invoice.dueAt != null ? #temporals.format(invoice.dueAt, 'MMM d, yyyy') : '—'}">May 14, 2026</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Period</p>
+            <p class="tabular-nums text-xs"
+               th:text="${invoice.periodStart != null and invoice.periodEnd != null
+                         ? #temporals.format(invoice.periodStart, 'MMM d') + ' — ' + #temporals.format(invoice.periodEnd, 'MMM d, yyyy')
+                         : '—'}">—</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Balance</p>
+            <p class="font-mono tabular-nums"
+               th:classappend="${balance.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
+               th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(balance, 0, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+          </div>
+        </div>
+
+        <!-- Items -->
+        <div class="px-8 py-5">
+          <h2 class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-4">Line Items</h2>
+
+          <div th:if="${#lists.isEmpty(items)}" class="text-sm text-slate-400 italic">No line items.</div>
+
+          <table th:unless="${#lists.isEmpty(items)}" class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+                <th class="text-left py-2 pr-4">Description</th>
+                <th class="text-right py-2 px-3 w-24">Qty</th>
+                <th class="text-right py-2 px-3 w-32">Unit price</th>
+                <th class="text-right py-2 pl-3 w-32">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="item : ${items}" class="border-b border-slate-100 last:border-b-0">
+                <td class="py-3 pr-4">
+                  <div th:text="${item.description ?: '—'}">Description</div>
+                </td>
+                <td class="py-3 px-3 text-right font-mono tabular-nums text-slate-600">
+                  <span th:text="${#numbers.formatDecimal(item.unitCount, 0, 'COMMA', 2, 'POINT')}">1.00</span>
+                  <span th:if="${item.unit}" class="text-slate-400 ml-1" th:text="${item.unit}">hr</span>
+                </td>
+                <td class="py-3 px-3 text-right font-mono tabular-nums text-slate-600"
+                    th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 2, 'POINT')}">0.00</td>
+                <td class="py-3 pl-3 text-right font-mono tabular-nums font-medium"
+                    th:text="${#numbers.formatDecimal(item.total, 0, 'COMMA', 2, 'POINT')}">0.00</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="py-4 text-right text-xs uppercase tracking-wider text-slate-500 font-semibold">Total</td>
+                <td class="py-4 pl-3 text-right font-mono tabular-nums font-semibold text-lg"
+                    th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(invoice.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+              </tr>
+              <tr th:if="${invoice.amountPaid != null and invoice.amountPaid.signum() > 0}">
+                <td colspan="3" class="pb-2 text-right text-xs uppercase tracking-wider text-slate-500 font-semibold">Paid</td>
+                <td class="pb-2 pl-3 text-right font-mono tabular-nums text-emerald-600"
+                    th:text="'− ' + ${#numbers.formatDecimal(invoice.amountPaid, 0, 'COMMA', 2, 'POINT')}">− 0.00</td>
+              </tr>
+              <tr th:if="${balance.signum() != 0}">
+                <td colspan="3" class="pb-4 text-right text-xs uppercase tracking-wider text-slate-500 font-semibold">Balance</td>
+                <td class="pb-4 pl-3 text-right font-mono tabular-nums font-semibold"
+                    th:classappend="${balance.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
+                    th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(balance, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Notes -->
+        <div th:if="${invoice.notes}" class="px-8 py-5 border-t border-slate-200 bg-slate-50">
+          <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-2">Notes</p>
+          <p class="text-sm text-slate-700 whitespace-pre-wrap" th:text="${invoice.notes}">Notes</p>
+        </div>
+
+        <!-- Attachments -->
+        <div class="px-8 py-5 border-t border-slate-200 grid grid-cols-2 gap-8">
+
+          <div>
+            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Invoice Documents</p>
+            <div th:replace="~{invoices/show :: attachmentList(${invoiceDocs})}"></div>
+            <div th:replace="~{invoices/show :: uploadForm(${invoice.id}, 'documents', 'PDF, image — invoice copy')}"></div>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-3">Payment Proofs</p>
+            <div th:replace="~{invoices/show :: attachmentList(${paymentProofs})}"></div>
+            <div th:replace="~{invoices/show :: uploadForm(${invoice.id}, 'payment_proofs', 'Receipt from client')}"></div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Reusable attachment list fragment -->
+      <div th:fragment="attachmentList(list)" class="space-y-1 mb-3">
+        <p th:if="${#lists.isEmpty(list)}" class="text-xs text-slate-400 italic">None attached.</p>
+        <div th:each="m : ${list}"
+             class="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg text-sm">
+          <a th:href="@{/media/{id}(id=${m.id})}" target="_blank"
+             class="text-[#ea7c28] hover:underline truncate flex-1">
+            <span th:text="${m.filename}">file.pdf</span>
+            <span class="text-slate-400 text-xs ml-2"
+                  th:text="${#numbers.formatDecimal(m.sizeBytes / 1024.0, 0, 'COMMA', 1, 'POINT') + ' KB'}">12 KB</span>
+          </a>
+          <form th:action="@{/media/{id}/delete(id=${m.id})}" method="post" class="inline"
+                onsubmit="return confirm('Delete this attachment?')">
+            <input type="hidden" name="return" th:value="'/invoices/' + ${m.ownerId}">
+            <button type="submit" class="text-slate-400 hover:text-red-600 text-xs ml-3">Delete</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Reusable upload form fragment -->
+      <form th:fragment="uploadForm(invoiceId, collection, hint)"
+            th:action="@{/invoices/{id}/attachments(id=${invoiceId}, _csrf=${_csrf.token})}"
+            method="post" enctype="multipart/form-data" class="space-y-2">
+        <input type="hidden" name="collection" th:value="${collection}">
+        <input type="file" name="file" required
+               accept="image/*,application/pdf"
+               class="w-full text-xs text-slate-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer">
+        <div class="flex items-center justify-between">
+          <p class="text-[10px] text-slate-400" th:text="${hint}">hint</p>
+          <button type="submit" class="text-xs bg-slate-900 hover:bg-slate-700 text-white px-3 py-1 rounded transition">Upload</button>
+        </div>
+      </form>
+
+      <!-- Actions -->
+      <div class="mt-6 flex items-center gap-3">
+        <form th:action="@{/invoices/{id}/delete(id=${invoice.id})}" method="post"
+              onsubmit="return confirm('Delete this invoice? All items will be removed.')">
+          <button type="submit"
+                  class="text-sm text-red-600 hover:text-red-800 px-3 py-2">Delete</button>
+        </form>
+      </div>
+
+    </section>
+  </body>
+</html>

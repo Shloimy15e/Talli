@@ -113,14 +113,18 @@
           Time
         </a>
 
-        <span class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 cursor-not-allowed">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <a
+          th:href="@{/invoices}"
+          th:classappend="${active == 'invoices'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
+          class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+               th:style="${active == 'invoices'} ? 'color: #ea7c28'">
             <path stroke-linecap="round" stroke-linejoin="round"
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           Invoices
-          <span class="ml-auto text-[9px] font-semibold uppercase tracking-wider text-slate-600 bg-[#222a3c] px-1.5 py-0.5 rounded">Soon</span>
-        </span>
+        </a>
 
         <a
           th:href="@{/expenses}"

@@ -40,19 +40,22 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Thymeleaf + Tailwind + HTMX + Alpine + Inter font + Dynamiq branding
 - ✅ Service layer: `TimeEntryService`, `DashboardService` (with unit tests)
 - ✅ Media library Phase A: `Media` entity, `HasMedia` interface, `MediaStorage` contract + `LocalMediaStorage`, `MediaService`
+- ✅ Media library Phase B: `MediaController` (download/delete), expense receipts upload, custom error page with copy buttons
+- ✅ Invoices Phase A: `Invoice` + `InvoiceItem` entities, repos, manual CRUD controller (index/show/new/create/delete), dynamic line-item form, attachments per invoice (documents + payment_proofs), `time_entries.invoice_id` FK ready for generation
 
 ## Now
 
-**Media library Phase B — expense receipts.** Wire `MediaService` into expenses end-to-end: multipart upload on the expense form, list attached receipts on the edit page, add `MediaController` for download/delete. Proves the abstraction before invoicing depends on it.
+**`InvoiceService` extraction + generation logic.** Pull manual CRUD out of the controller into `InvoiceService`, then add the real business logic on top: `generateForProject(project, periodStart, periodEnd)` (group billable unbilled time entries → invoice + items, mark billed), `recordPayment(invoice, amount, ...)` with cached `amount_paid`, state transitions (`paid` / `overdue` / `void`).
 
 ## Next up (ordered)
 
-1. **Media Phase B (above)** — expense receipts as the first consumer of `MediaService`
-2. **Media Phase C** — S3/R2 driver (`S3MediaStorage`) + profile-based switching
-3. **Invoices** — auto-generate per project billing schedule; PDF output stored via MediaService; mark time entries as billed
-4. **Email invoices** — send generated PDFs via Gmail SMTP with PDF attached
-5. **Client detail page** — drill into one client: projects, time, invoices, revenue
-6. **Project detail page** — same for one project
+1. **`InvoiceService`** — extract CRUD, then add generation, payments, state transitions
+2. **PDF generation** — render invoice as PDF, store via `MediaService` in `documents` collection
+3. **Email invoices** — send generated PDF via Gmail SMTP, set `sentAt`
+4. **Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
+5. **Payments** — separate `payments` table, `PaymentService` updates `invoice.amount_paid` cache + transitions status to `paid`
+6. **Client detail page** — drill into one client: projects, time, invoices, revenue
+7. **Project detail page** — same for one project, with "Generate invoice" button wired to `InvoiceService.generateForProject`
 
 ## Later / extensions
 

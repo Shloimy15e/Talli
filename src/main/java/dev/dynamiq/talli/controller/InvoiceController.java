@@ -1,0 +1,215 @@
+package dev.dynamiq.talli.controller;
+
+import dev.dynamiq.talli.model.Invoice;
+import dev.dynamiq.talli.model.InvoiceItem;
+import dev.dynamiq.talli.repository.InvoiceItemRepository;
+import dev.dynamiq.talli.repository.InvoiceRepository;
+import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.service.MediaService;
+import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+
+@Controller
+@RequestMapping("/invoices")
+public class InvoiceController {
+
+    private final InvoiceRepository invoiceRepository;
+    private final InvoiceItemRepository invoiceItemRepository;
+    private final ProjectRepository projectRepository;
+    private final MediaService mediaService;
+
+    public InvoiceController(InvoiceRepository invoiceRepository,
+                             InvoiceItemRepository invoiceItemRepository,
+                             ProjectRepository projectRepository,
+                             MediaService mediaService) {
+        this.invoiceRepository = invoiceRepository;
+        this.invoiceItemRepository = invoiceItemRepository;
+        this.projectRepository = projectRepository;
+        this.mediaService = mediaService;
+    }
+
+    @GetMapping
+    public String index(Model model) {
+        model.addAttribute("invoices", invoiceRepository.findAllByOrderByIssuedAtDescIdDesc());
+        return "invoices/index";
+    }
+
+    @GetMapping("/new")
+    public String newForm(Model model) {
+        InvoiceForm form = new InvoiceForm();
+        form.setIssuedAt(LocalDate.now().toString());
+        form.setDueAt(LocalDate.now().plusDays(30).toString());
+        form.setCurrency("USD");
+        form.setReference(nextReference());
+        form.setItems(new ArrayList<>(List.of(new InvoiceItemForm())));
+        model.addAttribute("form", form);
+        model.addAttribute("projects", projectRepository.findAll());
+        model.addAttribute("action", "/invoices");
+        model.addAttribute("title", "New Invoice");
+        return "invoices/_form :: form";
+    }
+
+    @PostMapping
+    @Transactional
+    public String create(@ModelAttribute InvoiceForm form) {
+        Invoice invoice = new Invoice();
+        form.applyTo(invoice, projectRepository);
+        invoice = invoiceRepository.save(invoice);
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (InvoiceItemForm itemForm : form.nonEmptyItems()) {
+            InvoiceItem item = new InvoiceItem();
+            itemForm.applyTo(item);
+            item.setInvoice(invoice);
+            invoiceItemRepository.save(item);
+            total = total.add(item.getTotal());
+        }
+
+        invoice.setAmount(total);
+
+        if (form.getInvoiceDoc() != null && !form.getInvoiceDoc().isEmpty()) {
+            mediaService.attach(invoice, form.getInvoiceDoc(), "documents");
+        }
+        if (form.getPaymentProof() != null && !form.getPaymentProof().isEmpty()) {
+            mediaService.attach(invoice, form.getPaymentProof(), "payment_proofs");
+        }
+
+        return "redirect:/invoices/" + invoice.getId();
+    }
+
+    @GetMapping("/{id}")
+    public String show(@PathVariable("id") Long id, Model model) {
+        Invoice invoice = invoiceRepository.findById(id).orElseThrow();
+        List<InvoiceItem> items = invoiceItemRepository.findByInvoiceIdOrderByIdAsc(id);
+        BigDecimal balance = invoice.getAmount().subtract(invoice.getAmountPaid());
+        model.addAttribute("invoice", invoice);
+        model.addAttribute("items", items);
+        model.addAttribute("balance", balance);
+        model.addAttribute("invoiceDocs", mediaService.forOwner(invoice, "documents"));
+        model.addAttribute("paymentProofs", mediaService.forOwner(invoice, "payment_proofs"));
+        return "invoices/show";
+    }
+
+    @PostMapping("/{id}/delete")
+    public String delete(@PathVariable("id") Long id) {
+        invoiceRepository.deleteById(id);
+        return "redirect:/invoices";
+    }
+
+    @PostMapping("/{id}/attachments")
+    public String upload(@PathVariable("id") Long id,
+                         @RequestParam("file") MultipartFile file,
+                         @RequestParam(value = "collection", defaultValue = "documents") String collection) {
+        Invoice invoice = invoiceRepository.findById(id).orElseThrow();
+        if (file != null && !file.isEmpty()) {
+            mediaService.attach(invoice, file, collection);
+        }
+        return "redirect:/invoices/" + id;
+    }
+
+    private String nextReference() {
+        long next = invoiceRepository.count() + 1;
+        return String.format("INV-%d-%04d", LocalDate.now().getYear(), next);
+    }
+
+    // --- Form beans ---
+
+    public static class InvoiceForm {
+        private String reference;
+        private Long projectId;
+        private String currency;
+        private String status;
+        private String issuedAt;
+        private String dueAt;
+        private String periodStart;
+        private String periodEnd;
+        private String notes;
+        private List<InvoiceItemForm> items = new ArrayList<>();
+        private MultipartFile invoiceDoc;
+        private MultipartFile paymentProof;
+
+        public void applyTo(Invoice inv, ProjectRepository projects) {
+            inv.setReference(reference);
+            inv.setProject(projectId == null ? null : projects.findById(projectId).orElseThrow());
+            inv.setCurrency(currency == null || currency.isBlank() ? "USD" : currency);
+            inv.setStatus(status == null || status.isBlank() ? "unpaid" : status);
+            inv.setIssuedAt(parseDate(issuedAt));
+            inv.setDueAt(parseDate(dueAt));
+            inv.setPeriodStart(parseDate(periodStart));
+            inv.setPeriodEnd(parseDate(periodEnd));
+            inv.setNotes(emptyToNull(notes));
+        }
+
+        public List<InvoiceItemForm> nonEmptyItems() {
+            return items == null ? List.of() : items.stream()
+                    .filter(i -> i.getUnitPrice() != null || i.getUnitCount() != null || (i.getDescription() != null && !i.getDescription().isBlank()))
+                    .toList();
+        }
+
+        public String getReference() { return reference; }
+        public void setReference(String reference) { this.reference = reference; }
+        public Long getProjectId() { return projectId; }
+        public void setProjectId(Long projectId) { this.projectId = projectId; }
+        public String getCurrency() { return currency; }
+        public void setCurrency(String currency) { this.currency = currency; }
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
+        public String getIssuedAt() { return issuedAt; }
+        public void setIssuedAt(String issuedAt) { this.issuedAt = issuedAt; }
+        public String getDueAt() { return dueAt; }
+        public void setDueAt(String dueAt) { this.dueAt = dueAt; }
+        public String getPeriodStart() { return periodStart; }
+        public void setPeriodStart(String periodStart) { this.periodStart = periodStart; }
+        public String getPeriodEnd() { return periodEnd; }
+        public void setPeriodEnd(String periodEnd) { this.periodEnd = periodEnd; }
+        public String getNotes() { return notes; }
+        public void setNotes(String notes) { this.notes = notes; }
+        public List<InvoiceItemForm> getItems() { return items; }
+        public void setItems(List<InvoiceItemForm> items) { this.items = items; }
+        public MultipartFile getInvoiceDoc() { return invoiceDoc; }
+        public void setInvoiceDoc(MultipartFile invoiceDoc) { this.invoiceDoc = invoiceDoc; }
+        public MultipartFile getPaymentProof() { return paymentProof; }
+        public void setPaymentProof(MultipartFile paymentProof) { this.paymentProof = paymentProof; }
+    }
+
+    public static class InvoiceItemForm {
+        private String description;
+        private String unit;
+        private BigDecimal unitPrice;
+        private BigDecimal unitCount;
+
+        public void applyTo(InvoiceItem item) {
+            item.setDescription(emptyToNull(description));
+            item.setUnit(emptyToNull(unit));
+            item.setUnitPrice(unitPrice == null ? BigDecimal.ZERO : unitPrice);
+            item.setUnitCount(unitCount == null ? BigDecimal.ONE : unitCount);
+            item.setTotal(item.getUnitPrice().multiply(item.getUnitCount()).setScale(2, RoundingMode.HALF_UP));
+        }
+
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public String getUnit() { return unit; }
+        public void setUnit(String unit) { this.unit = unit; }
+        public BigDecimal getUnitPrice() { return unitPrice; }
+        public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+        public BigDecimal getUnitCount() { return unitCount; }
+        public void setUnitCount(BigDecimal unitCount) { this.unitCount = unitCount; }
+    }
+
+    private static LocalDate parseDate(String s) {
+        return (s == null || s.isBlank()) ? null : LocalDate.parse(s);
+    }
+
+    private static String emptyToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
+    }
+}
