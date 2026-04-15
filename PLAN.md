@@ -50,17 +50,27 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Phase C (scheduled jobs): `@EnableScheduling` via `SchedulingConfig`. `ScheduledJobs` runs `markOverdue` daily at 06:00 and `generateRetainersForMonth` on the 1st at 03:00. Retainer generation groups active retainer projects by client, skips clients whose invoice for the current period already exists (`existsByClientIdAndPeriodStartAndPeriodEnd`). Shared `newInvoiceShell` + `singleCurrency` helpers used by both generators.
 - ✅ PDF generation: openhtmltopdf + BatikSVGDrawer, `POST /invoices/{id}/pdf` renders and stores via `MediaService` in the `documents` collection.
 - ✅ Phase D (email invoices): `InvoiceEmailService.send(id)` attaches the latest stored PDF, sends via Gmail SMTP using a branded Thymeleaf template, stamps `invoice.sentAt`, and logs an `Email` row tied to both client and invoice (V14 added nullable `emails.invoice_id` FK). `EmailService.sendTemplateWithAttachment` returns rendered HTML for log persistence and auto-injects `fromAddress`/`fromName` into every template context. Invoice show page redesigned: status timeline (Issued → Sent → Paid/Overdue), Email History card with per-attempt status/error, Alpine-driven send-confirmation modal showing recipient/subject/attachment, disabled states with tooltips when prerequisites are missing. Reusable Thymeleaf fragments (`attachmentList`, `uploadForm`) extracted to `invoices/_partials.html` so they don't render inline.
+- ✅ Phase E (payments): V15 `payments` table with `invoice_id`, `paid_at`, `amount`, `method`, `reference`, `notes`. `PaymentService.record()` recomputes `amount_paid` from `SUM(payments.amount)` (no drift from incrementing cache) and transitions status to `paid` + stamps `paidInFullBy` when balance ≤ 0. `PaymentService.delete()` recomputes too and reverts paid → unpaid/overdue if balance reopens. Invoice show page gains Payments card (totals + per-row list with Remove) and Record Payment modal (date / amount / method dropdown / reference / notes, defaults to outstanding balance).
+
+## Guiding principle
+
+**Self-consistent data — no bookkeeper needed to reconcile.** Assuming the person or automation entering data does so correctly, every summary, graph, and derived number in the app must agree with every other one. No silent drift between invoices, payments, time entries, and dashboard figures. Fix integrity gaps as they're found, prefer single-source-of-truth derivations over cached or parallel values.
 
 ## Now
 
-**Phase E — payments.** Separate `payments` table, `PaymentService` updates `invoice.amount_paid` cache + transitions status to `paid` when balance ≤ 0.
+**Phase F — data integrity pass.** Close the drift gaps found while auditing Phase E. Three issues, in order:
+
+1. **Invoice deletion leaks time entries.** `time_entries.invoice_id ON DELETE SET NULL` nulls the FK but leaves `billed=true`, so hours become "billed but unbilled" — invisible to re-invoicing and not on any invoice. Fix: either delete-is-void (preferred for audit) or un-mark billed entries on delete.
+2. **Dashboard revenue is fantasy.** `DashboardService.revenueVsExpenses` sums billable time × rate; doesn't match invoiced or received. Rewrite to source from invoices (accrual) and/or payments (cash).
+3. **Billable expenses don't flow anywhere.** `Expense.billable=true` is a form checkbox but `generateForClient` never reads it. Either wire it into invoice generation or hide the field.
 
 ## Next up (ordered)
 
-1. **Phase E — payments** (now) — separate `payments` table, `PaymentService` updates `invoice.amount_paid` cache + transitions status to `paid` when balance ≤ 0.
-2. **Customer statements** — per-client statement showing open invoices, totals, aging buckets. Optional PDF export.
-3. **Client detail page** — drill into one client: projects, time, invoices, revenue, payment terms.
-4. **Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
+1. **Phase F — data integrity** (now) — invoice delete behavior, dashboard revenue source, billable-expense flow.
+2. **Receivables view** — KPI tile on the dashboard (total outstanding) + aging buckets (0–30, 31–60, 60+). Follows naturally from Phase F #2.
+3. **Customer statements** — per-client statement showing open invoices, totals, aging buckets. Optional PDF export.
+4. **Client detail page** — drill into one client: projects, time, invoices, revenue, payment terms.
+5. **Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
 
 ## Deliberately skipped for Dynamiq's shape
 

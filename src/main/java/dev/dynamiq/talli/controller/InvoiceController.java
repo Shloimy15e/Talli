@@ -8,6 +8,7 @@ import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.service.InvoiceEmailService;
 import dev.dynamiq.talli.service.InvoiceService;
 import dev.dynamiq.talli.service.MediaService;
+import dev.dynamiq.talli.service.PaymentService;
 import dev.dynamiq.talli.service.PdfService;
 
 import org.springframework.stereotype.Controller;
@@ -35,13 +36,15 @@ public class InvoiceController {
     private final PdfService pdfService;
     private final InvoiceEmailService invoiceEmailService;
     private final EmailRepository emailRepository;
+    private final PaymentService paymentService;
 
     public InvoiceController(InvoiceService invoiceService,
             ClientRepository clientRepository,
             ProjectRepository projectRepository,
             MediaService mediaService, PdfService pdfService,
             InvoiceEmailService invoiceEmailService,
-            EmailRepository emailRepository) {
+            EmailRepository emailRepository,
+            PaymentService paymentService) {
         this.invoiceService = invoiceService;
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
@@ -49,6 +52,7 @@ public class InvoiceController {
         this.pdfService = pdfService;
         this.invoiceEmailService = invoiceEmailService;
         this.emailRepository = emailRepository;
+        this.paymentService = paymentService;
     }
 
     @GetMapping
@@ -107,6 +111,7 @@ public class InvoiceController {
         model.addAttribute("invoiceDocs", mediaService.forOwner(invoice, "documents"));
         model.addAttribute("paymentProofs", mediaService.forOwner(invoice, "payment_proofs"));
         model.addAttribute("emailHistory", emailRepository.findByInvoiceIdOrderByCreatedAtDesc(id));
+        model.addAttribute("payments", paymentService.listForInvoice(id));
         return "invoices/show";
     }
 
@@ -167,6 +172,32 @@ public class InvoiceController {
         } catch (IllegalStateException e) {
             flash.addFlashAttribute("emailError", e.getMessage());
         }
+        return "redirect:/invoices/" + id;
+    }
+
+    @PostMapping("/{id}/payments")
+    public String recordPayment(@PathVariable Long id,
+                                @RequestParam("paidAt") String paidAt,
+                                @RequestParam("amount") BigDecimal amount,
+                                @RequestParam(value = "method", required = false) String method,
+                                @RequestParam(value = "reference", required = false) String reference,
+                                @RequestParam(value = "notes", required = false) String notes,
+                                RedirectAttributes flash) {
+        try {
+            paymentService.record(id, parseDate(paidAt), amount,
+                    emptyToNull(method), emptyToNull(reference), emptyToNull(notes));
+            flash.addFlashAttribute("paymentSuccess", "Payment recorded.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            flash.addFlashAttribute("paymentError", e.getMessage());
+        }
+        return "redirect:/invoices/" + id;
+    }
+
+    @PostMapping("/{id}/payments/{paymentId}/delete")
+    public String deletePayment(@PathVariable Long id, @PathVariable Long paymentId,
+                                RedirectAttributes flash) {
+        paymentService.delete(paymentId);
+        flash.addFlashAttribute("paymentSuccess", "Payment removed.");
         return "redirect:/invoices/" + id;
     }
 
