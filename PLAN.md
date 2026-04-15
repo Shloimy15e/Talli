@@ -46,21 +46,21 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Time index page: summary tiles (today/week/month/unbilled), per-day grouping with totals, per-entry $ values, link from "Billed" badge to the invoice.
 - ✅ Phase A (invoicing): `Client.paymentTermsDays` (default 30, Net 30 US B2B standard), honored in `generateForClient.dueAt`. Project implements `HasMedia` + "sow" collection with upload/list on project form. Project has `isHourly()` / `isFixed()` / `isRetainer()` predicates + `contractAmount()` / `hourlyRate()` / `retainerMonthlyFee()` aliases. `Invoice.balance()` moved to entity. `Client._form.html` created (was missing — latent bug). `ClientController.update` persists terms.
 - ✅ Shared modal shell (`fragments/modal.html`): all 6 modals (clients, projects, expenses, time, invoices-manual, invoices-generate) use one overlay/card/header. Cap at 90vh with inner scroll; `overflow-hidden` on rounded card + `overflow-y-auto flex-1 min-h-0` on inner body preserves rounded corners without sticky-header hacks.
+- ✅ Phase B (project detail): `GET /projects/{id}` with `ProjectService.summary` (billed-to-date, unbilled value for hourly, remaining for fixed, month-billed for retainer). Lists linked invoices, time entries, SOW attachments. Inline change-contract form appends a dated change-order line to `project.notes`. `InvoiceItemRepository` gains `sumTotalByProjectId`, `sumTotalByProjectIdBetween`, `findInvoicesByProjectId` (EXISTS subquery avoids Postgres distinct+order-by rule).
+- ✅ Phase C (scheduled jobs): `@EnableScheduling` via `SchedulingConfig`. `ScheduledJobs` runs `markOverdue` daily at 06:00 and `generateRetainersForMonth` on the 1st at 03:00. Retainer generation groups active retainer projects by client, skips clients whose invoice for the current period already exists (`existsByClientIdAndPeriodStartAndPeriodEnd`). Shared `newInvoiceShell` + `singleCurrency` helpers used by both generators.
+- ✅ PDF generation: openhtmltopdf + BatikSVGDrawer, `POST /invoices/{id}/pdf` renders and stores via `MediaService` in the `documents` collection.
+- ✅ Phase D (email invoices): `InvoiceEmailService.send(id)` attaches the latest stored PDF, sends via Gmail SMTP using a branded Thymeleaf template, stamps `invoice.sentAt`, and logs an `Email` row tied to both client and invoice (V14 added nullable `emails.invoice_id` FK). `EmailService.sendTemplateWithAttachment` returns rendered HTML for log persistence and auto-injects `fromAddress`/`fromName` into every template context. Invoice show page redesigned: status timeline (Issued → Sent → Paid/Overdue), Email History card with per-attempt status/error, Alpine-driven send-confirmation modal showing recipient/subject/attachment, disabled states with tooltips when prerequisites are missing. Reusable Thymeleaf fragments (`attachmentList`, `uploadForm`) extracted to `invoices/_partials.html` so they don't render inline.
 
 ## Now
 
-**Phase B — project detail page.** Drill into one project to see: time entries, linked invoices, running balance (`SUM(invoice_items WHERE project_id)`), SOW attachments, editable contract amount (lightweight change-order note).
+**Phase E — payments.** Separate `payments` table, `PaymentService` updates `invoice.amount_paid` cache + transitions status to `paid` when balance ≤ 0.
 
 ## Next up (ordered)
 
-1. **Phase B — project detail page** (now) — list time entries, linked invoices, SOW, running balance, editable contract amount.
-3. **Phase C — scheduled jobs** — daily `markOverdue` (`@Scheduled`), monthly retainer auto-generation for active retainer projects.
-4. **PDF generation** — render invoice as PDF, store via `MediaService` in `documents` collection at generation time.
-5. **Email invoices** — send generated PDF via Gmail SMTP, set `sentAt`, transition nothing (status stays `unpaid` until payment).
-6. **Payments** — separate `payments` table, `PaymentService` updates `invoice.amount_paid` cache + transitions status to `paid` when balance ≤ 0.
-7. **Customer statements** — per-client statement showing open invoices, totals, aging buckets. Optional PDF export.
-8. **Client detail page** — drill into one client: projects, time, invoices, revenue, payment terms.
-9. **Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
+1. **Phase E — payments** (now) — separate `payments` table, `PaymentService` updates `invoice.amount_paid` cache + transitions status to `paid` when balance ≤ 0.
+2. **Customer statements** — per-client statement showing open invoices, totals, aging buckets. Optional PDF export.
+3. **Client detail page** — drill into one client: projects, time, invoices, revenue, payment terms.
+4. **Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
 
 ## Deliberately skipped for Dynamiq's shape
 

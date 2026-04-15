@@ -15,6 +15,10 @@ public class Email {
     @JoinColumn(name = "client_id")
     private Client client;  // optional
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id")
+    private Invoice invoice;  // optional — set when this email was sent for a specific invoice
+
     @Column(name = "to_address", nullable = false)
     private String toAddress;
 
@@ -55,6 +59,14 @@ public class Email {
 
     public void setClient(Client client) {
         this.client = client;
+    }
+
+    public Invoice getInvoice() {
+        return invoice;
+    }
+
+    public void setInvoice(Invoice invoice) {
+        this.invoice = invoice;
     }
 
     public String getToAddress() {

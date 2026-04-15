@@ -1,0 +1,39 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+
+    <!-- Attachment list -->
+    <div th:fragment="attachmentList(list)" class="space-y-1 mb-3">
+      <p th:if="${#lists.isEmpty(list)}" class="text-xs text-slate-400 italic">None attached.</p>
+      <div th:each="m : ${list}"
+           class="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg text-sm">
+        <a th:href="@{/media/{id}(id=${m.id})}" target="_blank"
+           class="text-[#ea7c28] hover:underline truncate flex-1">
+          <span th:text="${m.filename}">file.pdf</span>
+          <span class="text-slate-400 text-xs ml-2"
+                th:text="${#numbers.formatDecimal(m.sizeBytes / 1024.0, 0, 'COMMA', 1, 'POINT') + ' KB'}">12 KB</span>
+        </a>
+        <form th:action="@{/media/{id}/delete(id=${m.id})}" method="post" class="inline"
+              onsubmit="return confirm('Delete this attachment?')">
+          <input type="hidden" name="return" th:value="'/invoices/' + ${m.ownerId}">
+          <button type="submit" class="text-slate-400 hover:text-red-600 text-xs ml-3">Delete</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Upload form -->
+    <form th:fragment="uploadForm(invoiceId, collection, hint)"
+          th:action="@{/invoices/{id}/attachments(id=${invoiceId}, _csrf=${_csrf.token})}"
+          method="post" enctype="multipart/form-data" class="space-y-2">
+      <input type="hidden" name="collection" th:value="${collection}">
+      <input type="file" name="file" required
+             accept="image/*,application/pdf"
+             class="w-full text-xs text-slate-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer">
+      <div class="flex items-center justify-between">
+        <p class="text-[10px] text-slate-400" th:text="${hint}">hint</p>
+        <button type="submit" class="text-xs bg-slate-900 hover:bg-slate-700 text-white px-3 py-1 rounded transition">Upload</button>
+      </div>
+    </form>
+
+  </body>
+</html>

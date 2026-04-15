@@ -3,7 +3,9 @@ package dev.dynamiq.talli.controller;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
 import dev.dynamiq.talli.repository.ClientRepository;
+import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.service.InvoiceEmailService;
 import dev.dynamiq.talli.service.InvoiceService;
 import dev.dynamiq.talli.service.MediaService;
 import dev.dynamiq.talli.service.PdfService;
@@ -31,16 +33,22 @@ public class InvoiceController {
     private final ProjectRepository projectRepository;
     private final MediaService mediaService;
     private final PdfService pdfService;
+    private final InvoiceEmailService invoiceEmailService;
+    private final EmailRepository emailRepository;
 
     public InvoiceController(InvoiceService invoiceService,
             ClientRepository clientRepository,
             ProjectRepository projectRepository,
-            MediaService mediaService, PdfService pdfService) {
+            MediaService mediaService, PdfService pdfService,
+            InvoiceEmailService invoiceEmailService,
+            EmailRepository emailRepository) {
         this.invoiceService = invoiceService;
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.mediaService = mediaService;
         this.pdfService = pdfService;
+        this.invoiceEmailService = invoiceEmailService;
+        this.emailRepository = emailRepository;
     }
 
     @GetMapping
@@ -98,6 +106,7 @@ public class InvoiceController {
         model.addAttribute("balance", invoice.balance());
         model.addAttribute("invoiceDocs", mediaService.forOwner(invoice, "documents"));
         model.addAttribute("paymentProofs", mediaService.forOwner(invoice, "payment_proofs"));
+        model.addAttribute("emailHistory", emailRepository.findByInvoiceIdOrderByCreatedAtDesc(id));
         return "invoices/show";
     }
 
@@ -143,10 +152,21 @@ public class InvoiceController {
     }
 
     @PostMapping("/{id}/pdf")
-    public String generatePdf(@PathVariable Long id) {        
+    public String generatePdf(@PathVariable Long id) {
         Invoice invoice = invoiceService.get(id);
         byte[] bytes = pdfService.renderInvoice(invoice, invoiceService.itemsFor(id));
         mediaService.attachBytes(invoice, bytes, invoice.getReference() + ".pdf", "application/pdf",    "documents");
+        return "redirect:/invoices/" + id;
+    }
+
+    @PostMapping("/{id}/email")
+    public String email(@PathVariable Long id, RedirectAttributes flash) {
+        try {
+            invoiceEmailService.send(id);
+            flash.addFlashAttribute("emailSuccess", "Invoice emailed.");
+        } catch (IllegalStateException e) {
+            flash.addFlashAttribute("emailError", e.getMessage());
+        }
         return "redirect:/invoices/" + id;
     }
 

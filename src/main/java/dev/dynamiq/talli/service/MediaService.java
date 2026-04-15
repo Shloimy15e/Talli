@@ -2,6 +2,7 @@ package dev.dynamiq.talli.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.List;
 
@@ -81,6 +82,15 @@ public class MediaService {
     public List<Media> forOwner(HasMedia owner, String collection) {
         return mediaRepository.findByOwnerTypeAndOwnerIdAndCollectionNameOrderByCreatedAtDesc(owner.mediaOwnerType(),
                 owner.getId(), collection);
+    }
+
+    /** Read the stored bytes for a Media row. Caller gets a fully-buffered byte[]. */
+    public byte[] loadBytes(Media media) {
+        try (InputStream in = storage.read(media.getDiskKey())) {
+            return in.readAllBytes();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read stored media " + media.getDiskKey(), e);
+        }
     }
 
     public void delete(Media media) {
