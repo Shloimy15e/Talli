@@ -9,257 +9,298 @@
             margin: 0.6in 0.7in;
         }
         * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
         body {
             font-family: Helvetica, Arial, sans-serif;
-            color: #1e293b;
+            color: #1a1a1a;
             font-size: 10pt;
             line-height: 1.45;
-            margin: 0;
         }
 
-        /* Letterhead */
-        .letterhead {
-            display: table;
-            width: 100%;
-            border-bottom: 3px solid #ea7c28;
-            padding-bottom: 18px;
-            margin-bottom: 28px;
-        }
-        .letterhead .brand { display: table-cell; vertical-align: top; width: 50%; }
-        .letterhead .meta  { display: table-cell; vertical-align: top; width: 50%; text-align: right; }
+        /* Header */
+        .header { display: table; width: 100%; margin-bottom: 36pt; }
+        .header .left  { display: table-cell; vertical-align: top; width: 50%; }
+        .header .right { display: table-cell; vertical-align: top; width: 50%; text-align: right; }
+
+        .brand-row { border-collapse: collapse; }
+        .brand-row td { padding: 0; vertical-align: middle; }
+        .brand-row td.logo { padding-right: 10pt; }
         .brand-name {
-            font-size: 20pt;
+            font-size: 14pt;
             font-weight: bold;
-            letter-spacing: -0.5pt;
             color: #161f30;
+            line-height: 1.1;
         }
         .brand-sub {
-            color: #64748b;
             font-size: 9pt;
+            color: #666;
             margin-top: 2pt;
         }
-        .invoice-label {
-            font-size: 8pt;
-            letter-spacing: 1.5pt;
-            color: #94a3b8;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-        .invoice-ref {
-            font-size: 16pt;
+
+        .invoice-title {
+            font-size: 26pt;
             font-weight: bold;
             color: #161f30;
-            margin-top: 3pt;
+            letter-spacing: 2pt;
+            line-height: 1;
         }
-        .status-pill {
+        .invoice-ref {
+            font-size: 11pt;
+            color: #333;
+            margin-top: 6pt;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pill {
             display: inline-block;
-            padding: 2pt 8pt;
-            border-radius: 20pt;
-            font-size: 8pt;
+            margin-top: 8pt;
+            padding: 2pt 10pt;
+            border-radius: 12pt;
+            font-size: 8.5pt;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5pt;
-            margin-top: 4pt;
         }
-        .status-paid    { background: #dcfce7; color: #166534; }
-        .status-overdue { background: #fee2e2; color: #991b1b; }
-        .status-void    { background: #e2e8f0; color: #475569; }
-        .status-unpaid  { background: #fff1e4; color: #ea7c28; }
+        .pill-paid    { background: #dcfce7; color: #166534; }
+        .pill-overdue { background: #fee2e2; color: #991b1b; }
+        .pill-void    { background: #e5e7eb; color: #4b5563; }
+        .pill-unpaid  { background: #fff1e4; color: #ea7c28; }
 
-        /* Parties + meta */
-        .parties {
-            display: table;
-            width: 100%;
-            margin-bottom: 28px;
+        /* Parties block */
+        .parties { display: table; width: 100%; margin-bottom: 28pt; border-collapse: collapse; }
+        .parties .col {
+            display: table-cell;
+            vertical-align: top;
+            width: 50%;
+            padding: 14pt 16pt;
         }
-        .parties .col { display: table-cell; vertical-align: top; width: 50%; }
-        .parties .col.right { text-align: right; }
-        .field-label {
+        .parties .col.bill-to { background: #f7f7f5; border-left: 3pt solid #ea7c28; }
+        .parties .col.dates   { padding-left: 20pt; }
+
+        .block-label {
             font-size: 8pt;
             letter-spacing: 1pt;
             text-transform: uppercase;
-            color: #94a3b8;
             font-weight: bold;
+            color: #666;
+            margin-bottom: 6pt;
+        }
+        .party-name {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #161f30;
             margin-bottom: 4pt;
         }
-        .bill-to-name {
-            font-size: 11pt;
-            font-weight: bold;
-            color: #161f30;
+        .party-addr {
+            font-size: 9.5pt;
+            color: #333;
+            white-space: pre-wrap;
+            margin-bottom: 4pt;
+            line-height: 1.4;
         }
-        .bill-to-email { color: #475569; font-size: 9pt; }
-        .meta-row {
-            margin-bottom: 10pt;
-        }
+        .party-meta { font-size: 9.5pt; color: #444; }
 
-        /* Items table */
-        table.items {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 18pt;
-        }
-        table.items thead th {
-            text-align: left;
-            font-size: 8pt;
-            letter-spacing: 1pt;
-            text-transform: uppercase;
-            color: #94a3b8;
-            font-weight: bold;
-            padding: 8pt 6pt;
-            border-bottom: 1.5px solid #cbd5e1;
-        }
-        table.items thead th.num { text-align: right; }
-        table.items tbody td {
-            padding: 10pt 6pt;
-            border-bottom: 1px solid #e2e8f0;
+        table.dates-table { width: 100%; border-collapse: collapse; }
+        table.dates-table td {
+            padding: 3pt 0;
+            font-size: 10pt;
             vertical-align: top;
         }
-        table.items tbody td.num {
-            text-align: right;
+        table.dates-table td.key {
+            color: #666;
+            width: 90pt;
+        }
+        table.dates-table td.val {
+            color: #1a1a1a;
             font-variant-numeric: tabular-nums;
-            white-space: nowrap;
         }
-        .item-desc { color: #1e293b; }
 
-        /* Totals */
-        .totals {
-            width: 45%;
-            margin-left: auto;
-            border-collapse: collapse;
+        /* Line items */
+        table.items { width: 100%; border-collapse: collapse; margin-bottom: 20pt; }
+        table.items thead th {
+            background: #161f30;
+            color: #fff;
+            text-align: left;
+            font-size: 9pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.6pt;
+            padding: 8pt 10pt;
         }
-        .totals td {
-            padding: 5pt 6pt;
+        table.items thead th.r { text-align: right; }
+        table.items tbody td {
+            padding: 10pt;
+            border-bottom: 0.5pt solid #e5e7eb;
+            vertical-align: top;
             font-size: 10pt;
         }
-        .totals td.label {
-            text-align: right;
-            color: #64748b;
-        }
-        .totals td.value {
+        table.items tbody td.r {
             text-align: right;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
         }
-        .totals tr.total td {
-            border-top: 1.5px solid #cbd5e1;
-            font-size: 13pt;
-            font-weight: bold;
-            color: #161f30;
-            padding-top: 10pt;
-        }
-        .totals tr.balance td {
-            border-top: 1px solid #e2e8f0;
-            font-weight: bold;
-            color: #ea7c28;
-        }
-        .totals tr.paid td.value { color: #166534; }
+        table.items tbody tr:nth-child(even) td { background: #fafaf9; }
+        .unit-suffix { color: #888; margin-left: 3pt; font-size: 9pt; }
 
-        /* Notes */
-        .notes {
-            margin-top: 30pt;
+        /* Totals */
+        .totals-row { display: table; width: 100%; margin-bottom: 32pt; }
+        .totals-row .left  { display: table-cell; width: 55%; vertical-align: top; padding-right: 20pt; }
+        .totals-row .right { display: table-cell; width: 45%; vertical-align: top; }
+
+        table.totals { width: 100%; border-collapse: collapse; }
+        table.totals td {
+            padding: 6pt 10pt;
+            font-size: 10pt;
+        }
+        table.totals td.lbl { text-align: right; color: #555; }
+        table.totals td.val {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            width: 100pt;
+        }
+        table.totals tr.subtotal td { border-bottom: 0.5pt solid #e5e7eb; }
+        table.totals tr.paid td.val { color: #166534; }
+        table.totals tr.grand td {
+            background: #161f30;
+            color: #fff;
+            font-weight: bold;
+            font-size: 12pt;
+            padding: 10pt;
+        }
+
+        /* Payment terms + notes */
+        .foot-block {
             padding: 14pt 16pt;
-            background: #f8fafc;
-            border-left: 3px solid #ea7c28;
-            border-radius: 2pt;
-            font-size: 9.5pt;
-            color: #334155;
-            white-space: pre-wrap;
+            background: #f7f7f5;
+            border-radius: 4pt;
+            margin-bottom: 14pt;
         }
+        .foot-block p { margin: 0; font-size: 9.5pt; color: #333; line-height: 1.55; white-space: pre-wrap; }
+        .foot-block p + p { margin-top: 6pt; }
 
-        /* Footer */
         .footer {
-            margin-top: 40pt;
-            padding-top: 14pt;
-            border-top: 1px solid #e2e8f0;
-            font-size: 8pt;
-            color: #94a3b8;
+            margin-top: 20pt;
+            padding-top: 10pt;
+            border-top: 0.5pt solid #e5e7eb;
+            font-size: 8.5pt;
+            color: #888;
             text-align: center;
         }
     </style>
 </head>
 <body>
 
-<div class="letterhead">
-    <div class="brand">
-        <div class="brand-name">Dynamiq Solutions</div>
-        <div class="brand-sub">Professional services &amp; software</div>
+<!-- Header: brand (left) + INVOICE + ref (right) -->
+<div class="header">
+    <div class="left">
+        <table class="brand-row">
+            <tr>
+                <td class="logo">
+                    <img src="https://dynamiq.dev/logo.svg" width="40" height="40" alt="Dynamiq" />
+                </td>
+                <td>
+                    <div class="brand-name">Dynamiq Solutions</div>
+                    <div class="brand-sub">shloimyelbaum@gmail.com</div>
+                </td>
+            </tr>
+        </table>
     </div>
-    <div class="meta">
-        <div class="invoice-label">Invoice</div>
+    <div class="right">
+        <div class="invoice-title">INVOICE</div>
         <div class="invoice-ref" th:text="${invoice.reference}">INV-1001</div>
         <div th:switch="${invoice.status}">
-            <span th:case="'paid'"    class="status-pill status-paid">Paid</span>
-            <span th:case="'overdue'" class="status-pill status-overdue">Overdue</span>
-            <span th:case="'void'"    class="status-pill status-void">Void</span>
-            <span th:case="*"         class="status-pill status-unpaid">Unpaid</span>
+            <span th:case="'paid'"    class="pill pill-paid">Paid</span>
+            <span th:case="'overdue'" class="pill pill-overdue">Overdue</span>
+            <span th:case="'void'"    class="pill pill-void">Void</span>
+            <span th:case="*"         class="pill pill-unpaid">Unpaid</span>
         </div>
     </div>
 </div>
 
+<!-- Bill To + Dates -->
 <div class="parties">
-    <div class="col">
-        <div class="field-label">Bill To</div>
-        <div class="bill-to-name" th:text="${invoice.client.name}">Client</div>
-        <div class="bill-to-email" th:if="${invoice.client.email}" th:text="${invoice.client.email}">client@example.com</div>
+    <div class="col bill-to">
+        <div class="block-label">Bill to</div>
+        <div class="party-name" th:text="${invoice.client.name}">Client Co.</div>
+        <div class="party-addr" th:if="${not #strings.isEmpty(invoice.client.billingAddress)}" th:text="${invoice.client.billingAddress}">123 Main St.</div>
+        <div class="party-meta" th:if="${not #strings.isEmpty(invoice.client.email)}" th:text="${invoice.client.email}">client@example.com</div>
+        <div class="party-meta" th:if="${not #strings.isEmpty(invoice.client.phone)}" th:text="${invoice.client.phone}">+1 555 555 5555</div>
+        <div class="party-meta" th:if="${not #strings.isEmpty(invoice.client.taxId)}" th:text="'Tax ID: ' + ${invoice.client.taxId}">Tax ID: 12-3456789</div>
     </div>
-    <div class="col right">
-        <div class="meta-row">
-            <div class="field-label">Issued</div>
-            <div th:text="${#temporals.format(invoice.issuedAt, 'MMMM d, yyyy')}">April 14, 2026</div>
-        </div>
-        <div class="meta-row" th:if="${invoice.dueAt != null}">
-            <div class="field-label">Due</div>
-            <div th:text="${#temporals.format(invoice.dueAt, 'MMMM d, yyyy')}">May 14, 2026</div>
-        </div>
-        <div class="meta-row" th:if="${invoice.periodStart != null and invoice.periodEnd != null}">
-            <div class="field-label">Period</div>
-            <div th:text="${#temporals.format(invoice.periodStart, 'MMM d')} + ' — ' + ${#temporals.format(invoice.periodEnd, 'MMM d, yyyy')}">Mar 1 — Mar 31, 2026</div>
-        </div>
+    <div class="col dates">
+        <div class="block-label">Invoice details</div>
+        <table class="dates-table">
+            <tr>
+                <td class="key">Issue date</td>
+                <td class="val" th:text="${#temporals.format(invoice.issuedAt, 'MMM d, yyyy')}">Apr 14, 2026</td>
+            </tr>
+            <tr th:if="${invoice.dueAt != null}">
+                <td class="key">Due date</td>
+                <td class="val" th:text="${#temporals.format(invoice.dueAt, 'MMM d, yyyy')}">May 14, 2026</td>
+            </tr>
+            <tr th:if="${invoice.periodStart != null and invoice.periodEnd != null}">
+                <td class="key">Service period</td>
+                <td class="val" th:text="${#temporals.format(invoice.periodStart, 'MMM d')} + ' – ' + ${#temporals.format(invoice.periodEnd, 'MMM d, yyyy')}">Mar 1 – Mar 31, 2026</td>
+            </tr>
+        </table>
     </div>
 </div>
 
+<!-- Line items -->
 <table class="items">
     <thead>
         <tr>
             <th>Description</th>
-            <th class="num" style="width:80pt;">Qty</th>
-            <th class="num" style="width:90pt;">Unit price</th>
-            <th class="num" style="width:90pt;">Amount</th>
+            <th class="r" style="width:70pt;">Qty</th>
+            <th class="r" style="width:90pt;">Unit price</th>
+            <th class="r" style="width:95pt;">Amount</th>
         </tr>
     </thead>
     <tbody>
         <tr th:each="item : ${items}">
-            <td class="item-desc" th:text="${item.description ?: '—'}">Line item</td>
-            <td class="num">
-                <span th:text="${#numbers.formatDecimal(item.unitCount, 0, 'COMMA', 2, 'POINT')}">1.00</span>
-                <span th:if="${item.unit}" th:text="' ' + ${item.unit}">hr</span>
+            <td th:text="${item.description ?: '—'}">Description</td>
+            <td class="r">
+                <span th:text="${#numbers.formatDecimal(item.unitCount, 0, 'COMMA', 2, 'POINT')}">0.00</span>
+                <span th:if="${item.unit}" class="unit-suffix" th:text="${item.unit}">hr</span>
             </td>
-            <td class="num" th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 2, 'POINT')}">0.00</td>
-            <td class="num" th:text="${#numbers.formatDecimal(item.total, 0, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td class="r" th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td class="r" th:text="${#numbers.formatDecimal(item.total, 0, 'COMMA', 2, 'POINT')}">0.00</td>
         </tr>
         <tr th:if="${#lists.isEmpty(items)}">
-            <td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic; padding:20pt;">No line items</td>
+            <td colspan="4" style="text-align:center; padding:22pt 0; color:#888; font-style:italic;">No line items.</td>
         </tr>
     </tbody>
 </table>
 
-<table class="totals">
-    <tr class="total">
-        <td class="label">Total</td>
-        <td class="value" th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(invoice.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
-    </tr>
-    <tr class="paid" th:if="${invoice.amountPaid != null and invoice.amountPaid.signum() > 0}">
-        <td class="label">Paid</td>
-        <td class="value" th:text="'− ' + ${#numbers.formatDecimal(invoice.amountPaid, 0, 'COMMA', 2, 'POINT')}">− 0.00</td>
-    </tr>
-    <tr class="balance" th:if="${balance.signum() != 0}">
-        <td class="label">Balance due</td>
-        <td class="value" th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(balance, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
-    </tr>
-</table>
+<!-- Totals -->
+<div class="totals-row">
+    <div class="left"></div>
+    <div class="right">
+        <table class="totals">
+            <tr class="subtotal">
+                <td class="lbl">Subtotal</td>
+                <td class="val" th:text="${#numbers.formatDecimal(invoice.amount, 0, 'COMMA', 2, 'POINT')}">0.00</td>
+            </tr>
+            <tr class="paid" th:if="${invoice.amountPaid != null and invoice.amountPaid.signum() > 0}">
+                <td class="lbl">Paid</td>
+                <td class="val" th:text="'− ' + ${#numbers.formatDecimal(invoice.amountPaid, 0, 'COMMA', 2, 'POINT')}">− 0.00</td>
+            </tr>
+            <tr class="grand">
+                <td class="lbl" th:text="${balance.signum() > 0} ? 'Balance due' : 'Total'">Balance due</td>
+                <td class="val" th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(balance.signum() > 0 ? balance : invoice.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+            </tr>
+        </table>
+    </div>
+</div>
 
-<div class="notes" th:if="${invoice.notes}" th:text="${invoice.notes}">Notes</div>
+<!-- Notes -->
+<div class="foot-block" th:if="${invoice.notes}">
+    <div class="block-label">Notes</div>
+    <p th:text="${invoice.notes}">Notes.</p>
+</div>
 
+<!-- Footer -->
 <div class="footer">
     Thank you for your business.
 </div>

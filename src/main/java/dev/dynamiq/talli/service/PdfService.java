@@ -1,6 +1,7 @@
 package dev.dynamiq.talli.service;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,7 @@ public class PdfService {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
+            builder.useSVGDrawer(new BatikSVGDrawer());
             builder.withHtmlContent(html, null);
             builder.toStream(out);
             builder.run();
