@@ -3,25 +3,13 @@
   <body>
 
     <div th:fragment="form(form, action, title, clients, projects)"
-         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
-         @click.self="$dispatch('close-modal')">
-
-      <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto"
-           x-transition:enter="ease-out duration-200"
-           x-transition:enter-start="opacity-0 scale-95"
-           x-transition:enter-end="opacity-100 scale-100"
+         th:replace="~{fragments/modal :: shell(${title}, 'max-w-3xl', ~{::#body})}">
+      <div id="body"
            x-data="{
              rows: [{}],
              addRow() { this.rows.push({}); },
              removeRow(idx) { if (this.rows.length > 1) this.rows.splice(idx, 1); }
            }">
-
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 sticky top-0 bg-white z-10">
-          <h2 class="text-lg font-semibold" th:text="${title}">Invoice</h2>
-          <button type="button" @click="$dispatch('close-modal')"
-                  class="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
-        </div>
-
         <form th:action="@{${action}(_csrf=${_csrf.token})}" method="post" enctype="multipart/form-data" class="p-6 space-y-5">
 
           <div class="grid grid-cols-2 gap-4">

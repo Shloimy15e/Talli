@@ -19,6 +19,10 @@ public class Client {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    /** Net-X payment terms in days. Used to compute invoice due date at generation time. */
+    @Column(name = "payment_terms_days", nullable = false)
+    private Integer paymentTermsDays = 30;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -67,6 +71,14 @@ public class Client {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Integer getPaymentTermsDays() {
+        return paymentTermsDays;
+    }
+
+    public void setPaymentTermsDays(Integer paymentTermsDays) {
+        this.paymentTermsDays = paymentTermsDays;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -44,15 +44,16 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Invoices: `Invoice` + `InvoiceItem` entities + repos, `InvoiceService` with manual CRUD and `generateForClient(clientId, periodStart, periodEnd)` (hourly projects only — one line per project per period, atomically marks time entries billed). Controller + UI: index/show/new/create/delete/generate, attachments (documents + payment_proofs), generate-from-client modal.
 - ✅ QB-style sequential invoice references (`INV-1001`+), per-client invoice model (V11).
 - ✅ Time index page: summary tiles (today/week/month/unbilled), per-day grouping with totals, per-entry $ values, link from "Billed" badge to the invoice.
+- ✅ Phase A (invoicing): `Client.paymentTermsDays` (default 30, Net 30 US B2B standard), honored in `generateForClient.dueAt`. Project implements `HasMedia` + "sow" collection with upload/list on project form. Project has `isHourly()` / `isFixed()` / `isRetainer()` predicates + `contractAmount()` / `hourlyRate()` / `retainerMonthlyFee()` aliases. `Invoice.balance()` moved to entity. `Client._form.html` created (was missing — latent bug). `ClientController.update` persists terms.
+- ✅ Shared modal shell (`fragments/modal.html`): all 6 modals (clients, projects, expenses, time, invoices-manual, invoices-generate) use one overlay/card/header. Cap at 90vh with inner scroll; `overflow-hidden` on rounded card + `overflow-y-auto flex-1 min-h-0` on inner body preserves rounded corners without sticky-header hacks.
 
 ## Now
 
-**Phase A — fixed-project supporting infrastructure (QB-grade basics).** Add `Client.paymentTermsDays` (default 30, Net 30 standard), use it in invoice generation. Project implements `HasMedia` with SOW attachment. Neutral helper methods on Project for contract-amount vs. hourly-rate naming without schema churn.
+**Phase B — project detail page.** Drill into one project to see: time entries, linked invoices, running balance (`SUM(invoice_items WHERE project_id)`), SOW attachments, editable contract amount (lightweight change-order note).
 
 ## Next up (ordered)
 
-1. **Phase A — client payment terms + SOW attachment** (now) — `Client.paymentTermsDays`, Project `HasMedia` + SOW upload, `generateForClient` honors per-client Net terms.
-2. **Phase B — project detail page** — list time entries, linked invoices, SOW, running balance (`SUM(invoice_items WHERE project_id)`), editable contract amount (lightweight change-order workflow).
+1. **Phase B — project detail page** (now) — list time entries, linked invoices, SOW, running balance, editable contract amount.
 3. **Phase C — scheduled jobs** — daily `markOverdue` (`@Scheduled`), monthly retainer auto-generation for active retainer projects.
 4. **PDF generation** — render invoice as PDF, store via `MediaService` in `documents` collection at generation time.
 5. **Email invoices** — send generated PDF via Gmail SMTP, set `sentAt`, transition nothing (status stays `unpaid` until payment).

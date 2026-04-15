@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title th:text="'Invoice ' + ${invoice.reference}">Invoice</title>
+    <style>
+        @page {
+            size: Letter;
+            margin: 0.6in 0.7in;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            font-size: 10pt;
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        /* Letterhead */
+        .letterhead {
+            display: table;
+            width: 100%;
+            border-bottom: 3px solid #ea7c28;
+            padding-bottom: 18px;
+            margin-bottom: 28px;
+        }
+        .letterhead .brand { display: table-cell; vertical-align: top; width: 50%; }
+        .letterhead .meta  { display: table-cell; vertical-align: top; width: 50%; text-align: right; }
+        .brand-name {
+            font-size: 20pt;
+            font-weight: bold;
+            letter-spacing: -0.5pt;
+            color: #161f30;
+        }
+        .brand-sub {
+            color: #64748b;
+            font-size: 9pt;
+            margin-top: 2pt;
+        }
+        .invoice-label {
+            font-size: 8pt;
+            letter-spacing: 1.5pt;
+            color: #94a3b8;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .invoice-ref {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #161f30;
+            margin-top: 3pt;
+        }
+        .status-pill {
+            display: inline-block;
+            padding: 2pt 8pt;
+            border-radius: 20pt;
+            font-size: 8pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5pt;
+            margin-top: 4pt;
+        }
+        .status-paid    { background: #dcfce7; color: #166534; }
+        .status-overdue { background: #fee2e2; color: #991b1b; }
+        .status-void    { background: #e2e8f0; color: #475569; }
+        .status-unpaid  { background: #fff1e4; color: #ea7c28; }
+
+        /* Parties + meta */
+        .parties {
+            display: table;
+            width: 100%;
+            margin-bottom: 28px;
+        }
+        .parties .col { display: table-cell; vertical-align: top; width: 50%; }
+        .parties .col.right { text-align: right; }
+        .field-label {
+            font-size: 8pt;
+            letter-spacing: 1pt;
+            text-transform: uppercase;
+            color: #94a3b8;
+            font-weight: bold;
+            margin-bottom: 4pt;
+        }
+        .bill-to-name {
+            font-size: 11pt;
+            font-weight: bold;
+            color: #161f30;
+        }
+        .bill-to-email { color: #475569; font-size: 9pt; }
+        .meta-row {
+            margin-bottom: 10pt;
+        }
+
+        /* Items table */
+        table.items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18pt;
+        }
+        table.items thead th {
+            text-align: left;
+            font-size: 8pt;
+            letter-spacing: 1pt;
+            text-transform: uppercase;
+            color: #94a3b8;
+            font-weight: bold;
+            padding: 8pt 6pt;
+            border-bottom: 1.5px solid #cbd5e1;
+        }
+        table.items thead th.num { text-align: right; }
+        table.items tbody td {
+            padding: 10pt 6pt;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+        }
+        table.items tbody td.num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .item-desc { color: #1e293b; }
+
+        /* Totals */
+        .totals {
+            width: 45%;
+            margin-left: auto;
+            border-collapse: collapse;
+        }
+        .totals td {
+            padding: 5pt 6pt;
+            font-size: 10pt;
+        }
+        .totals td.label {
+            text-align: right;
+            color: #64748b;
+        }
+        .totals td.value {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .totals tr.total td {
+            border-top: 1.5px solid #cbd5e1;
+            font-size: 13pt;
+            font-weight: bold;
+            color: #161f30;
+            padding-top: 10pt;
+        }
+        .totals tr.balance td {
+            border-top: 1px solid #e2e8f0;
+            font-weight: bold;
+            color: #ea7c28;
+        }
+        .totals tr.paid td.value { color: #166534; }
+
+        /* Notes */
+        .notes {
+            margin-top: 30pt;
+            padding: 14pt 16pt;
+            background: #f8fafc;
+            border-left: 3px solid #ea7c28;
+            border-radius: 2pt;
+            font-size: 9.5pt;
+            color: #334155;
+            white-space: pre-wrap;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 40pt;
+            padding-top: 14pt;
+            border-top: 1px solid #e2e8f0;
+            font-size: 8pt;
+            color: #94a3b8;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="letterhead">
+    <div class="brand">
+        <div class="brand-name">Dynamiq Solutions</div>
+        <div class="brand-sub">Professional services &amp; software</div>
+    </div>
+    <div class="meta">
+        <div class="invoice-label">Invoice</div>
+        <div class="invoice-ref" th:text="${invoice.reference}">INV-1001</div>
+        <div th:switch="${invoice.status}">
+            <span th:case="'paid'"    class="status-pill status-paid">Paid</span>
+            <span th:case="'overdue'" class="status-pill status-overdue">Overdue</span>
+            <span th:case="'void'"    class="status-pill status-void">Void</span>
+            <span th:case="*"         class="status-pill status-unpaid">Unpaid</span>
+        </div>
+    </div>
+</div>
+
+<div class="parties">
+    <div class="col">
+        <div class="field-label">Bill To</div>
+        <div class="bill-to-name" th:text="${invoice.client.name}">Client</div>
+        <div class="bill-to-email" th:if="${invoice.client.email}" th:text="${invoice.client.email}">client@example.com</div>
+    </div>
+    <div class="col right">
+        <div class="meta-row">
+            <div class="field-label">Issued</div>
+            <div th:text="${#temporals.format(invoice.issuedAt, 'MMMM d, yyyy')}">April 14, 2026</div>
+        </div>
+        <div class="meta-row" th:if="${invoice.dueAt != null}">
+            <div class="field-label">Due</div>
+            <div th:text="${#temporals.format(invoice.dueAt, 'MMMM d, yyyy')}">May 14, 2026</div>
+        </div>
+        <div class="meta-row" th:if="${invoice.periodStart != null and invoice.periodEnd != null}">
+            <div class="field-label">Period</div>
+            <div th:text="${#temporals.format(invoice.periodStart, 'MMM d')} + ' — ' + ${#temporals.format(invoice.periodEnd, 'MMM d, yyyy')}">Mar 1 — Mar 31, 2026</div>
+        </div>
+    </div>
+</div>
+
+<table class="items">
+    <thead>
+        <tr>
+            <th>Description</th>
+            <th class="num" style="width:80pt;">Qty</th>
+            <th class="num" style="width:90pt;">Unit price</th>
+            <th class="num" style="width:90pt;">Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:each="item : ${items}">
+            <td class="item-desc" th:text="${item.description ?: '—'}">Line item</td>
+            <td class="num">
+                <span th:text="${#numbers.formatDecimal(item.unitCount, 0, 'COMMA', 2, 'POINT')}">1.00</span>
+                <span th:if="${item.unit}" th:text="' ' + ${item.unit}">hr</span>
+            </td>
+            <td class="num" th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td class="num" th:text="${#numbers.formatDecimal(item.total, 0, 'COMMA', 2, 'POINT')}">0.00</td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(items)}">
+            <td colspan="4" style="text-align:center; color:#94a3b8; font-style:italic; padding:20pt;">No line items</td>
+        </tr>
+    </tbody>
+</table>
+
+<table class="totals">
+    <tr class="total">
+        <td class="label">Total</td>
+        <td class="value" th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(invoice.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+    </tr>
+    <tr class="paid" th:if="${invoice.amountPaid != null and invoice.amountPaid.signum() > 0}">
+        <td class="label">Paid</td>
+        <td class="value" th:text="'− ' + ${#numbers.formatDecimal(invoice.amountPaid, 0, 'COMMA', 2, 'POINT')}">− 0.00</td>
+    </tr>
+    <tr class="balance" th:if="${balance.signum() != 0}">
+        <td class="label">Balance due</td>
+        <td class="value" th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(balance, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+    </tr>
+</table>
+
+<div class="notes" th:if="${invoice.notes}" th:text="${invoice.notes}">Notes</div>
+
+<div class="footer">
+    Thank you for your business.
+</div>
+
+</body>
+</html>

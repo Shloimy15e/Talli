@@ -134,7 +134,8 @@ public class InvoiceService {
         invoice.setClient(client);
         invoice.setReference(nextReference());
         invoice.setIssuedAt(LocalDate.now());
-        invoice.setDueAt(LocalDate.now().plusDays(30));
+        int terms = client.getPaymentTermsDays() == null ? 30 : client.getPaymentTermsDays();
+        invoice.setDueAt(LocalDate.now().plusDays(terms));
         invoice.setPeriodStart(periodStart);
         invoice.setPeriodEnd(periodEnd);
         invoice.setCurrency(currency);

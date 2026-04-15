@@ -6,7 +6,28 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "projects")
-public class Project {
+public class Project implements HasMedia {
+
+    @Override
+    public String mediaOwnerType() { return "project"; }
+
+    /** True for hourly-rated projects — bill per hour tracked via time entries. */
+    public boolean isHourly() { return "hourly".equals(rateType); }
+
+    /** True for fixed-price projects — bill the contract amount (or partial). */
+    public boolean isFixed() { return "fixed".equals(rateType); }
+
+    /** True for retainer projects — flat recurring fee. */
+    public boolean isRetainer() { return "retainer".equals(rateType); }
+
+    /** The per-hour rate (hourly projects). Alias for currentRate for clarity at call sites. */
+    public BigDecimal hourlyRate() { return currentRate; }
+
+    /** The contract total (fixed projects). Alias for currentRate for clarity at call sites. */
+    public BigDecimal contractAmount() { return currentRate; }
+
+    /** The monthly retainer fee (retainer projects). Alias for currentRate for clarity at call sites. */
+    public BigDecimal retainerMonthlyFee() { return currentRate; }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -6,6 +6,8 @@ import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.service.InvoiceService;
 import dev.dynamiq.talli.service.MediaService;
+import dev.dynamiq.talli.service.PdfService;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +19,8 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Controller
 @RequestMapping("/invoices")
@@ -26,15 +30,17 @@ public class InvoiceController {
     private final ClientRepository clientRepository;
     private final ProjectRepository projectRepository;
     private final MediaService mediaService;
+    private final PdfService pdfService;
 
     public InvoiceController(InvoiceService invoiceService,
-                             ClientRepository clientRepository,
-                             ProjectRepository projectRepository,
-                             MediaService mediaService) {
+            ClientRepository clientRepository,
+            ProjectRepository projectRepository,
+            MediaService mediaService, PdfService pdfService) {
         this.invoiceService = invoiceService;
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.mediaService = mediaService;
+        this.pdfService = pdfService;
     }
 
     @GetMapping
@@ -103,8 +109,8 @@ public class InvoiceController {
 
     @PostMapping("/{id}/attachments")
     public String upload(@PathVariable("id") Long id,
-                         @RequestParam("file") MultipartFile file,
-                         @RequestParam(value = "collection", defaultValue = "documents") String collection) {
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "collection", defaultValue = "documents") String collection) {
         Invoice invoice = invoiceService.get(id);
         if (file != null && !file.isEmpty()) {
             mediaService.attach(invoice, file, collection);
@@ -123,9 +129,9 @@ public class InvoiceController {
 
     @PostMapping("/generate")
     public String generate(@RequestParam("clientId") Long clientId,
-                           @RequestParam("periodStart") String periodStart,
-                           @RequestParam("periodEnd") String periodEnd,
-                           RedirectAttributes flash) {
+            @RequestParam("periodStart") String periodStart,
+            @RequestParam("periodEnd") String periodEnd,
+            RedirectAttributes flash) {
         try {
             Invoice invoice = invoiceService.generateForClient(
                     clientId, LocalDate.parse(periodStart), LocalDate.parse(periodEnd));
@@ -134,6 +140,14 @@ public class InvoiceController {
             flash.addFlashAttribute("generateError", e.getMessage());
             return "redirect:/invoices";
         }
+    }
+
+    @PostMapping("/{id}/pdf")
+    public String generatePdf(@PathVariable Long id) {        
+        Invoice invoice = invoiceService.get(id);
+        byte[] bytes = pdfService.renderInvoice(invoice, invoiceService.itemsFor(id));
+        mediaService.attachBytes(invoice, bytes, invoice.getReference() + ".pdf", "application/pdf",    "documents");
+        return "redirect:/invoices/" + id;
     }
 
     // --- Form beans ---
@@ -165,35 +179,108 @@ public class InvoiceController {
         }
 
         public List<InvoiceItemForm> nonEmptyItems() {
-            return items == null ? List.of() : items.stream()
-                    .filter(i -> i.getUnitPrice() != null || i.getUnitCount() != null || (i.getDescription() != null && !i.getDescription().isBlank()))
-                    .toList();
+            return items == null ? List.of()
+                    : items.stream()
+                            .filter(i -> i.getUnitPrice() != null || i.getUnitCount() != null
+                                    || (i.getDescription() != null && !i.getDescription().isBlank()))
+                            .toList();
         }
 
-        public String getReference() { return reference; }
-        public void setReference(String reference) { this.reference = reference; }
-        public Long getClientId() { return clientId; }
-        public void setClientId(Long clientId) { this.clientId = clientId; }
-        public String getCurrency() { return currency; }
-        public void setCurrency(String currency) { this.currency = currency; }
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
-        public String getIssuedAt() { return issuedAt; }
-        public void setIssuedAt(String issuedAt) { this.issuedAt = issuedAt; }
-        public String getDueAt() { return dueAt; }
-        public void setDueAt(String dueAt) { this.dueAt = dueAt; }
-        public String getPeriodStart() { return periodStart; }
-        public void setPeriodStart(String periodStart) { this.periodStart = periodStart; }
-        public String getPeriodEnd() { return periodEnd; }
-        public void setPeriodEnd(String periodEnd) { this.periodEnd = periodEnd; }
-        public String getNotes() { return notes; }
-        public void setNotes(String notes) { this.notes = notes; }
-        public List<InvoiceItemForm> getItems() { return items; }
-        public void setItems(List<InvoiceItemForm> items) { this.items = items; }
-        public MultipartFile getInvoiceDoc() { return invoiceDoc; }
-        public void setInvoiceDoc(MultipartFile invoiceDoc) { this.invoiceDoc = invoiceDoc; }
-        public MultipartFile getPaymentProof() { return paymentProof; }
-        public void setPaymentProof(MultipartFile paymentProof) { this.paymentProof = paymentProof; }
+        public String getReference() {
+            return reference;
+        }
+
+        public void setReference(String reference) {
+            this.reference = reference;
+        }
+
+        public Long getClientId() {
+            return clientId;
+        }
+
+        public void setClientId(Long clientId) {
+            this.clientId = clientId;
+        }
+
+        public String getCurrency() {
+            return currency;
+        }
+
+        public void setCurrency(String currency) {
+            this.currency = currency;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+
+        public String getIssuedAt() {
+            return issuedAt;
+        }
+
+        public void setIssuedAt(String issuedAt) {
+            this.issuedAt = issuedAt;
+        }
+
+        public String getDueAt() {
+            return dueAt;
+        }
+
+        public void setDueAt(String dueAt) {
+            this.dueAt = dueAt;
+        }
+
+        public String getPeriodStart() {
+            return periodStart;
+        }
+
+        public void setPeriodStart(String periodStart) {
+            this.periodStart = periodStart;
+        }
+
+        public String getPeriodEnd() {
+            return periodEnd;
+        }
+
+        public void setPeriodEnd(String periodEnd) {
+            this.periodEnd = periodEnd;
+        }
+
+        public String getNotes() {
+            return notes;
+        }
+
+        public void setNotes(String notes) {
+            this.notes = notes;
+        }
+
+        public List<InvoiceItemForm> getItems() {
+            return items;
+        }
+
+        public void setItems(List<InvoiceItemForm> items) {
+            this.items = items;
+        }
+
+        public MultipartFile getInvoiceDoc() {
+            return invoiceDoc;
+        }
+
+        public void setInvoiceDoc(MultipartFile invoiceDoc) {
+            this.invoiceDoc = invoiceDoc;
+        }
+
+        public MultipartFile getPaymentProof() {
+            return paymentProof;
+        }
+
+        public void setPaymentProof(MultipartFile paymentProof) {
+            this.paymentProof = paymentProof;
+        }
     }
 
     public static class InvoiceItemForm {
@@ -212,16 +299,45 @@ public class InvoiceController {
             item.setTotal(item.getUnitPrice().multiply(item.getUnitCount()).setScale(2, RoundingMode.HALF_UP));
         }
 
-        public Long getProjectId() { return projectId; }
-        public void setProjectId(Long projectId) { this.projectId = projectId; }
-        public String getDescription() { return description; }
-        public void setDescription(String description) { this.description = description; }
-        public String getUnit() { return unit; }
-        public void setUnit(String unit) { this.unit = unit; }
-        public BigDecimal getUnitPrice() { return unitPrice; }
-        public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
-        public BigDecimal getUnitCount() { return unitCount; }
-        public void setUnitCount(BigDecimal unitCount) { this.unitCount = unitCount; }
+        public Long getProjectId() {
+            return projectId;
+        }
+
+        public void setProjectId(Long projectId) {
+            this.projectId = projectId;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public String getUnit() {
+            return unit;
+        }
+
+        public void setUnit(String unit) {
+            this.unit = unit;
+        }
+
+        public BigDecimal getUnitPrice() {
+            return unitPrice;
+        }
+
+        public void setUnitPrice(BigDecimal unitPrice) {
+            this.unitPrice = unitPrice;
+        }
+
+        public BigDecimal getUnitCount() {
+            return unitCount;
+        }
+
+        public void setUnitCount(BigDecimal unitCount) {
+            this.unitCount = unitCount;
+        }
     }
 
     private static LocalDate parseDate(String s) {

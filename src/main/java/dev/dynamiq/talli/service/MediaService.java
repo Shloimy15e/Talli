@@ -1,5 +1,6 @@
 package dev.dynamiq.talli.service;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -46,6 +47,29 @@ public class MediaService {
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read uploaded file", e);
         }
+
+        return media;
+    }
+
+    /**
+     * Attach raw bytes (e.g. a generated PDF) — mirrors {@link #attach} but skips MultipartFile.
+     */
+    @Transactional
+    public Media attachBytes(HasMedia owner, byte[] bytes, String filename, String mimeType, String collection) {
+        Media media = new Media();
+        media.setOwnerType(owner.mediaOwnerType());
+        media.setOwnerId(owner.getId());
+        media.setCollectionName(collection != null ? collection : "default");
+        media.setFilename(filename);
+        media.setMimeType(mimeType);
+        media.setSizeBytes((long) bytes.length);
+
+        media = mediaRepository.save(media);
+
+        String diskKey = media.getId() + "/" + filename;
+        media.setDiskKey(diskKey);
+
+        storage.store(diskKey, new ByteArrayInputStream(bytes), bytes.length);
 
         return media;
     }

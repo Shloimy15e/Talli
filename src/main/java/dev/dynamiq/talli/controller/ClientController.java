@@ -131,6 +131,7 @@ public class ClientController {
         existing.setName(client.getName());
         existing.setEmail(client.getEmail());
         existing.setNotes(client.getNotes());
+        existing.setPaymentTermsDays(client.getPaymentTermsDays());
         clientRepository.save(existing);
         return "redirect:/clients";
     }

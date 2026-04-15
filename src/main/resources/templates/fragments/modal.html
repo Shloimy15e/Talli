@@ -1,0 +1,53 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <body>
+
+    <!--
+      Shared modal shell.
+      Usage from a form template:
+
+        <div th:fragment="form(...)"
+             th:replace="~{fragments/modal :: shell(${title}, 'max-w-lg', ~{::#body})}">
+          <div id="body">
+            <form th:action="..." method="post" class="p-6 space-y-5">
+              ...
+            </form>
+          </div>
+        </div>
+
+      Args:
+        title     — heading text
+        widthClass — Tailwind max-w-* (e.g. 'max-w-lg', 'max-w-3xl')
+        content   — markup selector for the body (Thymeleaf fragment expression)
+
+      Behavior:
+        - Overlay with click-outside-to-close
+        - Card capped at 90vh with internal scroll
+        - Sticky header so the × and title stay visible while scrolling long forms
+    -->
+
+    <div th:fragment="shell(title, widthClass, content)"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+         @click.self="$dispatch('close-modal')">
+      <div th:classappend="${widthClass ?: 'max-w-lg'}"
+           class="bg-white rounded-xl shadow-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+           x-transition:enter="ease-out duration-200"
+           x-transition:enter-start="opacity-0 scale-95"
+           x-transition:enter-end="opacity-100 scale-100">
+
+        <!-- Header — fixed at top by virtue of sitting outside the scroll area. -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 shrink-0">
+          <h2 class="text-lg font-semibold" th:text="${title}">Title</h2>
+          <button type="button" @click="$dispatch('close-modal')"
+                  class="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
+        </div>
+
+        <!-- Scrollable body. min-h-0 is required so this flex child can actually shrink. -->
+        <div class="overflow-y-auto flex-1 min-h-0">
+          <th:block th:replace="${content}"></th:block>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
