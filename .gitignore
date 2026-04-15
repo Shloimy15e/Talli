@@ -29,3 +29,5 @@ desktop.ini
 dist/
 
 .env
+
+storage/

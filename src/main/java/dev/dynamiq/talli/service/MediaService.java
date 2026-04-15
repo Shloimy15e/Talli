@@ -34,6 +34,8 @@ public class MediaService {
         media.setSizeBytes(file.getSize());
 
         // First save to get an auto-generated id we can use in the disk key.
+        // disk_key is nullable — gets populated below before storage.store runs,
+        // and the UPDATE flushes on @Transactional commit via JPA dirty checking.
         media = mediaRepository.save(media);
 
         String diskKey = media.getId() + "/" + file.getOriginalFilename();

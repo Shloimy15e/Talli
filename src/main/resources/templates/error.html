@@ -1,0 +1,76 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Something went wrong')}"></head>
+  <body class="bg-slate-50 text-slate-900 antialiased min-h-screen flex items-center justify-center">
+
+    <div class="max-w-5xl w-full mx-4">
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-10">
+
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-10 h-10 rounded-full bg-[#ea7c28]/10 flex items-center justify-center">
+            <span class="text-2xl text-[#ea7c28] leading-none">!</span>
+          </div>
+          <span class="font-mono text-sm text-slate-400 tabular-nums"
+                th:text="${status} + ' · ' + (${error} ?: 'Error')">500 · Internal Server Error</span>
+        </div>
+
+        <h1 class="text-2xl font-semibold tracking-tight mb-2"
+            th:text="${status == 404} ? 'Page not found' : (${status == 403} ? 'Not allowed' : 'Something went wrong')">
+          Something went wrong
+        </h1>
+
+        <p class="text-sm text-slate-500 mb-6"
+           th:switch="${status}">
+          <span th:case="404">The page you're looking for doesn't exist or has moved.</span>
+          <span th:case="403">You don't have permission to access this resource.</span>
+          <span th:case="*">An unexpected error occurred. Try again, or head back to the dashboard.</span>
+        </p>
+
+        <div th:if="${message != null and !#strings.isEmpty(message) and status >= 500}"
+             x-data="{ copied: false }"
+             class="mb-4 p-3 bg-slate-50 border border-slate-200 rounded-lg relative group">
+          <p class="text-xs font-mono text-slate-600 break-all pr-14" th:text="${message}" x-ref="msg">detail</p>
+          <button type="button"
+                  @click="navigator.clipboard.writeText($refs.msg.textContent.trim()).then(() => { copied = true; setTimeout(() => copied = false, 1500); })"
+                  class="absolute top-2 right-2 text-[10px] uppercase tracking-wider font-semibold text-slate-400 hover:text-slate-900 bg-white border border-slate-200 rounded px-2 py-1 transition">
+            <span x-show="!copied">Copy</span>
+            <span x-show="copied" x-cloak class="text-[#ea7c28]">Copied</span>
+          </button>
+        </div>
+
+        <details th:if="${trace != null and status >= 500}" class="mb-6"
+                 x-data="{ copied: false }">
+          <summary class="text-xs text-slate-500 hover:text-slate-900 cursor-pointer select-none">
+            Show stack trace
+          </summary>
+          <div class="relative mt-2">
+            <button type="button"
+                    @click="navigator.clipboard.writeText($refs.trace.textContent).then(() => { copied = true; setTimeout(() => copied = false, 1500); })"
+                    class="absolute top-2 right-6 z-10 text-[10px] uppercase tracking-wider font-semibold text-slate-100 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded px-2 py-1 transition">
+              <span x-show="!copied">Copy</span>
+              <span x-show="copied" x-cloak class="text-[#ea7c28]">Copied</span>
+            </button>
+            <pre x-ref="trace"
+                 class="p-3 bg-slate-900 text-slate-100 rounded-lg text-[11px] font-mono overflow-x-auto max-h-80 leading-relaxed"
+                 th:text="${trace}">trace</pre>
+          </div>
+        </details>
+
+        <div class="flex items-center gap-3">
+          <a th:href="@{/dashboard}"
+             class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+            Back to dashboard
+          </a>
+          <a href="javascript:history.back()"
+             class="text-sm text-slate-600 hover:text-slate-900 px-4 py-2">Go back</a>
+        </div>
+
+      </div>
+
+      <p class="text-center text-xs text-slate-400 mt-6" th:if="${timestamp}">
+        <span th:text="${#dates.format(timestamp, 'yyyy-MM-dd HH:mm:ss')}">timestamp</span>
+      </p>
+    </div>
+
+  </body>
+</html>

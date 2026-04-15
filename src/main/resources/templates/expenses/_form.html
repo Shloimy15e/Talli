@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
   <body>
 
-    <div th:fragment="form(expense, action, title, clients, projects)"
+    <div th:fragment="form(expense, action, title, clients, projects, receipts)"
          class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
          @click.self="$dispatch('close-modal')">
 
@@ -17,7 +17,7 @@
                   class="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
         </div>
 
-        <form th:action="${action}" method="post" class="p-6 space-y-5">
+        <form th:action="@{${action}(_csrf=${_csrf.token})}" method="post" enctype="multipart/form-data" class="p-6 space-y-5">
 
           <!-- Date + amount + currency -->
           <div class="grid grid-cols-3 gap-4">
@@ -68,20 +68,38 @@
                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
           </div>
 
-          <!-- Payment method + receipt URL -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="paymentMethod" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Payment method</label>
-              <input type="text" id="paymentMethod" name="paymentMethod"
-                     th:value="${expense.paymentMethod}" placeholder="e.g., Amex 1234"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-            </div>
-            <div>
-              <label for="receiptUrl" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Receipt URL</label>
-              <input type="url" id="receiptUrl" name="receiptUrl"
-                     th:value="${expense.receiptUrl}" placeholder="Link to receipt"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-            </div>
+          <!-- Payment method -->
+          <div>
+            <label for="paymentMethod" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Payment method</label>
+            <input type="text" id="paymentMethod" name="paymentMethod"
+                   th:value="${expense.paymentMethod}" placeholder="e.g., Amex 1234"
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+          </div>
+
+          <!-- Receipts -->
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Receipts</label>
+
+            <ul th:if="${receipts != null and not #lists.isEmpty(receipts)}" class="space-y-1 mb-3">
+              <li th:each="r : ${receipts}"
+                  class="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg text-sm">
+                <a th:href="@{/media/{id}(id=${r.id})}" target="_blank"
+                   class="text-[#ea7c28] hover:underline truncate flex-1">
+                  <span th:text="${r.filename}">receipt.pdf</span>
+                  <span class="text-slate-400 text-xs ml-2"
+                        th:text="${#numbers.formatDecimal(r.sizeBytes / 1024.0, 0, 'COMMA', 1, 'POINT') + ' KB'}">12.3 KB</span>
+                </a>
+                <button type="submit" formmethod="post" formnovalidate
+                        th:formaction="@{/media/{id}/delete(id=${r.id})}"
+                        class="text-slate-400 hover:text-red-600 text-xs ml-3"
+                        onclick="return confirm('Delete this receipt?')">Delete</button>
+              </li>
+            </ul>
+
+            <input type="file" id="receipt" name="receipt"
+                   accept="image/*,application/pdf"
+                   class="w-full text-sm text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer">
+            <p class="text-xs text-slate-400 mt-1">Attach a photo or PDF. Max 10MB.</p>
           </div>
 
           <!-- Optional tagging -->

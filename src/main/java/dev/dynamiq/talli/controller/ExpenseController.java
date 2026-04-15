@@ -4,9 +4,12 @@ import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.service.MediaService;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -18,13 +21,15 @@ public class ExpenseController {
     private final ExpenseRepository expenseRepository;
     private final ClientRepository clientRepository;
     private final ProjectRepository projectRepository;
+    private final MediaService mediaService;
 
     public ExpenseController(ExpenseRepository expenseRepository,
                              ClientRepository clientRepository,
-                             ProjectRepository projectRepository) {
+                             ProjectRepository projectRepository, MediaService mediaService) {
         this.expenseRepository = expenseRepository;
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
+        this.mediaService = mediaService;
     }
 
     @GetMapping
@@ -67,6 +72,7 @@ public class ExpenseController {
         Expense e = new Expense();
         form.applyTo(e, clientRepository, projectRepository);
         expenseRepository.save(e);
+        attachReceiptIfPresent(e, form.getReceipt());
         return "redirect:/expenses";
     }
 
@@ -75,7 +81,14 @@ public class ExpenseController {
         Expense e = expenseRepository.findById(id).orElseThrow();
         form.applyTo(e, clientRepository, projectRepository);
         expenseRepository.save(e);
+        attachReceiptIfPresent(e, form.getReceipt());
         return "redirect:/expenses";
+    }
+
+    private void attachReceiptIfPresent(Expense e, MultipartFile receipt) {
+        if (receipt != null && !receipt.isEmpty()) {
+            mediaService.attach(e, receipt, "receipts");
+        }
     }
 
     @PostMapping("/{id}/delete")
@@ -96,6 +109,7 @@ public class ExpenseController {
         private String paymentMethod;
         private String receiptUrl;
         private Boolean billable;
+        private MultipartFile receipt;
 
         public void applyTo(Expense e, ClientRepository clients, ProjectRepository projects) {
             e.setClient(clientId == null ? null : clients.findById(clientId).orElse(null));
@@ -126,5 +140,7 @@ public class ExpenseController {
         public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
         public void setReceiptUrl(String receiptUrl) { this.receiptUrl = receiptUrl; }
         public void setBillable(Boolean billable) { this.billable = billable; }
+        public void setReceipt(MultipartFile receipt) { this.receipt = receipt; }
+        public MultipartFile getReceipt() { return receipt; }
     }
 }

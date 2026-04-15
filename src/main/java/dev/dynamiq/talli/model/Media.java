@@ -24,7 +24,7 @@ public class Media {
     @Column(nullable = false)
     private String filename;
 
-    @Column(name = "disk_key", nullable = false)
+    @Column(name = "disk_key")
     private String diskKey;
 
     @Column(name = "mime_type", nullable = false)
