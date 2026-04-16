@@ -53,6 +53,9 @@ public class Invoice implements HasMedia {
     @Column(nullable = false)
     private String currency = "USD";
 
+    @Column(name = "exchange_rate", nullable = false)
+    private BigDecimal exchangeRate = BigDecimal.ONE;
+
     @Column(nullable = false)
     private String status = "unpaid";
 
@@ -137,6 +140,14 @@ public class Invoice implements HasMedia {
 
     public void setCurrency(String currency) {
         this.currency = currency;
+    }
+
+    public BigDecimal getExchangeRate() {
+        return exchangeRate;
+    }
+
+    public void setExchangeRate(BigDecimal exchangeRate) {
+        this.exchangeRate = exchangeRate;
     }
 
     public String getStatus() {

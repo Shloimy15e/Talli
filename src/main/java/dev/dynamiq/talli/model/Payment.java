@@ -24,6 +24,9 @@ public class Payment {
     @Column(nullable = false)
     private BigDecimal amount = BigDecimal.ZERO;
 
+    @Column(name = "exchange_rate", nullable = false)
+    private BigDecimal exchangeRate = BigDecimal.ONE;
+
     private String method;
     private String reference;
 
@@ -58,6 +61,9 @@ public class Payment {
 
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public BigDecimal getExchangeRate() { return exchangeRate; }
+    public void setExchangeRate(BigDecimal exchangeRate) { this.exchangeRate = exchangeRate; }
 
     public String getMethod() { return method; }
     public void setMethod(String method) { this.method = method; }

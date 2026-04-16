@@ -28,7 +28,9 @@ class PaymentServiceTest {
     void setUp() {
         paymentRepository = mock(PaymentRepository.class);
         invoiceRepository = mock(InvoiceRepository.class);
-        service = new PaymentService(paymentRepository, invoiceRepository);
+        ExchangeRateService exchangeRateService = mock(ExchangeRateService.class);
+        when(exchangeRateService.getRate(any())).thenReturn(java.math.BigDecimal.ONE);
+        service = new PaymentService(paymentRepository, invoiceRepository, exchangeRateService);
 
         invoice = new Invoice();
         invoice.setId(1L);

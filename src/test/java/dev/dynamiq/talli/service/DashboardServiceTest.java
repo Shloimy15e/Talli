@@ -27,6 +27,7 @@ import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -64,10 +65,13 @@ class DashboardServiceTest {
         projectB.setName("Bravo");
         projectB.setCurrentRate(new BigDecimal("150"));
 
+        ExchangeRateService exchangeRateService = mock(ExchangeRateService.class);
+        when(exchangeRateService.toUsd(any(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
+        when(exchangeRateService.toUsdCurrent(any(), any())).thenAnswer(inv -> inv.getArgument(0));
         service = new DashboardService(
                 clientRepository, projectRepository, timeEntryRepository,
                 expenseRepository, subscriptionRepository,
-                invoiceRepository, paymentRepository);
+                invoiceRepository, paymentRepository, exchangeRateService);
     }
 
     @Test

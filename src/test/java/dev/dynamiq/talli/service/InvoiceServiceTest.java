@@ -64,8 +64,11 @@ class InvoiceServiceTest {
         client.setId(1L);
         client.setName("Acme Corp");
 
+        ExchangeRateService exchangeRateService = mock(ExchangeRateService.class);
+        when(exchangeRateService.getRate(any())).thenReturn(java.math.BigDecimal.ONE);
         service = new InvoiceService(invoiceRepository, invoiceItemRepository,
-                timeEntryRepository, projectRepository, clientRepository, expenseRepository);
+                timeEntryRepository, projectRepository, clientRepository, expenseRepository,
+                exchangeRateService);
     }
 
     // --- CRUD / reads ---

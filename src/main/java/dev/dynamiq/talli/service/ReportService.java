@@ -26,19 +26,22 @@ public class ReportService {
     private final TimeEntryRepository timeEntryRepository;
     private final ProjectRepository projectRepository;
     private final InvoiceItemRepository invoiceItemRepository;
+    private final ExchangeRateService exchangeRateService;
 
     public ReportService(InvoiceRepository invoiceRepository,
                          PaymentRepository paymentRepository,
                          ExpenseRepository expenseRepository,
                          TimeEntryRepository timeEntryRepository,
                          ProjectRepository projectRepository,
-                         InvoiceItemRepository invoiceItemRepository) {
+                         InvoiceItemRepository invoiceItemRepository,
+                         ExchangeRateService exchangeRateService) {
         this.invoiceRepository = invoiceRepository;
         this.paymentRepository = paymentRepository;
         this.expenseRepository = expenseRepository;
         this.timeEntryRepository = timeEntryRepository;
         this.projectRepository = projectRepository;
         this.invoiceItemRepository = invoiceItemRepository;
+        this.exchangeRateService = exchangeRateService;
     }
 
     // --- Per-client P&L ---
@@ -54,14 +57,18 @@ public class ReportService {
             if (inv.getIssuedAt() == null || inv.getIssuedAt().isBefore(from) || inv.getIssuedAt().isAfter(to)) continue;
             Long cid = inv.getClient().getId();
             clientNames.putIfAbsent(cid, inv.getClient().getName());
-            invoicedByClient.merge(cid, inv.getAmount(), BigDecimal::add);
+            invoicedByClient.merge(cid,
+                    exchangeRateService.toUsd(inv.getAmount(), inv.getCurrency(), inv.getExchangeRate()),
+                    BigDecimal::add);
         }
 
         for (Payment p : paymentRepository.findAll()) {
             if (p.getPaidAt() == null || p.getPaidAt().isBefore(from) || p.getPaidAt().isAfter(to)) continue;
             Long cid = p.getInvoice().getClient().getId();
             clientNames.putIfAbsent(cid, p.getInvoice().getClient().getName());
-            receivedByClient.merge(cid, p.getAmount(), BigDecimal::add);
+            receivedByClient.merge(cid,
+                    exchangeRateService.toUsd(p.getAmount(), p.getInvoice().getCurrency(), p.getExchangeRate()),
+                    BigDecimal::add);
         }
 
         for (var ex : expenseRepository.findAllByOrderByIncurredOnDesc()) {
@@ -109,13 +116,15 @@ public class ReportService {
         for (Invoice inv : invoiceRepository.findAll()) {
             if ("void".equals(inv.getStatus()) || inv.getIssuedAt() == null) continue;
             YearMonth ym = YearMonth.from(inv.getIssuedAt());
-            invoiced.computeIfPresent(ym, (k, v) -> v.add(inv.getAmount()));
+            BigDecimal usd = exchangeRateService.toUsd(inv.getAmount(), inv.getCurrency(), inv.getExchangeRate());
+            invoiced.computeIfPresent(ym, (k, v) -> v.add(usd));
         }
 
         for (Payment p : paymentRepository.findAll()) {
             if (p.getPaidAt() == null) continue;
             YearMonth ym = YearMonth.from(p.getPaidAt());
-            received.computeIfPresent(ym, (k, v) -> v.add(p.getAmount()));
+            BigDecimal usd = exchangeRateService.toUsd(p.getAmount(), p.getInvoice().getCurrency(), p.getExchangeRate());
+            received.computeIfPresent(ym, (k, v) -> v.add(usd));
         }
 
         LocalDate rangeStart = startMonth.atDay(1);
@@ -130,9 +139,71 @@ public class ReportService {
             BigDecimal inv = invoiced.get(ym);
             BigDecimal rec = received.get(ym);
             BigDecimal exp = expenses.get(ym);
-            out.add(new MonthSummary(ym.format(fmt), inv, rec, exp, inv.subtract(exp)));
+            out.add(new MonthSummary(ym.format(fmt), inv, rec, exp, rec.subtract(exp)));
         }
         return out;
+    }
+
+    /** Aggregate monthly data into quarters. */
+    public List<QuarterSummary> quarterlyRevenue(int months) {
+        List<MonthSummary> monthly = monthlyRevenue(months);
+        LocalDate today = LocalDate.now();
+        YearMonth startMonth = YearMonth.from(today).minusMonths(months - 1L);
+
+        Map<String, BigDecimal[]> quarters = new LinkedHashMap<>();
+        for (int i = 0; i < months; i++) {
+            YearMonth ym = startMonth.plusMonths(i);
+            int q = (ym.getMonthValue() - 1) / 3 + 1;
+            String key = ym.getYear() + " Q" + q;
+            quarters.computeIfAbsent(key, k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO});
+        }
+
+        int idx = 0;
+        for (int i = 0; i < months; i++) {
+            YearMonth ym = startMonth.plusMonths(i);
+            int q = (ym.getMonthValue() - 1) / 3 + 1;
+            String key = ym.getYear() + " Q" + q;
+            BigDecimal[] totals = quarters.get(key);
+            if (idx < monthly.size()) {
+                MonthSummary m = monthly.get(idx);
+                totals[0] = totals[0].add(m.invoiced());
+                totals[1] = totals[1].add(m.received());
+                totals[2] = totals[2].add(m.expenses());
+            }
+            idx++;
+        }
+
+        return quarters.entrySet().stream()
+                .map(e -> new QuarterSummary(e.getKey(), e.getValue()[0], e.getValue()[1],
+                        e.getValue()[2], e.getValue()[1].subtract(e.getValue()[2])))
+                .toList();
+    }
+
+    /** Aggregate monthly data into years. */
+    public List<YearSummary> yearlyRevenue(int months) {
+        List<MonthSummary> monthly = monthlyRevenue(months);
+        LocalDate today = LocalDate.now();
+        YearMonth startMonth = YearMonth.from(today).minusMonths(months - 1L);
+
+        Map<Integer, BigDecimal[]> years = new LinkedHashMap<>();
+        int idx = 0;
+        for (int i = 0; i < months; i++) {
+            YearMonth ym = startMonth.plusMonths(i);
+            BigDecimal[] totals = years.computeIfAbsent(ym.getYear(),
+                    k -> new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO});
+            if (idx < monthly.size()) {
+                MonthSummary m = monthly.get(idx);
+                totals[0] = totals[0].add(m.invoiced());
+                totals[1] = totals[1].add(m.received());
+                totals[2] = totals[2].add(m.expenses());
+            }
+            idx++;
+        }
+
+        return years.entrySet().stream()
+                .map(e -> new YearSummary(e.getKey(), e.getValue()[0], e.getValue()[1],
+                        e.getValue()[2], e.getValue()[1].subtract(e.getValue()[2])))
+                .toList();
     }
 
     // --- Time utilization ---
@@ -298,6 +369,12 @@ public class ReportService {
 
     public record MonthSummary(String month, BigDecimal invoiced, BigDecimal received,
                                BigDecimal expenses, BigDecimal net) {}
+
+    public record QuarterSummary(String quarter, BigDecimal invoiced, BigDecimal received,
+                                 BigDecimal expenses, BigDecimal net) {}
+
+    public record YearSummary(int year, BigDecimal invoiced, BigDecimal received,
+                              BigDecimal expenses, BigDecimal net) {}
 
     public record TimeUtilization(int billableMinutes, int nonBillableMinutes,
                                   int totalMinutes, BigDecimal utilizationRate) {}

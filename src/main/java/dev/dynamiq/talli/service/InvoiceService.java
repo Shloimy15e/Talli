@@ -12,6 +12,8 @@ import dev.dynamiq.talli.repository.InvoiceItemRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,23 +36,36 @@ public class InvoiceService {
     private final ProjectRepository projectRepository;
     private final ClientRepository clientRepository;
     private final ExpenseRepository expenseRepository;
+    private final ExchangeRateService exchangeRateService;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
             InvoiceItemRepository invoiceItemRepository,
             TimeEntryRepository timeEntryRepository,
             ProjectRepository projectRepository,
             ClientRepository clientRepository,
-            ExpenseRepository expenseRepository) {
+            ExpenseRepository expenseRepository,
+            ExchangeRateService exchangeRateService) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceItemRepository = invoiceItemRepository;
         this.timeEntryRepository = timeEntryRepository;
         this.projectRepository = projectRepository;
         this.clientRepository = clientRepository;
         this.expenseRepository = expenseRepository;
+        this.exchangeRateService = exchangeRateService;
     }
 
     public List<Invoice> listAll() {
         return invoiceRepository.findAllByOrderByIssuedAtDescIdDesc();
+    }
+
+    public Page<Invoice> listAll(int page, int size) {
+        return invoiceRepository.findAllByOrderByIssuedAtDescIdDesc(PageRequest.of(page, size));
+    }
+
+    public Page<Invoice> listFiltered(List<String> statuses, String search, int page, int size) {
+        String q = (search == null || search.isBlank()) ? "" : search;
+        List<String> s = (statuses == null || statuses.isEmpty()) ? List.of() : statuses;
+        return invoiceRepository.findFiltered(s, q, PageRequest.of(page, size));
     }
 
     public Invoice get(Long id) {
@@ -70,6 +85,7 @@ public class InvoiceService {
      */
     @Transactional
     public Invoice create(Invoice invoice, List<InvoiceItem> items) {
+        invoice.setExchangeRate(exchangeRateService.getRate(invoice.getCurrency()));
         invoice = invoiceRepository.save(invoice);
 
         BigDecimal total = BigDecimal.ZERO;
@@ -312,6 +328,7 @@ public class InvoiceService {
         invoice.setPeriodStart(periodStart);
         invoice.setPeriodEnd(periodEnd);
         invoice.setCurrency(currency);
+        invoice.setExchangeRate(exchangeRateService.getRate(currency));
         invoice.setStatus("unpaid");
         return invoiceRepository.save(invoice);
     }

@@ -43,6 +43,7 @@ public class DashboardService {
     private final SubscriptionRepository subscriptionRepository;
     private final InvoiceRepository invoiceRepository;
     private final PaymentRepository paymentRepository;
+    private final ExchangeRateService exchangeRateService;
 
     public DashboardService(ClientRepository clientRepository,
                             ProjectRepository projectRepository,
@@ -50,7 +51,8 @@ public class DashboardService {
                             ExpenseRepository expenseRepository,
                             SubscriptionRepository subscriptionRepository,
                             InvoiceRepository invoiceRepository,
-                            PaymentRepository paymentRepository) {
+                            PaymentRepository paymentRepository,
+                            ExchangeRateService exchangeRateService) {
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.timeEntryRepository = timeEntryRepository;
@@ -58,6 +60,7 @@ public class DashboardService {
         this.subscriptionRepository = subscriptionRepository;
         this.invoiceRepository = invoiceRepository;
         this.paymentRepository = paymentRepository;
+        this.exchangeRateService = exchangeRateService;
     }
 
     public long countClients() {
@@ -181,19 +184,21 @@ public class DashboardService {
             expensesByMonth.put(ym, BigDecimal.ZERO);
         }
 
-        // Invoiced revenue — bucketed by issuedAt month, excluding void.
+        // Invoiced revenue — bucketed by issuedAt month, converted to USD.
         for (Invoice inv : invoiceRepository.findAll()) {
             if ("void".equals(inv.getStatus())) continue;
             if (inv.getIssuedAt() == null || inv.getAmount() == null) continue;
             YearMonth ym = YearMonth.from(inv.getIssuedAt());
-            invoicedByMonth.computeIfPresent(ym, (k, v) -> v.add(inv.getAmount()));
+            BigDecimal usd = exchangeRateService.toUsd(inv.getAmount(), inv.getCurrency(), inv.getExchangeRate());
+            invoicedByMonth.computeIfPresent(ym, (k, v) -> v.add(usd));
         }
 
-        // Cash received — bucketed by paidAt month.
+        // Cash received — bucketed by paidAt month, converted to USD at payment-date rate.
         for (Payment p : paymentRepository.findAll()) {
             if (p.getPaidAt() == null || p.getAmount() == null) continue;
             YearMonth ym = YearMonth.from(p.getPaidAt());
-            receivedByMonth.computeIfPresent(ym, (k, v) -> v.add(p.getAmount()));
+            BigDecimal usd = exchangeRateService.toUsd(p.getAmount(), p.getInvoice().getCurrency(), p.getExchangeRate());
+            receivedByMonth.computeIfPresent(ym, (k, v) -> v.add(usd));
         }
 
         // Expenses.
@@ -210,16 +215,16 @@ public class DashboardService {
             BigDecimal inv = invoicedByMonth.get(ym);
             BigDecimal rec = receivedByMonth.get(ym);
             BigDecimal exp = expensesByMonth.get(ym);
-            out.add(new MonthFinancials(ym.format(monthFmt), inv, rec, exp, inv.subtract(exp)));
+            out.add(new MonthFinancials(ym.format(monthFmt), inv, rec, exp, rec.subtract(exp)));
         }
         return out;
     }
 
-    /** Total outstanding balance across all unpaid/overdue invoices. */
+    /** Total outstanding balance across all unpaid/overdue invoices, converted to USD at current rate. */
     public BigDecimal totalReceivables() {
         return invoiceRepository.findAll().stream()
                 .filter(i -> "unpaid".equals(i.getStatus()) || "overdue".equals(i.getStatus()))
-                .map(Invoice::balance)
+                .map(i -> exchangeRateService.toUsdCurrent(i.balance(), i.getCurrency()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 

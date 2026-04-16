@@ -17,10 +17,14 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final InvoiceRepository invoiceRepository;
+    private final ExchangeRateService exchangeRateService;
 
-    public PaymentService(PaymentRepository paymentRepository, InvoiceRepository invoiceRepository) {
+    public PaymentService(PaymentRepository paymentRepository,
+                          InvoiceRepository invoiceRepository,
+                          ExchangeRateService exchangeRateService) {
         this.paymentRepository = paymentRepository;
         this.invoiceRepository = invoiceRepository;
+        this.exchangeRateService = exchangeRateService;
     }
 
     public List<Payment> listForInvoice(Long invoiceId) {
@@ -48,6 +52,7 @@ public class PaymentService {
         payment.setMethod(method);
         payment.setReference(reference);
         payment.setNotes(notes);
+        payment.setExchangeRate(exchangeRateService.getRate(invoice.getCurrency()));
         payment = paymentRepository.save(payment);
 
         // Force flush so the new payment is visible to the sum query below.
