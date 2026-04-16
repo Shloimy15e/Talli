@@ -1,0 +1,326 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Reports')}"></head>
+  <body th:replace="~{layout :: page('reports', ~{::section})}">
+    <section>
+
+      <div class="flex items-center justify-between mb-8">
+        <div>
+          <h1 class="text-2xl font-semibold tracking-tight">Reports</h1>
+          <p class="text-sm text-slate-500 mt-1" th:text="${yearLabel} + ' year to date'">2026 YTD</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <a th:href="@{/reports(months=6)}"
+             th:classappend="${months == 6} ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'"
+             class="text-xs px-3 py-1.5 rounded-lg">6 mo</a>
+          <a th:href="@{/reports(months=12)}"
+             th:classappend="${months == 12} ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'"
+             class="text-xs px-3 py-1.5 rounded-lg">12 mo</a>
+          <a th:href="@{/reports(months=24)}"
+             th:classappend="${months == 24} ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 border border-slate-200'"
+             class="text-xs px-3 py-1.5 rounded-lg">24 mo</a>
+        </div>
+      </div>
+
+      <!-- ==================== TIME UTILIZATION ==================== -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Billable time</p>
+          <p class="text-3xl font-semibold mt-2 font-mono tabular-nums"
+             th:text="${utilization.billableMinutes / 60} + 'h ' + ${utilization.billableMinutes % 60} + 'm'">0h</p>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Non-billable</p>
+          <p class="text-3xl font-semibold mt-2 font-mono tabular-nums text-slate-500"
+             th:text="${utilization.nonBillableMinutes / 60} + 'h ' + ${utilization.nonBillableMinutes % 60} + 'm'">0h</p>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total logged</p>
+          <p class="text-3xl font-semibold mt-2 font-mono tabular-nums"
+             th:text="${utilization.totalMinutes / 60} + 'h ' + ${utilization.totalMinutes % 60} + 'm'">0h</p>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 p-5">
+          <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Utilization rate</p>
+          <p class="text-3xl font-semibold mt-2 font-mono tabular-nums"
+             th:classappend="${utilization.utilizationRate.intValue() >= 70} ? 'text-emerald-600' : (${utilization.utilizationRate.intValue() >= 50} ? 'text-[#ea7c28]' : 'text-red-600')"
+             th:text="${#numbers.formatDecimal(utilization.utilizationRate, 1, 'COMMA', 1, 'POINT')} + '%'">0.0%</p>
+        </div>
+      </div>
+
+      <!-- ==================== REVENUE CHART + EXPENSES DONUT ==================== -->
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <h2 class="text-sm font-semibold mb-4">Revenue, received &amp; expenses</h2>
+          <canvas id="chartRevenue" th:attr="data-chart=${monthlyRevenueJson}" height="120"></canvas>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <h2 class="text-sm font-semibold mb-4">Expenses by category</h2>
+          <canvas id="chartExpCat" th:attr="data-chart=${expensesByCategoryJson}" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- ==================== OUTSTANDING INVOICES (COLLECTIONS) ==================== -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-sm font-semibold">Outstanding invoices</h2>
+          <span class="text-xs text-slate-500" th:text="${#lists.size(outstandingInvoices)} + ' open'">0 open</span>
+        </div>
+        <div th:if="${#lists.isEmpty(outstandingInvoices)}" class="px-6 py-6 text-sm text-slate-400 italic">All invoices are paid or void.</div>
+        <table th:unless="${#lists.isEmpty(outstandingInvoices)}" class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+              <th class="text-left px-6 py-3">Reference</th>
+              <th class="text-left px-6 py-3">Client</th>
+              <th class="text-left px-6 py-3">Issued</th>
+              <th class="text-left px-6 py-3">Due</th>
+              <th class="text-right px-6 py-3">Amount</th>
+              <th class="text-right px-6 py-3">Balance</th>
+              <th class="text-right px-6 py-3">Days overdue</th>
+              <th class="text-left px-6 py-3">Sent</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="o : ${outstandingInvoices}" class="border-b border-slate-100 last:border-b-0">
+              <td class="px-6 py-3 font-mono">
+                <a th:href="@{/invoices/{id}(id=${o.invoiceId})}"
+                   class="text-[#ea7c28] hover:underline" th:text="${o.reference}">INV-1001</a>
+              </td>
+              <td class="px-6 py-3" th:text="${o.clientName}">Client</td>
+              <td class="px-6 py-3 tabular-nums text-slate-600" th:text="${#temporals.format(o.issuedAt, 'MMM d, yyyy')}">—</td>
+              <td class="px-6 py-3 tabular-nums"
+                  th:classappend="${o.daysOverdue > 0} ? 'text-red-600 font-medium' : 'text-slate-600'"
+                  th:text="${o.dueAt != null ? #temporals.format(o.dueAt, 'MMM d, yyyy') : '—'}">—</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums"
+                  th:text="${csym.apply(o.currency)} + ${#numbers.formatDecimal(o.amount, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums text-[#ea7c28] font-medium"
+                  th:text="${csym.apply(o.currency)} + ${#numbers.formatDecimal(o.balance, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              <td class="px-6 py-3 text-right tabular-nums"
+                  th:classappend="${o.daysOverdue > 30} ? 'text-red-600 font-medium' : (${o.daysOverdue > 0} ? 'text-[#ea7c28]' : 'text-slate-400')"
+                  th:text="${o.daysOverdue > 0 ? o.daysOverdue + 'd' : '—'}">—</td>
+              <td class="px-6 py-3">
+                <span th:if="${o.sent}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700">Yes</span>
+                <span th:unless="${o.sent}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-amber-50 text-amber-700">No</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ==================== MONTHLY BREAKDOWN ==================== -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h2 class="text-sm font-semibold">Monthly breakdown</h2>
+        </div>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+              <th class="text-left px-6 py-3">Month</th>
+              <th class="text-right px-6 py-3">Invoiced</th>
+              <th class="text-right px-6 py-3">Received</th>
+              <th class="text-right px-6 py-3">Expenses</th>
+              <th class="text-right px-6 py-3">Net</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="m : ${monthlyRevenue}" class="border-b border-slate-100 last:border-b-0">
+              <td class="px-6 py-3 text-slate-700" th:text="${m.month}">Jan 2026</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums"
+                  th:text="'$' + ${#numbers.formatDecimal(m.invoiced, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums text-emerald-600"
+                  th:text="'$' + ${#numbers.formatDecimal(m.received, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums text-red-600"
+                  th:text="'$' + ${#numbers.formatDecimal(m.expenses, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums font-medium"
+                  th:classappend="${m.net.signum() >= 0} ? 'text-slate-900' : 'text-red-600'"
+                  th:text="'$' + ${#numbers.formatDecimal(m.net, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ==================== CLIENT P&L ==================== -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h2 class="text-sm font-semibold">Client P&amp;L <span class="text-slate-400 font-normal" th:text="'(' + ${yearLabel} + ' YTD)'">2026 YTD</span></h2>
+        </div>
+        <div th:if="${#lists.isEmpty(clientPL)}" class="px-6 py-6 text-sm text-slate-400 italic">No client activity in this period.</div>
+        <table th:unless="${#lists.isEmpty(clientPL)}" class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+              <th class="text-left px-6 py-3">Client</th>
+              <th class="text-right px-6 py-3">Invoiced</th>
+              <th class="text-right px-6 py-3">Received</th>
+              <th class="text-right px-6 py-3">Expenses</th>
+              <th class="text-right px-6 py-3">Profit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="c : ${clientPL}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
+              <td class="px-6 py-3 font-medium">
+                <a th:href="@{/clients/{id}(id=${c.clientId})}"
+                   class="hover:text-[#ea7c28] hover:underline" th:text="${c.clientName}">Client</a>
+              </td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums"
+                  th:text="'$' + ${#numbers.formatDecimal(c.invoiced, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums text-emerald-600"
+                  th:text="'$' + ${#numbers.formatDecimal(c.received, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums text-red-600"
+                  th:text="'$' + ${#numbers.formatDecimal(c.expenses, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums font-medium"
+                  th:classappend="${c.profit.signum() >= 0} ? 'text-slate-900' : 'text-red-600'"
+                  th:text="'$' + ${#numbers.formatDecimal(c.profit, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ==================== PROJECT REVENUE ==================== -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h2 class="text-sm font-semibold">Revenue by project <span class="text-slate-400 font-normal" th:text="'(' + ${yearLabel} + ' YTD)'">2026 YTD</span></h2>
+        </div>
+        <div th:if="${#lists.isEmpty(projectRevenue)}" class="px-6 py-6 text-sm text-slate-400 italic">No project activity.</div>
+        <table th:unless="${#lists.isEmpty(projectRevenue)}" class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+              <th class="text-left px-6 py-3">Project</th>
+              <th class="text-left px-6 py-3">Client</th>
+              <th class="text-left px-6 py-3">Type</th>
+              <th class="text-right px-6 py-3">Billed</th>
+              <th class="text-right px-6 py-3">Hours</th>
+              <th class="text-right px-6 py-3">Eff. rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="p : ${projectRevenue}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
+              <td class="px-6 py-3 font-medium">
+                <a th:href="@{/projects/{id}(id=${p.projectId})}"
+                   class="hover:text-[#ea7c28] hover:underline" th:text="${p.projectName}">Project</a>
+              </td>
+              <td class="px-6 py-3 text-slate-600" th:text="${p.clientName}">Client</td>
+              <td class="px-6 py-3 text-slate-600 capitalize" th:text="${p.rateType}">hourly</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums"
+                  th:text="${csym.apply(p.currency)} + ${#numbers.formatDecimal(p.billed, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums text-slate-600"
+                  th:text="${#numbers.formatDecimal(p.billableMinutes / 60.0, 1, 'COMMA', 1, 'POINT')} + 'h'">0.0h</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums"
+                  th:classappend="${p.effectiveRate.signum() > 0} ? '' : 'text-slate-400'"
+                  th:text="${p.effectiveRate.signum() > 0 ? csym.apply(p.currency) + #numbers.formatDecimal(p.effectiveRate, 1, 'COMMA', 2, 'POINT') + '/hr' : '—'}">$0.00/hr</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ==================== EXPENSES BY CATEGORY ==================== -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h2 class="text-sm font-semibold">Expenses by category <span class="text-slate-400 font-normal" th:text="'(' + ${yearLabel} + ' YTD)'">2026 YTD</span></h2>
+        </div>
+        <div th:if="${#lists.isEmpty(expensesByCategory)}" class="px-6 py-6 text-sm text-slate-400 italic">No expenses in this period.</div>
+        <table th:unless="${#lists.isEmpty(expensesByCategory)}" class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+              <th class="text-left px-6 py-3">Category</th>
+              <th class="text-right px-6 py-3">Count</th>
+              <th class="text-right px-6 py-3">Total</th>
+              <th class="text-right px-6 py-3">% of total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="e : ${expensesByCategory}" class="border-b border-slate-100 last:border-b-0">
+              <td class="px-6 py-3 capitalize font-medium" th:text="${e.category}">software</td>
+              <td class="px-6 py-3 text-right tabular-nums text-slate-600" th:text="${e.count}">0</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums"
+                  th:text="'$' + ${#numbers.formatDecimal(e.total, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              <td class="px-6 py-3 text-right tabular-nums text-slate-600"
+                  th:text="${#numbers.formatDecimal(e.percentage, 1, 'COMMA', 1, 'POINT')} + '%'">0.0%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ==================== PAYMENT HISTORY ==================== -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-sm font-semibold">Payment history <span class="text-slate-400 font-normal" th:text="'(' + ${yearLabel} + ' YTD)'">2026 YTD</span></h2>
+          <span class="text-xs text-slate-500" th:text="${#lists.size(payments)} + ' payment' + (${#lists.size(payments)} == 1 ? '' : 's')">0 payments</span>
+        </div>
+        <div th:if="${#lists.isEmpty(payments)}" class="px-6 py-6 text-sm text-slate-400 italic">No payments received in this period.</div>
+        <table th:unless="${#lists.isEmpty(payments)}" class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+              <th class="text-left px-6 py-3">Date</th>
+              <th class="text-left px-6 py-3">Client</th>
+              <th class="text-left px-6 py-3">Invoice</th>
+              <th class="text-left px-6 py-3">Method</th>
+              <th class="text-left px-6 py-3">Reference</th>
+              <th class="text-right px-6 py-3">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="p : ${payments}" class="border-b border-slate-100 last:border-b-0">
+              <td class="px-6 py-3 tabular-nums text-slate-600"
+                  th:text="${#temporals.format(p.paidAt, 'MMM d, yyyy')}">Apr 15, 2026</td>
+              <td class="px-6 py-3" th:text="${p.clientName}">Client</td>
+              <td class="px-6 py-3 font-mono text-slate-600" th:text="${p.invoiceRef}">INV-1001</td>
+              <td class="px-6 py-3 text-slate-600 capitalize" th:text="${p.method ?: '—'}">zelle</td>
+              <td class="px-6 py-3 font-mono text-xs text-slate-500" th:text="${p.reference ?: '—'}">ref</td>
+              <td class="px-6 py-3 text-right font-mono tabular-nums text-emerald-600 font-medium"
+                  th:text="${csym.apply(p.currency)} + ${#numbers.formatDecimal(p.amount, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Charts JS -->
+      <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+      <script>
+        (function () {
+          const orange = '#ea7c28';
+          const green = '#10b981';
+          const red = '#ef4444';
+          const navy = '#161f30';
+          const colors = [orange, navy, green, red, '#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899', '#64748b'];
+
+          // Revenue chart
+          const revData = JSON.parse(document.getElementById('chartRevenue').dataset.chart);
+          new Chart(document.getElementById('chartRevenue'), {
+            data: {
+              labels: revData.map(d => d.month),
+              datasets: [
+                { type: 'bar', label: 'Invoiced', data: revData.map(d => Number(d.invoiced)), backgroundColor: orange, borderRadius: 4 },
+                { type: 'bar', label: 'Received', data: revData.map(d => Number(d.received)), backgroundColor: green, borderRadius: 4 },
+                { type: 'bar', label: 'Expenses', data: revData.map(d => Number(d.expenses)), backgroundColor: red, borderRadius: 4 },
+                { type: 'line', label: 'Net', data: revData.map(d => Number(d.net)), borderColor: navy, backgroundColor: navy, tension: 0.3, pointRadius: 4 },
+              ],
+            },
+            options: {
+              plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+              scales: { y: { beginAtZero: true } },
+            },
+          });
+
+          // Expense category donut
+          const catData = JSON.parse(document.getElementById('chartExpCat').dataset.chart);
+          if (catData.length > 0) {
+            new Chart(document.getElementById('chartExpCat'), {
+              type: 'doughnut',
+              data: {
+                labels: catData.map(d => d.category),
+                datasets: [{
+                  data: catData.map(d => Number(d.total)),
+                  backgroundColor: catData.map((_, i) => colors[i % colors.length]),
+                }],
+              },
+              options: {
+                cutout: '60%',
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } },
+              },
+            });
+          }
+        })();
+      </script>
+
+    </section>
+  </body>
+</html>

@@ -7,11 +7,10 @@
       class="w-56 h-screen bg-[#121826] text-slate-300 flex flex-col px-3 py-5 fixed left-0 top-0"
     >
       <!-- Logo -->
-      <div class="flex items-center gap-2 px-2 mb-1">
-        <img src="/logo.svg" alt="Talli" class="w-6 h-6" />
-        <span class="text-white font-bold text-base">Talli</span>
+      <div class="flex items-center gap-2 px-2 mb-8">
+        <img src="/logo.svg" alt="Talli" class="w-7 h-7" />
+        <span class="text-white font-semibold text-[15px]">Talli</span>
       </div>
-      <p class="text-[10px] text-slate-500 px-2 mb-8">Internal PSA</p>
 
       <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2 mb-2">Workspace</p>
 
@@ -71,6 +70,13 @@
            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition">
           <i data-lucide="mail" class="w-5 h-5" th:style="${active == 'emails'} ? 'color: #ea7c28'"></i>
           Emails
+        </a>
+        <a sec:authorize="hasAuthority('view-reports')"
+           th:href="@{/reports}"
+           th:classappend="${active == 'reports'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
+           class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition">
+          <i data-lucide="bar-chart-3" class="w-5 h-5" th:style="${active == 'reports'} ? 'color: #ea7c28'"></i>
+          Reports
         </a>
       </nav>
 

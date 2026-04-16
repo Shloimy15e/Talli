@@ -62,6 +62,9 @@ public class SecurityConfig {
                 // Emails — standalone compose page is admin-only; invoice-specific send uses send-emails
                 .requestMatchers("/emails/**").hasRole("admin")
 
+                // Reports
+                .requestMatchers("/reports/**").hasAuthority("view-reports")
+
                 // Dashboard, profile, media — any authenticated user with dashboard access
                 .requestMatchers("/dashboard").hasAuthority("view-dashboard")
                 .requestMatchers("/profile", "/profile/**").authenticated()

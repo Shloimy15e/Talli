@@ -61,7 +61,10 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 ## Next up (ordered)
 
 1. **Media Phase C** (WIP) — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`.
-2. **Reports page** — monthly/yearly revenue, per-client P&L, time utilization.
+2. **Data import** — two parts:
+   - **Google Sheets historic import**: one-time migration of existing Dynamiq billing data (clients, projects, invoices, time, expenses, payments) from the current spreadsheet workflow into Talli. Likely a CLI command or admin page with column-mapping.
+   - **Excel/CSV import for expenses & incomes**: ongoing feature. Upload bank export (Excel/CSV), map columns, preview rows, import as expenses or payments. Handles duplicates, date parsing, currency.
+3. **Reports page** — monthly/yearly revenue, per-client P&L, time utilization.
 
 ## Deliberately skipped for Dynamiq's shape
 
