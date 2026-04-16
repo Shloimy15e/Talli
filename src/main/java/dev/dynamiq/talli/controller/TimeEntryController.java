@@ -41,7 +41,8 @@ public class TimeEntryController {
                         Model model) {
         model.addAttribute("view", timeEntryService.indexView(projectId, clientId, status, page, 30));
         model.addAttribute("running", timeEntryRepository.findFirstByEndedAtIsNullOrderByStartedAtDesc().orElse(null));
-        model.addAttribute("projects", projectRepository.findAll());
+        model.addAttribute("projects", projectRepository.findAll()); // filter dropdown — all projects (for historical data)
+        model.addAttribute("activeProjects", projectRepository.findByStatusOrderByNameAsc("active")); // quick-start timer
         model.addAttribute("clients", clientRepository.findAll());
         model.addAttribute("filterProjectIds", projectId);
         model.addAttribute("filterClientIds", clientId);
@@ -54,7 +55,7 @@ public class TimeEntryController {
         TimeEntry entry = new TimeEntry();
         entry.setStartedAt(LocalDateTime.now().withSecond(0).withNano(0));
         model.addAttribute("entry", entry);
-        model.addAttribute("projects", projectRepository.findAll());
+        model.addAttribute("projects", projectRepository.findByStatusOrderByNameAsc("active"));
         model.addAttribute("action", "/time");
         model.addAttribute("title", "Log Time");
         return "time/_form :: form";
@@ -64,7 +65,7 @@ public class TimeEntryController {
     public String editForm(@PathVariable("id") Long id, Model model) {
         TimeEntry entry = timeEntryRepository.findById(id).orElseThrow();
         model.addAttribute("entry", entry);
-        model.addAttribute("projects", projectRepository.findAll());
+        model.addAttribute("projects", projectRepository.findByStatusOrderByNameAsc("active"));
         model.addAttribute("action", "/time/" + id);
         model.addAttribute("title", "Edit Time Entry");
         return "time/_form :: form";

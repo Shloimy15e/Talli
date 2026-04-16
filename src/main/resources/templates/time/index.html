@@ -89,14 +89,14 @@
       </div>
 
       <!-- Quick-start form when no timer is running -->
-      <div th:if="${running == null and !#lists.isEmpty(projects)}"
+      <div th:if="${running == null and !#lists.isEmpty(activeProjects)}"
            sec:authorize="hasAuthority('manage-time')"
            class="mb-6 p-4 bg-white border border-slate-200 rounded-xl">
         <form th:action="@{/time/start}" method="post" class="flex items-center gap-3">
           <select name="projectId" required
                   class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
             <option value="" disabled selected>Pick a project…</option>
-            <option th:each="p : ${projects}" th:value="${p.id}" th:text="${p.name} + ' · ' + ${p.client.name}">Project</option>
+            <option th:each="p : ${activeProjects}" th:value="${p.id}" th:text="${p.name} + ' · ' + ${p.client.name}">Project</option>
           </select>
           <input type="text" name="description" placeholder="What are you working on?"
                  class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">

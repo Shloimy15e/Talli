@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Controller
 @RequestMapping("/projects")
@@ -41,8 +42,20 @@ public class ProjectController {
     }
 
     @GetMapping
-    public String index(Model model) {
-        model.addAttribute("projects", projectRepository.findAll());
+    public String index(@RequestParam(defaultValue = "0") int page,
+                        @RequestParam(required = false) List<String> status,
+                        @RequestParam(required = false) List<Long> clientId,
+                        @RequestParam(required = false) String search,
+                        Model model) {
+        var projectPage = projectRepository.findFiltered(status, clientId,
+                search != null ? search : "",
+                org.springframework.data.domain.PageRequest.of(page, 25));
+        model.addAttribute("projects", projectPage.getContent());
+        model.addAttribute("page", projectPage);
+        model.addAttribute("clients", clientRepository.findAll());
+        model.addAttribute("filterStatuses", status);
+        model.addAttribute("filterClientIds", clientId);
+        model.addAttribute("filterSearch", search);
         return "projects/index";
     }
 

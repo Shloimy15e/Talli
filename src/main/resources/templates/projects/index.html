@@ -9,7 +9,7 @@
           <h1 class="text-2xl font-semibold tracking-tight">Projects</h1>
           <p
             class="text-sm text-slate-500 mt-1"
-            th:text="${#lists.size(projects)} + ' project' + (${#lists.size(projects)} == 1 ? '' : 's')"
+            th:text="${page.totalElements} + ' project' + (${page.totalElements} == 1 ? '' : 's')"
           >
             0 projects
           </p>
@@ -25,6 +25,51 @@
           New Project
         </button>
       </div>
+
+      <!-- Filters -->
+      <form method="get" th:action="@{/projects}" class="mb-5">
+        <div class="flex items-center gap-4 flex-wrap">
+          <!-- Search -->
+          <div class="relative flex-shrink-0">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input type="text" name="search" th:value="${filterSearch}" placeholder="Search projects..."
+                   class="w-64 pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/20 focus:border-[#ea7c28] placeholder-slate-400">
+          </div>
+
+          <!-- Client dropdown -->
+          <select name="clientId" onchange="this.form.submit()"
+                  class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/20 focus:border-[#ea7c28]">
+            <option value="">All clients</option>
+            <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}"
+                    th:selected="${filterClientIds != null and filterClientIds.contains(c.id)}">Client</option>
+          </select>
+
+          <!-- Status pills -->
+          <div class="flex items-center gap-1 border-l border-slate-200 pl-4">
+            <label th:each="s : ${ {'active','paused','completed','cancelled'} }"
+                   th:class="'inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer select-none transition-all '
+                     + (${filterStatuses != null and filterStatuses.contains(s)}
+                       ? (${s == 'active'} ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-sm'
+                         : (${s == 'paused'} ? 'bg-amber-50 border border-amber-200 text-amber-700 shadow-sm'
+                           : (${s == 'cancelled'} ? 'bg-red-50 border border-red-200 text-red-700 shadow-sm'
+                             : 'bg-slate-100 border border-slate-300 text-slate-600 shadow-sm')))
+                       : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700')">
+              <input type="checkbox" name="status" th:value="${s}"
+                     th:checked="${filterStatuses != null and filterStatuses.contains(s)}"
+                     onchange="this.form.submit()" class="hidden">
+              <span th:text="${#strings.capitalize(s)}">Status</span>
+            </label>
+          </div>
+
+          <!-- Clear -->
+          <th:block th:if="${filterStatuses != null or filterClientIds != null or (filterSearch != null and !filterSearch.isBlank())}">
+            <a th:href="@{/projects}"
+               class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 ml-auto">
+              <i data-lucide="x" class="w-3 h-3"></i> Clear
+            </a>
+          </th:block>
+        </div>
+      </form>
 
       <div
         th:if="${#lists.isEmpty(projects)}"
@@ -151,6 +196,38 @@
           </tbody>
         </table>
       </div>
+      <!-- Pagination -->
+      <div th:if="${page != null and page.totalPages > 1}"
+           class="mt-4 flex items-center justify-between text-sm">
+        <p class="text-slate-500">
+          Showing <span th:text="${page.number * page.size + 1}">1</span>–<span th:text="${page.number * page.size + page.numberOfElements}">25</span>
+          of <span th:text="${page.totalElements}">100</span>
+        </p>
+        <div class="flex items-center gap-1">
+          <a th:if="${page.number > 0}"
+             th:href="@{/projects(page=${page.number - 1}, status=${filterStatuses}, clientId=${filterClientIds}, search=${filterSearch})}"
+             class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">Prev</a>
+          <span th:if="${page.number == 0}"
+                class="px-3 py-1.5 rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">Prev</span>
+
+          <th:block th:each="p : ${#numbers.sequence(0, page.totalPages - 1)}">
+            <a th:if="${p != page.number}"
+               th:href="@{/projects(page=${p}, status=${filterStatuses}, clientId=${filterClientIds}, search=${filterSearch})}"
+               th:text="${p + 1}"
+               class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">1</a>
+            <span th:if="${p == page.number}"
+                  th:text="${p + 1}"
+                  class="px-3 py-1.5 rounded-lg bg-[#ea7c28] text-white font-medium">1</span>
+          </th:block>
+
+          <a th:if="${page.number < page.totalPages - 1}"
+             th:href="@{/projects(page=${page.number + 1}, status=${filterStatuses}, clientId=${filterClientIds}, search=${filterSearch})}"
+             class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">Next</a>
+          <span th:if="${page.number >= page.totalPages - 1}"
+                class="px-3 py-1.5 rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">Next</span>
+        </div>
+      </div>
+
     </section>
   </body>
 </html>
