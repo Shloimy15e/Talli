@@ -3,8 +3,10 @@ package dev.dynamiq.talli.config;
 import dev.dynamiq.talli.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -12,6 +14,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +22,44 @@ import java.util.List;
 @Configuration
 public class SecurityConfig {
 
+    private final ApiTokenAuthenticationFilter apiTokenAuthenticationFilter;
+
+    public SecurityConfig(ApiTokenAuthenticationFilter apiTokenAuthenticationFilter) {
+        this.apiTokenAuthenticationFilter = apiTokenAuthenticationFilter;
+    }
+
+    /**
+     * API filter chain — stateless, no CSRF, Bearer token auth.
+     * Matches /api/** paths before the web chain gets a chance.
+     */
     @Bean
+    @Order(1)
+    SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher("/api/**")
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .addFilterBefore(apiTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.GET,  "/api/v1/projects").hasAuthority("view-projects")
+                .requestMatchers(HttpMethod.GET,  "/api/v1/time/**").hasAuthority("view-time")
+                .requestMatchers(HttpMethod.POST, "/api/v1/time/**").hasAuthority("manage-time")
+                .requestMatchers(HttpMethod.POST, "/api/v1/expenses").hasAuthority("manage-expenses")
+                .anyRequest().authenticated()
+            )
+            .exceptionHandling(eh -> eh
+                .authenticationEntryPoint((req, res, ex) -> {
+                    res.setStatus(401);
+                    res.setContentType("application/json");
+                    res.getWriter().write("{\"error\":\"Unauthorized\"}");
+                })
+            );
+        return http.build();
+    }
+
+    /** Web filter chain — session-based, CSRF enabled, form login. */
+    @Bean
+    @Order(2)
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
@@ -31,6 +71,7 @@ public class SecurityConfig {
                 // Admin
                 .requestMatchers("/admin/users/**").hasAuthority("manage-users")
                 .requestMatchers("/admin/import/**").hasAuthority("manage-users")
+                .requestMatchers("/admin/migration/**").hasAuthority("manage-users")
 
                 // Clients — POST = write, GET = read
                 .requestMatchers(HttpMethod.POST, "/clients", "/clients/*/delete", "/clients/*").hasAuthority("manage-clients")

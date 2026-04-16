@@ -30,7 +30,7 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Spatie-style roles/permissions: 4 roles (admin, bookkeeper, accountant, client), 17 permissions, `@ManyToMany` pivots, `thymeleaf-extras-springsecurity6` for `sec:authorize`
 - ✅ Email-based user invitations: admin invites by email+name+roles → UUID token → branded invite email → set-password page → login. Inline new-client creation when inviting client-role users.
 - ✅ User profile page (edit name/email, change password)
-- ✅ Flyway migrations (V1–V20), PostgreSQL, spring-dotenv
+- ✅ Flyway migrations (V1–V21), PostgreSQL, spring-dotenv
 - ✅ Dockerfile + Railway deployment
 - ✅ Thymeleaf + Tailwind + HTMX + Alpine + Lucide Icons + Inter font + Dynamiq branding
 - ✅ `@ControllerAdvice` for currency symbols (`$`, `₪`, `€`, `£` via `csym` function)
@@ -62,7 +62,7 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 
 ## Now — WIP
 
-**Dashboard/reports cleanup** — reduce noise, improve information hierarchy.
+**Chrome extension** — Phase 1 (PAT infrastructure) done. Phase 2 (REST API endpoints) in progress. Phase 3 (extension itself) next.
 
 ## Deliberately skipped for Dynamiq's shape
 
@@ -74,7 +74,7 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 
 ## Later / extensions
 
-- **Chrome extension** — one-click time tracking + quick expense entry via REST API
+- ~~**Chrome extension**~~ — in progress (PAT auth + REST API + Manifest V3 popup)
 - **Raycast extension** — log time, add expense, look up clients
 - ~~**Currency conversion**~~ — done (V20, ExchangeRateService)
 - **Multi-org (maybe)** — only if another service business with the same shape of needs wants Talli. Not for product/e-commerce businesses (those would fork). Keeps the app simple.
