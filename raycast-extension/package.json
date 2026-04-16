@@ -1,0 +1,79 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "talli",
+  "title": "Talli",
+  "description": "Time tracking, expense entry, and project lookup for Talli",
+  "icon": "extension-icon.png",
+  "author": "shloimy",
+  "categories": ["Productivity"],
+  "license": "MIT",
+  "preferences": [
+    {
+      "name": "serverUrl",
+      "title": "Server URL",
+      "description": "Your Talli instance URL",
+      "type": "textfield",
+      "required": true,
+      "placeholder": "https://your-app.up.railway.app"
+    },
+    {
+      "name": "apiToken",
+      "title": "API Token",
+      "description": "Personal access token from your Talli profile page",
+      "type": "password",
+      "required": true,
+      "placeholder": "talli_..."
+    }
+  ],
+  "commands": [
+    {
+      "name": "start-timer",
+      "title": "Start Timer",
+      "subtitle": "Talli",
+      "description": "Start a time entry for a project",
+      "mode": "view"
+    },
+    {
+      "name": "stop-timer",
+      "title": "Stop Timer",
+      "subtitle": "Talli",
+      "description": "Stop the currently running timer",
+      "mode": "no-view"
+    },
+    {
+      "name": "log-expense",
+      "title": "Log Expense",
+      "subtitle": "Talli",
+      "description": "Quickly log an expense",
+      "mode": "view"
+    },
+    {
+      "name": "timer-status",
+      "title": "Timer Status",
+      "subtitle": "Talli",
+      "description": "Show running timer in the menu bar",
+      "mode": "menu-bar",
+      "interval": "1m"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.93.0",
+    "@raycast/utils": "^1.19.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "22.13.14",
+    "@types/react": "19.0.12",
+    "eslint": "^9.23.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "prepublishOnly": "echo \"Error: no publish\" && exit 1",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}
