@@ -95,6 +95,33 @@ export async function createExpense(data: {
   return res.json();
 }
 
+export interface ClientResponse {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  paymentTermsDays: number;
+}
+
+export async function fetchClients(q?: string): Promise<ClientResponse[]> {
+  const params = q ? `?q=${encodeURIComponent(q)}` : "";
+  const res = await talliFetch(`/api/v1/clients${params}`);
+  return res.json();
+}
+
+export async function createClient(data: {
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  paymentTermsDays?: number | null;
+}): Promise<ClientResponse> {
+  const res = await talliFetch("/api/v1/clients", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
 export function formatDuration(startedAt: string): string {
   const start = new Date(startedAt);
   const now = new Date();

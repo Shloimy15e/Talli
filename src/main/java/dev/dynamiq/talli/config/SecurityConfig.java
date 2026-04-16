@@ -55,6 +55,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET,  "/api/v1/time/**").hasAuthority("view-time")
                 .requestMatchers(HttpMethod.POST, "/api/v1/time/**").hasAuthority("manage-time")
                 .requestMatchers(HttpMethod.POST, "/api/v1/expenses").hasAuthority("manage-expenses")
+                .requestMatchers(HttpMethod.GET,  "/api/v1/clients/**").hasAuthority("view-clients")
+                .requestMatchers(HttpMethod.POST, "/api/v1/clients").hasAuthority("manage-clients")
                 .anyRequest().authenticated()
             )
             .exceptionHandling(eh -> eh

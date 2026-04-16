@@ -36,3 +36,6 @@ Dynamiq Dev .xlsx
 Dynamiq Dev
 
 node_modules/
+
+# Extension build artifacts
+talli-extension.zip

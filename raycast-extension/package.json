@@ -54,6 +54,20 @@
       "description": "Show running timer in the menu bar",
       "mode": "menu-bar",
       "interval": "1m"
+    },
+    {
+      "name": "search-clients",
+      "title": "Search Clients",
+      "subtitle": "Talli",
+      "description": "Search and view clients",
+      "mode": "view"
+    },
+    {
+      "name": "create-client",
+      "title": "Create Client",
+      "subtitle": "Talli",
+      "description": "Create a new client",
+      "mode": "view"
     }
   ],
   "dependencies": {

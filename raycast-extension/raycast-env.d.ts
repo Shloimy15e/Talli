@@ -26,6 +26,10 @@ declare namespace Preferences {
   export type LogExpense = ExtensionPreferences & {}
   /** Preferences accessible in the `timer-status` command */
   export type TimerStatus = ExtensionPreferences & {}
+  /** Preferences accessible in the `search-clients` command */
+  export type SearchClients = ExtensionPreferences & {}
+  /** Preferences accessible in the `create-client` command */
+  export type CreateClient = ExtensionPreferences & {}
 }
 
 declare namespace Arguments {
@@ -37,5 +41,9 @@ declare namespace Arguments {
   export type LogExpense = {}
   /** Arguments passed to the `timer-status` command */
   export type TimerStatus = {}
+  /** Arguments passed to the `search-clients` command */
+  export type SearchClients = {}
+  /** Arguments passed to the `create-client` command */
+  export type CreateClient = {}
 }
 
