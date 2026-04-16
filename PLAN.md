@@ -59,10 +59,11 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Historic data migration: `MigrationService` + `MigrationController` — multi-sheet xlsx upload → preview (transformed data, client normalization via regex rules in `ClientMapping`) → confirm → dependency-ordered import (clients → projects → invoices+payments → time entries → subscriptions+expenses). Time entries link to invoice projects. Subscriptions generate monthly expense records. `SpreadsheetUtil` for shared parse helpers. Unit tests for ClientMapping, SpreadsheetUtil, MigrationService.
 - ✅ Exchange rate support (V20): `ExchangeRateService` with 1h-cached current rates (open.er-api.com) + historic rates (fawazahmed0/currency-api). `exchange_rate` column on invoices + payments. Dashboard/reports convert all aggregates to USD: received at payment-date rate, outstanding at current rate. Backfill endpoint for existing data. Net line fixed to cash basis (received − expenses).
 - ✅ UI improvements: invoice index pagination (25/page) with server-side search + status pill filters. Time index pagination (30/page) with client/project dropdowns + status pills, currency-aware values (per-entry native currency, totals in USD), hh:mm chart formatting. Quarterly + yearly breakdown tables and quarterly bar chart on reports. Quarterly chart on dashboard. Currency symbols (`csym`) on expense/subscription index. `expenseCategories` via `@ControllerAdvice` (fixes T() SpEL DevTools bug). Cancelled subscriptions visible in collapsible section.
+- ✅ Chrome extension Phase 1–2: Personal Access Tokens (V21, SHA-256 hashed, generate/revoke UI on profile page), dual `SecurityFilterChain` (stateless API chain + session web chain), REST API (`/api/v1/time`, `/api/v1/expenses`, `/api/v1/projects`) with `@RestController` + Java record DTOs + `ApiExceptionHandler`, CORS for Chrome extensions. Tests: `ApiTokenServiceTest` (11), `ApiTimeControllerTest` (5), `ApiExpenseControllerTest` (4), `ApiProjectControllerTest` (3).
 
 ## Now — WIP
 
-**Chrome extension** — Phase 1 (PAT infrastructure) done. Phase 2 (REST API endpoints) in progress. Phase 3 (extension itself) next.
+**Chrome extension** — Phase 1 (PAT infrastructure) done. Phase 2 (REST API + CORS) done. Phase 3 (extension itself) next.
 
 ## Deliberately skipped for Dynamiq's shape
 
