@@ -48,7 +48,7 @@
                 <div class="text-xs text-slate-500" th:text="${s.category}">category</div>
               </td>
               <td class="px-6 py-4 font-mono text-sm tabular-nums"
-                  th:text="${s.currency} + ' ' + ${#numbers.formatDecimal(s.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                  th:text="${csym.apply(s.currency)} + ${#numbers.formatDecimal(s.amount, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
               <td class="px-6 py-4 text-sm text-slate-600 capitalize" th:text="${s.cycle}">monthly</td>
               <td class="px-6 py-4 text-sm">
                 <span th:if="${s.nextDueOn != null and !s.nextDueOn.isAfter(today)}"
@@ -113,7 +113,7 @@
                   <div class="text-xs text-slate-400" th:text="'Cancelled ' + ${#temporals.format(s.cancelledOn, 'MMM d, yyyy')}">Cancelled</div>
                 </td>
                 <td class="px-6 py-3 font-mono text-sm text-slate-500 tabular-nums"
-                    th:text="${s.currency} + ' ' + ${#numbers.formatDecimal(s.amount, 1, 'COMMA', 2, 'POINT')} + ' / ' + ${s.cycle}">USD 0.00 / monthly</td>
+                    th:text="${csym.apply(s.currency)} + ${#numbers.formatDecimal(s.amount, 1, 'COMMA', 2, 'POINT')} + ' / ' + ${s.cycle}">$0.00 / monthly</td>
                 <td class="px-6 py-3 text-right">
                   <form th:action="@{/subscriptions/{id}/reactivate(id=${s.id})}" method="post" class="inline">
                     <button type="submit" class="text-xs text-[#ea7c28] hover:underline">Reactivate</button>

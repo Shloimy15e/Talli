@@ -33,7 +33,9 @@ class TimeEntryServiceTest {
         project.setId(1L);
         when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
 
-        service = new TimeEntryService(timeEntryRepository, projectRepository);
+        ExchangeRateService exchangeRateService = mock(ExchangeRateService.class);
+        when(exchangeRateService.toUsdCurrent(any(), any())).thenAnswer(inv -> inv.getArgument(0));
+        service = new TimeEntryService(timeEntryRepository, projectRepository, exchangeRateService);
     }
 
     @Test

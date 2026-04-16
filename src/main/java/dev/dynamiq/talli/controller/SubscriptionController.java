@@ -33,8 +33,12 @@ public class SubscriptionController {
 
     @GetMapping
     public String index(Model model) {
-        model.addAttribute("activeSubs", subscriptionRepository.findByCancelledOnIsNullOrderByVendorAsc());
-        model.addAttribute("cancelledSubs", subscriptionRepository.findByCancelledOnIsNotNullOrderByCancelledOnDesc());
+        var active = subscriptionRepository.findByCancelledOnIsNullOrderByVendorAsc();
+        var cancelled = subscriptionRepository.findByCancelledOnIsNotNullOrderByCancelledOnDesc();
+        model.addAttribute("activeSubs", active);
+        model.addAttribute("cancelledSubs", cancelled);
+        model.addAttribute("active", active);
+        model.addAttribute("cancelled", cancelled);
         model.addAttribute("monthlyTotal", subscriptionRepository.sumActiveMonthlyEquivalent());
         model.addAttribute("today", LocalDate.now());
         return "subscriptions/index";

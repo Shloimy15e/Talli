@@ -1,6 +1,7 @@
 package dev.dynamiq.talli.controller;
 
 import dev.dynamiq.talli.model.TimeEntry;
+import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import dev.dynamiq.talli.service.TimeEntryService;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Controller
 @RequestMapping("/time")
@@ -19,18 +21,31 @@ public class TimeEntryController {
     private final TimeEntryRepository timeEntryRepository;
     private final TimeEntryService timeEntryService;
     private final ProjectRepository projectRepository;
+    private final ClientRepository clientRepository;
 
-    public TimeEntryController(TimeEntryRepository timeEntryRepository, TimeEntryService timeEntryService, ProjectRepository projectRepository) {
+    public TimeEntryController(TimeEntryRepository timeEntryRepository,
+                               TimeEntryService timeEntryService,
+                               ProjectRepository projectRepository,
+                               ClientRepository clientRepository) {
         this.timeEntryRepository = timeEntryRepository;
         this.projectRepository = projectRepository;
         this.timeEntryService = timeEntryService;
+        this.clientRepository = clientRepository;
     }
 
     @GetMapping
-    public String index(Model model) {
-        model.addAttribute("view", timeEntryService.indexView());
+    public String index(@RequestParam(defaultValue = "0") int page,
+                        @RequestParam(required = false) List<Long> projectId,
+                        @RequestParam(required = false) List<Long> clientId,
+                        @RequestParam(required = false) List<String> status,
+                        Model model) {
+        model.addAttribute("view", timeEntryService.indexView(projectId, clientId, status, page, 30));
         model.addAttribute("running", timeEntryRepository.findFirstByEndedAtIsNullOrderByStartedAtDesc().orElse(null));
         model.addAttribute("projects", projectRepository.findAll());
+        model.addAttribute("clients", clientRepository.findAll());
+        model.addAttribute("filterProjectIds", projectId);
+        model.addAttribute("filterClientIds", clientId);
+        model.addAttribute("filterStatuses", status);
         return "time/index";
     }
 

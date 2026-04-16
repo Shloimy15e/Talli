@@ -1,8 +1,10 @@
 package dev.dynamiq.talli.config;
 
+import dev.dynamiq.talli.model.Expense;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,5 +30,10 @@ public class GlobalModelAttributes {
     @ModelAttribute("csym")
     public java.util.function.Function<String, String> currencySymbolFn() {
         return code -> CURRENCY_SYMBOLS.getOrDefault(code, code + " ");
+    }
+
+    @ModelAttribute("expenseCategories")
+    public List<String> expenseCategories() {
+        return Expense.CATEGORIES;
     }
 }

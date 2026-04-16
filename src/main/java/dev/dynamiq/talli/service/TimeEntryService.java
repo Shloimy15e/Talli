@@ -24,10 +24,14 @@ public class TimeEntryService {
 
     private final TimeEntryRepository timeEntryRepository;
     private final ProjectRepository projectRepository;
+    private final ExchangeRateService exchangeRateService;
 
-    public TimeEntryService(TimeEntryRepository timeEntryRepository, ProjectRepository projectRepository) {
+    public TimeEntryService(TimeEntryRepository timeEntryRepository,
+                            ProjectRepository projectRepository,
+                            ExchangeRateService exchangeRateService) {
         this.timeEntryRepository = timeEntryRepository;
         this.projectRepository = projectRepository;
+        this.exchangeRateService = exchangeRateService;
     }
 
     @Transactional
@@ -79,35 +83,57 @@ public class TimeEntryService {
 
     // --- Index view ---
 
-    /** Single call assembling everything the time index page needs. */
+    /** Paginated + filtered index view. */
+    public IndexView indexView(List<Long> projectIds, List<Long> clientIds,
+                               List<String> statuses, int page, int size) {
+        var entryPage = timeEntryRepository.findFiltered(
+                projectIds, clientIds, statuses,
+                org.springframework.data.domain.PageRequest.of(page, size));
+        return buildIndexView(entryPage.getContent(), entryPage);
+    }
+
+    /** Full (unpaginated) index view. */
     public IndexView indexView() {
         List<TimeEntry> entries = timeEntryRepository.findAllByOrderByStartedAtDesc();
+        return buildIndexView(entries, null);
+    }
+
+    private IndexView buildIndexView(List<TimeEntry> entries,
+                                     org.springframework.data.domain.Page<TimeEntry> page) {
         LocalDateTime now = LocalDateTime.now();
         LocalDate today = now.toLocalDate();
         LocalDate weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate monthStart = today.withDayOfMonth(1);
 
         int todayMinutes = 0, weekMinutes = 0, monthMinutes = 0, unbilledMinutes = 0;
-        BigDecimal unbilledValue = BigDecimal.ZERO;
+        BigDecimal unbilledValueUsd = BigDecimal.ZERO;
         Map<Long, BigDecimal> entryValues = new HashMap<>();
+        Map<Long, String> entryCurrencies = new HashMap<>();
 
-        for (TimeEntry e : entries) {
+        // KPI stats from ALL entries (not just the current page)
+        List<TimeEntry> allEntries = page != null
+                ? timeEntryRepository.findAllByOrderByStartedAtDesc() : entries;
+        for (TimeEntry e : allEntries) {
             if (e.getStartedAt() == null) continue;
             int m = minutesFor(e, now);
             LocalDate day = e.getStartedAt().toLocalDate();
             if (!day.isBefore(today)) todayMinutes += m;
             if (!day.isBefore(weekStart)) weekMinutes += m;
             if (!day.isBefore(monthStart)) monthMinutes += m;
-            if (Boolean.TRUE.equals(e.getBillable())) {
+            if (Boolean.TRUE.equals(e.getBillable()) && e.getProject() != null) {
                 BigDecimal value = valueOf(m, e.getProject().getCurrentRate());
+                String currency = e.getProject().getCurrency();
                 entryValues.put(e.getId(), value);
+                entryCurrencies.put(e.getId(), currency);
                 if (Boolean.FALSE.equals(e.getBilled())) {
                     unbilledMinutes += m;
-                    unbilledValue = unbilledValue.add(value);
+                    unbilledValueUsd = unbilledValueUsd.add(
+                            exchangeRateService.toUsdCurrent(value, currency));
                 }
             }
         }
 
+        // Day groups from the page's entries only
         Map<LocalDate, List<TimeEntry>> byDay = entries.stream()
                 .filter(e -> e.getStartedAt() != null && e.getEndedAt() != null)
                 .collect(Collectors.groupingBy(
@@ -118,16 +144,18 @@ public class TimeEntryService {
         List<DayGroup> days = byDay.entrySet().stream()
                 .map(en -> {
                     int dayMinutes = en.getValue().stream().mapToInt(e -> minutesFor(e, now)).sum();
-                    BigDecimal dayValue = en.getValue().stream()
-                            .filter(e -> Boolean.TRUE.equals(e.getBillable()))
-                            .map(e -> valueOf(minutesFor(e, now), e.getProject().getCurrentRate()))
+                    BigDecimal dayValueUsd = en.getValue().stream()
+                            .filter(e -> Boolean.TRUE.equals(e.getBillable()) && e.getProject() != null)
+                            .map(e -> exchangeRateService.toUsdCurrent(
+                                    valueOf(minutesFor(e, now), e.getProject().getCurrentRate()),
+                                    e.getProject().getCurrency()))
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
-                    return new DayGroup(en.getKey(), en.getValue(), dayMinutes, dayValue);
+                    return new DayGroup(en.getKey(), en.getValue(), dayMinutes, dayValueUsd);
                 })
                 .toList();
 
-        return new IndexView(entries, days, entryValues,
-                todayMinutes, weekMinutes, monthMinutes, unbilledMinutes, unbilledValue);
+        return new IndexView(days, entryValues, entryCurrencies,
+                todayMinutes, weekMinutes, monthMinutes, unbilledMinutes, unbilledValueUsd, page);
     }
 
     /** Unbilled dollar value + entry count for a single project's time entries. */
@@ -158,15 +186,16 @@ public class TimeEntryService {
         return rate.multiply(BigDecimal.valueOf(minutes)).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
     }
 
-    public record DayGroup(LocalDate day, List<TimeEntry> entries, int minutes, BigDecimal value) {}
+    public record DayGroup(LocalDate day, List<TimeEntry> entries, int minutes, BigDecimal valueUsd) {}
 
     public record IndexView(
-            List<TimeEntry> entries,
             List<DayGroup> days,
             Map<Long, BigDecimal> entryValues,
+            Map<Long, String> entryCurrencies,
             int todayMinutes,
             int weekMinutes,
             int monthMinutes,
             int unbilledMinutes,
-            BigDecimal unbilledValue) {}
+            BigDecimal unbilledValueUsd,
+            org.springframework.data.domain.Page<TimeEntry> page) {}
 }

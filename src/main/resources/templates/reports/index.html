@@ -47,11 +47,15 @@
         </div>
       </div>
 
-      <!-- ==================== REVENUE CHART + EXPENSES DONUT ==================== -->
-      <div class="grid grid-cols-3 gap-4 mb-6">
-        <div class="col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-          <h2 class="text-sm font-semibold mb-4">Revenue, received &amp; expenses</h2>
-          <canvas id="chartRevenue" th:attr="data-chart=${monthlyRevenueJson}" height="120"></canvas>
+      <!-- ==================== CHARTS ==================== -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-6">
+        <h2 class="text-sm font-semibold mb-4">Monthly revenue</h2>
+        <canvas id="chartRevenue" th:attr="data-chart=${monthlyRevenueJson}" height="100"></canvas>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <h2 class="text-sm font-semibold mb-4">Quarterly revenue</h2>
+          <canvas id="chartQuarterly" th:attr="data-chart=${quarterlyRevenueJson}" height="160"></canvas>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
           <h2 class="text-sm font-semibold mb-4">Expenses by category</h2>
@@ -136,6 +140,71 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- ==================== QUARTERLY BREAKDOWN ==================== -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="text-sm font-semibold">Quarterly breakdown</h2>
+          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+                <th class="text-left px-6 py-3">Quarter</th>
+                <th class="text-right px-6 py-3">Invoiced</th>
+                <th class="text-right px-6 py-3">Received</th>
+                <th class="text-right px-6 py-3">Expenses</th>
+                <th class="text-right px-6 py-3">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="q : ${quarterlyRevenue}" class="border-b border-slate-100 last:border-b-0">
+                <td class="px-6 py-3 text-slate-700 font-medium" th:text="${q.quarter()}">2026 Q1</td>
+                <td class="px-6 py-3 text-right font-mono tabular-nums"
+                    th:text="'$' + ${#numbers.formatDecimal(q.invoiced(), 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                <td class="px-6 py-3 text-right font-mono tabular-nums text-emerald-600"
+                    th:text="'$' + ${#numbers.formatDecimal(q.received(), 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                <td class="px-6 py-3 text-right font-mono tabular-nums text-red-600"
+                    th:text="'$' + ${#numbers.formatDecimal(q.expenses(), 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                <td class="px-6 py-3 text-right font-mono tabular-nums font-medium"
+                    th:classappend="${q.net().signum() >= 0} ? 'text-slate-900' : 'text-red-600'"
+                    th:text="'$' + ${#numbers.formatDecimal(q.net(), 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="text-sm font-semibold">Yearly breakdown</h2>
+          </div>
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+                <th class="text-left px-6 py-3">Year</th>
+                <th class="text-right px-6 py-3">Invoiced</th>
+                <th class="text-right px-6 py-3">Received</th>
+                <th class="text-right px-6 py-3">Expenses</th>
+                <th class="text-right px-6 py-3">Net</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="y : ${yearlyRevenue}" class="border-b border-slate-100 last:border-b-0">
+                <td class="px-6 py-3 text-slate-700 font-medium" th:text="${y.year()}">2026</td>
+                <td class="px-6 py-3 text-right font-mono tabular-nums"
+                    th:text="'$' + ${#numbers.formatDecimal(y.invoiced(), 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                <td class="px-6 py-3 text-right font-mono tabular-nums text-emerald-600"
+                    th:text="'$' + ${#numbers.formatDecimal(y.received(), 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                <td class="px-6 py-3 text-right font-mono tabular-nums text-red-600"
+                    th:text="'$' + ${#numbers.formatDecimal(y.expenses(), 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+                <td class="px-6 py-3 text-right font-mono tabular-nums font-medium"
+                    th:classappend="${y.net().signum() >= 0} ? 'text-slate-900' : 'text-red-600'"
+                    th:text="'$' + ${#numbers.formatDecimal(y.net(), 1, 'COMMA', 2, 'POINT')}">$0.00</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- ==================== CLIENT P&L ==================== -->
@@ -292,6 +361,24 @@
                 { type: 'bar', label: 'Received', data: revData.map(d => Number(d.received)), backgroundColor: green, borderRadius: 4 },
                 { type: 'bar', label: 'Expenses', data: revData.map(d => Number(d.expenses)), backgroundColor: red, borderRadius: 4 },
                 { type: 'line', label: 'Net', data: revData.map(d => Number(d.net)), borderColor: navy, backgroundColor: navy, tension: 0.3, pointRadius: 4 },
+              ],
+            },
+            options: {
+              plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+              scales: { y: { beginAtZero: true } },
+            },
+          });
+
+          // Quarterly chart
+          const qData = JSON.parse(document.getElementById('chartQuarterly').dataset.chart);
+          new Chart(document.getElementById('chartQuarterly'), {
+            data: {
+              labels: qData.map(d => d.quarter),
+              datasets: [
+                { type: 'bar', label: 'Invoiced', data: qData.map(d => Number(d.invoiced)), backgroundColor: orange, borderRadius: 4 },
+                { type: 'bar', label: 'Received', data: qData.map(d => Number(d.received)), backgroundColor: green, borderRadius: 4 },
+                { type: 'bar', label: 'Expenses', data: qData.map(d => Number(d.expenses)), backgroundColor: red, borderRadius: 4 },
+                { type: 'line', label: 'Net', data: qData.map(d => Number(d.net)), borderColor: navy, backgroundColor: navy, tension: 0.3, pointRadius: 4 },
               ],
             },
             options: {

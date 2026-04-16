@@ -51,6 +51,12 @@ public class ReportController {
         model.addAttribute("arAging", reportService.accountsReceivableAging());
         model.addAttribute("outstandingInvoices", reportService.outstandingInvoices());
 
+        // Quarterly + yearly summaries
+        var quarterly = reportService.quarterlyRevenue(months);
+        model.addAttribute("quarterlyRevenue", quarterly);
+        model.addAttribute("quarterlyRevenueJson", objectMapper.writeValueAsString(quarterly));
+        model.addAttribute("yearlyRevenue", reportService.yearlyRevenue(months));
+
         // Payment history
         model.addAttribute("payments", reportService.paymentHistory(yearStart, today));
 

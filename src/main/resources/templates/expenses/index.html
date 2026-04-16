@@ -51,7 +51,7 @@
               </td>
               <td class="px-6 py-4 text-sm text-slate-600 capitalize" th:text="${e.category}">software</td>
               <td class="px-6 py-4 font-mono text-sm tabular-nums"
-                  th:text="${e.currency} + ' ' + ${#numbers.formatDecimal(e.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                  th:text="${csym.apply(e.currency)} + ${#numbers.formatDecimal(e.amount, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
               <td class="px-6 py-4 text-xs">
                 <span th:if="${e.subscription != null}"
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#ea7c28]/10 text-[#ea7c28]">

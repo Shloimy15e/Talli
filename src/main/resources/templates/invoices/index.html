@@ -3,13 +3,13 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head th:replace="~{layout :: head('Invoices')}"></head>
   <body th:replace="~{layout :: page('invoices', ~{::section})}">
-    <section x-data="{ status: '', search: '' }">
+    <section>
 
       <div class="flex items-center justify-between mb-8">
         <div>
           <h1 class="text-2xl font-semibold tracking-tight">Invoices</h1>
           <p class="text-sm text-slate-500 mt-1"
-             th:text="${#lists.size(invoices)} + ' invoice' + (${#lists.size(invoices)} == 1 ? '' : 's')">0 invoices</p>
+             th:text="${page.totalElements} + ' invoice' + (${page.totalElements} == 1 ? '' : 's')">0 invoices</p>
         </div>
         <div class="flex items-center gap-2">
           <button sec:authorize="hasAuthority('manage-invoices')"
@@ -32,18 +32,46 @@
       </div>
 
       <!-- Filters -->
-      <div th:unless="${#lists.isEmpty(invoices)}" class="flex items-center gap-3 mb-4">
-        <input type="text" x-model="search" placeholder="Search by reference or client..."
-               class="w-full max-w-xs px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-        <select x-model="status"
-                class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-          <option value="">All statuses</option>
-          <option value="unpaid">Unpaid</option>
-          <option value="overdue">Overdue</option>
-          <option value="paid">Paid</option>
-          <option value="void">Void</option>
-        </select>
-      </div>
+      <form method="get" th:action="@{/invoices}" class="mb-5">
+        <div class="flex items-center gap-4">
+          <!-- Search -->
+          <div class="relative flex-shrink-0">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input type="text" name="search" th:value="${filterSearch}" placeholder="Search invoices..."
+                   class="w-64 pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/20 focus:border-[#ea7c28] placeholder-slate-400">
+          </div>
+
+          <!-- Status pills -->
+          <div class="flex items-center gap-1 border-l border-slate-200 pl-4">
+            <label th:each="s : ${ {'unpaid','overdue','paid','void'} }"
+                   th:class="'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer select-none transition-all '
+                     + (${#lists.contains(filterStatuses, s)}
+                       ? (${s == 'paid'} ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-sm'
+                         : (${s == 'overdue'} ? 'bg-red-50 border border-red-200 text-red-700 shadow-sm'
+                           : (${s == 'void'} ? 'bg-slate-100 border border-slate-300 text-slate-600 shadow-sm'
+                             : 'bg-[#ea7c28]/10 border border-[#ea7c28]/30 text-[#ea7c28] shadow-sm')))
+                       : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700')">
+              <input type="checkbox" name="status" th:value="${s}"
+                     th:checked="${#lists.contains(filterStatuses, s)}"
+                     onchange="this.form.submit()" class="hidden">
+              <span th:text="${#strings.capitalize(s)}">Status</span>
+            </label>
+          </div>
+
+          <!-- Active filter indicator + clear -->
+          <th:block th:if="${!filterStatuses.isEmpty() or filterSearch != null}">
+            <div class="flex items-center gap-2 ml-auto">
+              <span class="text-xs text-slate-400"
+                    th:text="${page.totalElements} + ' result' + (${page.totalElements} == 1 ? '' : 's')">0 results</span>
+              <a th:href="@{/invoices}"
+                 class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition">
+                <i data-lucide="x" class="w-3 h-3"></i>
+                Clear
+              </a>
+            </div>
+          </th:block>
+        </div>
+      </form>
 
       <div th:if="${#lists.isEmpty(invoices)}" class="bg-white rounded-xl border border-slate-200 p-12 text-center">
         <p class="text-slate-500">No invoices yet.</p>
@@ -66,9 +94,7 @@
           </thead>
           <tbody>
               <tr th:each="i : ${invoices}"
-                  class="border-b border-slate-100 hover:bg-slate-50 transition"
-                  th:data-status="${i.status}" th:data-search="${i.reference + ' ' + i.client.name}"
-                  x-show="(!status || status === $el.dataset.status) && (!search || $el.dataset.search.toLowerCase().includes(search.toLowerCase()))">
+                  class="border-b border-slate-100 hover:bg-slate-50 transition">
                 <td class="px-6 py-4 text-sm">
                   <a th:href="@{/invoices/{id}(id=${i.id})}"
                      class="font-mono font-medium text-[#ea7c28] hover:underline"
@@ -92,6 +118,38 @@
               </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Pagination -->
+      <div th:if="${page != null and page.totalPages > 1}"
+           class="mt-4 flex items-center justify-between text-sm">
+        <p class="text-slate-500">
+          Showing <span th:text="${page.number * page.size + 1}">1</span>–<span th:text="${page.number * page.size + page.numberOfElements}">25</span>
+          of <span th:text="${page.totalElements}">100</span>
+        </p>
+        <div class="flex items-center gap-1">
+          <a th:if="${page.number > 0}"
+             th:href="@{/invoices(page=${page.number - 1}, status=${filterStatuses}, search=${filterSearch})}"
+             class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">Prev</a>
+          <span th:if="${page.number == 0}"
+                class="px-3 py-1.5 rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">Prev</span>
+
+          <th:block th:each="p : ${#numbers.sequence(0, page.totalPages - 1)}">
+            <a th:if="${p != page.number}"
+               th:href="@{/invoices(page=${p}, status=${filterStatuses}, search=${filterSearch})}"
+               th:text="${p + 1}"
+               class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">1</a>
+            <span th:if="${p == page.number}"
+                  th:text="${p + 1}"
+                  class="px-3 py-1.5 rounded-lg bg-[#ea7c28] text-white font-medium">1</span>
+          </th:block>
+
+          <a th:if="${page.number < page.totalPages - 1}"
+             th:href="@{/invoices(page=${page.number + 1}, status=${filterStatuses}, search=${filterSearch})}"
+             class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">Next</a>
+          <span th:if="${page.number >= page.totalPages - 1}"
+                class="px-3 py-1.5 rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">Next</span>
+        </div>
       </div>
 
     </section>

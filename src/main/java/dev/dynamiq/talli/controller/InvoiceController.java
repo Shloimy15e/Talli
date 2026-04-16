@@ -56,8 +56,16 @@ public class InvoiceController {
     }
 
     @GetMapping
-    public String index(Model model) {
-        model.addAttribute("invoices", invoiceService.listAll());
+    public String index(@RequestParam(defaultValue = "0") int page,
+                        @RequestParam(required = false) List<String> status,
+                        @RequestParam(required = false) String search,
+                        Model model) {
+        List<String> statuses = status == null ? List.of() : status;
+        var invoicePage = invoiceService.listFiltered(statuses, search, page, 25);
+        model.addAttribute("invoices", invoicePage.getContent());
+        model.addAttribute("page", invoicePage);
+        model.addAttribute("filterStatuses", statuses);
+        model.addAttribute("filterSearch", search);
         return "invoices/index";
     }
 

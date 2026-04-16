@@ -84,7 +84,7 @@
       <!-- Financial tiles -->
       <div class="grid grid-cols-4 gap-4 mb-6">
 
-        <a th:href="@{/invoices}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">
+        <a th:href="@{/invoices(status=unpaid,status=overdue)}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Receivables</p>
           <p class="text-3xl font-semibold mt-2 font-mono tabular-nums"
              th:classappend="${totalReceivables.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
@@ -123,7 +123,7 @@
         <div class="col-span-2 bg-white rounded-xl border border-slate-200 p-5">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-sm font-semibold">Time tracked (last 14 days)</h2>
-            <span class="text-xs text-slate-500">minutes per day</span>
+            <span class="text-xs text-slate-500">hours per day</span>
           </div>
           <canvas id="chartTimePerDay" th:attr="data-chart=${timePerDayJson}" height="110"></canvas>
         </div>
@@ -145,6 +145,11 @@
           <canvas id="chartTimePerProject" th:attr="data-chart=${timePerProjectJson}" height="200"></canvas>
         </div>
 
+        <div class="col-span-3 bg-white rounded-xl border border-slate-200 p-5">
+          <h2 class="text-sm font-semibold mb-4">Quarterly revenue</h2>
+          <canvas id="chartQuarterly" th:attr="data-chart=${quarterlyRevenueJson}" height="80"></canvas>
+        </div>
+
       </div>
 
       <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -159,6 +164,12 @@
 
           Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
           Chart.defaults.color = slate;
+
+          const fmtMinutes = m => {
+            const h = Math.floor(m / 60);
+            const min = m % 60;
+            return h > 0 ? h + 'h ' + String(min).padStart(2, '0') + 'm' : min + 'm';
+          };
 
           // Time per day — bar
           {
@@ -177,9 +188,12 @@
                 }],
               },
               options: {
-                plugins: { legend: { display: false } },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { callbacks: { label: ctx => fmtMinutes(ctx.raw) } },
+                },
                 scales: {
-                  y: { beginAtZero: true, ticks: { precision: 0 } },
+                  y: { beginAtZero: true, ticks: { callback: v => fmtMinutes(v) } },
                   x: { grid: { display: false } },
                 },
               },
@@ -201,7 +215,10 @@
               },
               options: {
                 cutout: '65%',
-                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+                plugins: {
+                  legend: { position: 'bottom', labels: { boxWidth: 12 } },
+                  tooltip: { callbacks: { label: ctx => ctx.label + ': ' + fmtMinutes(ctx.raw) } },
+                },
               },
             });
           }
@@ -212,6 +229,26 @@
             new Chart(document.getElementById('chartFinancials'), {
               data: {
                 labels: data.map(d => d.month),
+                datasets: [
+                  { type: 'bar', label: 'Invoiced',  data: data.map(d => Number(d.invoiced)),  backgroundColor: orange, borderRadius: 4 },
+                  { type: 'bar', label: 'Received', data: data.map(d => Number(d.received)), backgroundColor: green,  borderRadius: 4 },
+                  { type: 'bar', label: 'Expenses', data: data.map(d => Number(d.expenses)), backgroundColor: red,    borderRadius: 4 },
+                  { type: 'line', label: 'Net', data: data.map(d => Number(d.net)), borderColor: navy, backgroundColor: navy, tension: 0.3, pointRadius: 4 },
+                ],
+              },
+              options: {
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+                scales: { y: { beginAtZero: true } },
+              },
+            });
+          }
+
+          // Quarterly revenue
+          {
+            const data = read('chartQuarterly');
+            new Chart(document.getElementById('chartQuarterly'), {
+              data: {
+                labels: data.map(d => d.quarter),
                 datasets: [
                   { type: 'bar', label: 'Invoiced',  data: data.map(d => Number(d.invoiced)),  backgroundColor: orange, borderRadius: 4 },
                   { type: 'bar', label: 'Received', data: data.map(d => Number(d.received)), backgroundColor: green,  borderRadius: 4 },
@@ -241,9 +278,12 @@
               },
               options: {
                 indexAxis: 'y',
-                plugins: { legend: { display: false } },
+                plugins: {
+                  legend: { display: false },
+                  tooltip: { callbacks: { label: ctx => fmtMinutes(ctx.raw) } },
+                },
                 scales: {
-                  x: { beginAtZero: true, ticks: { precision: 0 } },
+                  x: { beginAtZero: true, ticks: { callback: v => fmtMinutes(v) } },
                   y: { grid: { display: false } },
                 },
               },
