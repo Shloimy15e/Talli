@@ -1,5 +1,6 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head th:replace="~{layout :: head('Invoices')}"></head>
   <body th:replace="~{layout :: page('invoices', ~{::section})}">
     <section>
@@ -10,12 +11,14 @@
           <p class="text-sm text-slate-500 mt-1">Billing documents issued to clients.</p>
         </div>
         <div class="flex items-center gap-2">
-          <button hx-get="/invoices/generate" hx-target="#modal" hx-swap="innerHTML"
+          <button sec:authorize="hasAuthority('manage-invoices')"
+                  hx-get="/invoices/generate" hx-target="#modal" hx-swap="innerHTML"
                   class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             Generate for Client
           </button>
-          <button hx-get="/invoices/new" hx-target="#modal" hx-swap="innerHTML"
+          <button sec:authorize="hasAuthority('manage-invoices')"
+                  hx-get="/invoices/new" hx-target="#modal" hx-swap="innerHTML"
                   class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg border border-slate-200 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
             Manual
@@ -67,7 +70,7 @@
                 </span>
               </td>
               <td class="px-6 py-4 font-mono text-sm tabular-nums text-right"
-                  th:text="${i.currency} + ' ' + ${#numbers.formatDecimal(i.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                  th:text="${i.currency} + ' ' + ${#numbers.formatDecimal(i.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
               <td class="px-6 py-4 text-right">
                 <form th:action="@{/invoices/{id}/delete(id=${i.id})}" method="post" class="inline opacity-0 group-hover:opacity-100 transition"
                       onsubmit="return confirm('Delete this invoice? All items will be removed.')">

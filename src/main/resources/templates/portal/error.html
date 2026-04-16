@@ -1,0 +1,12 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{portal/layout :: head('Error')}"></head>
+  <body th:replace="~{portal/layout :: portal(~{::main})}">
+    <main>
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-8 text-center">
+        <p class="text-slate-600" th:text="${error}">Something went wrong.</p>
+        <a href="/portal" class="text-sm text-[#ea7c28] hover:underline mt-4 inline-block">Go back</a>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,5 +1,6 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head th:replace="~{layout :: head('Projects')}"></head>
   <body th:replace="~{layout :: page('projects', ~{::section})}">
     <section>
@@ -17,6 +18,7 @@
           hx-get="/projects/new"
           hx-target="#modal"
           hx-swap="innerHTML"
+          sec:authorize="hasAuthority('manage-projects')"
           class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition"
         >
           <svg
@@ -136,6 +138,7 @@
                   <button
                     th:hx-get="@{/projects/{id}/edit(id=${project.id})}"
                     hx-target="#modal"
+                    sec:authorize="hasAuthority('manage-projects')"
                     class="text-xs text-slate-500 hover:text-slate-900"
                   >
                     Edit
@@ -144,6 +147,7 @@
                     th:action="@{/projects/{id}/delete(id=${project.id})}"
                     method="post"
                     class="inline"
+                    sec:authorize="hasAuthority('manage-projects')"
                     onsubmit="return confirm('Delete this project?');"
                   >
                     <button

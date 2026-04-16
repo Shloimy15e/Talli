@@ -2,8 +2,10 @@ package dev.dynamiq.talli.service;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
+import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
+import dev.dynamiq.talli.service.ClientService.AgingBuckets;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -39,6 +41,18 @@ public class PdfService {
         ctx.setVariable("balance", balance);
 
         String html = templateEngine.process("invoices/pdf", ctx);
+        return htmlToPdf(html);
+    }
+
+    public byte[] renderStatement(Client client, List<Invoice> invoices, AgingBuckets aging, String currency) {
+        Context ctx = new Context();
+        ctx.setVariable("client", client);
+        ctx.setVariable("invoices", invoices);
+        ctx.setVariable("aging", aging);
+        ctx.setVariable("currency", currency);
+        ctx.setVariable("today", java.time.LocalDate.now());
+
+        String html = templateEngine.process("clients/statement-pdf", ctx);
         return htmlToPdf(html);
     }
 

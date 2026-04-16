@@ -87,20 +87,20 @@
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Receivables</p>
           <p class="text-3xl font-semibold mt-2 font-mono tabular-nums"
              th:classappend="${totalReceivables.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
-             th:text="'$' + ${#numbers.formatDecimal(totalReceivables, 0, 'COMMA', 2, 'POINT')}">$0.00</p>
+             th:text="'$' + ${#numbers.formatDecimal(totalReceivables, 1, 'COMMA', 2, 'POINT')}">$0.00</p>
           <p class="text-xs text-slate-500 mt-1">outstanding</p>
         </a>
 
         <a th:href="@{/expenses}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Expenses This Month</p>
           <p class="text-3xl font-semibold text-slate-900 mt-2 font-mono tabular-nums"
-             th:text="'$' + ${#numbers.formatDecimal(expensesThisMonth, 0, 'COMMA', 2, 'POINT')}">$0.00</p>
+             th:text="'$' + ${#numbers.formatDecimal(expensesThisMonth, 1, 'COMMA', 2, 'POINT')}">$0.00</p>
         </a>
 
         <a th:href="@{/subscriptions}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Monthly Recurring</p>
           <p class="text-3xl font-semibold text-slate-900 mt-2 font-mono tabular-nums">
-            <span th:text="'$' + ${#numbers.formatDecimal(monthlyBurn, 0, 'COMMA', 2, 'POINT')}">$0.00</span>
+            <span th:text="'$' + ${#numbers.formatDecimal(monthlyBurn, 1, 'COMMA', 2, 'POINT')}">$0.00</span>
             <span class="text-xl text-slate-500">/mo</span>
           </p>
         </a>

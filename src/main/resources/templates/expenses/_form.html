@@ -75,7 +75,7 @@
                    class="text-[#ea7c28] hover:underline truncate flex-1">
                   <span th:text="${r.filename}">receipt.pdf</span>
                   <span class="text-slate-400 text-xs ml-2"
-                        th:text="${#numbers.formatDecimal(r.sizeBytes / 1024.0, 0, 'COMMA', 1, 'POINT') + ' KB'}">12.3 KB</span>
+                        th:text="${#numbers.formatDecimal(r.sizeBytes / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB'}">12.3 KB</span>
                 </a>
                 <button type="submit" formmethod="post" formnovalidate
                         th:formaction="@{/media/{id}/delete(id=${r.id})}"

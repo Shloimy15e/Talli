@@ -14,6 +14,9 @@
       src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
     ></script>
 
+    <!-- Lucide icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
     <!-- Tippy.js for tooltips -->
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
@@ -29,8 +32,9 @@
           });
         }
       }
-      document.addEventListener('DOMContentLoaded', initTooltips);
-      document.addEventListener('htmx:afterSwap', initTooltips);
+      function initLucide() { if (window.lucide) lucide.createIcons(); }
+      document.addEventListener('DOMContentLoaded', () => { initTooltips(); initLucide(); });
+      document.addEventListener('htmx:afterSwap', () => { initTooltips(); initLucide(); });
     </script>
 
     <link rel="preconnect" href="https://rsms.me/" />

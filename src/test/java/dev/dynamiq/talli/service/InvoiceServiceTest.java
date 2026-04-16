@@ -6,6 +6,7 @@ import dev.dynamiq.talli.model.InvoiceItem;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
+import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.InvoiceItemRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
@@ -31,6 +32,7 @@ class InvoiceServiceTest {
     private TimeEntryRepository timeEntryRepository;
     private ProjectRepository projectRepository;
     private ClientRepository clientRepository;
+    private ExpenseRepository expenseRepository;
     private InvoiceService service;
 
     private Client client;
@@ -42,6 +44,9 @@ class InvoiceServiceTest {
         timeEntryRepository = mock(TimeEntryRepository.class);
         projectRepository = mock(ProjectRepository.class);
         clientRepository = mock(ClientRepository.class);
+        expenseRepository = mock(ExpenseRepository.class);
+        when(expenseRepository.findByClientIdAndBillableTrueAndBilledFalseAndIncurredOnBetweenOrderByIncurredOnAsc(
+                any(), any(), any())).thenReturn(List.of());
 
         when(invoiceRepository.save(any(Invoice.class))).thenAnswer(inv -> {
             Invoice i = inv.getArgument(0);
@@ -59,7 +64,7 @@ class InvoiceServiceTest {
         client.setName("Acme Corp");
 
         service = new InvoiceService(invoiceRepository, invoiceItemRepository,
-                timeEntryRepository, projectRepository, clientRepository);
+                timeEntryRepository, projectRepository, clientRepository, expenseRepository);
     }
 
     // --- CRUD / reads ---

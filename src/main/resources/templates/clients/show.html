@@ -1,5 +1,6 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{layout :: head(${client.name})}"></head>
 <body th:replace="~{layout :: page('clients', ~{::section})}">
 <section>
@@ -7,23 +8,52 @@
     <div class="mb-6 flex items-center justify-between">
         <a th:href="@{/clients}" class="text-sm text-slate-500 hover:text-slate-900">← Clients</a>
         <div class="flex items-center gap-2">
+            <a th:href="@{/clients/{id}/statement(id=${client.id})}"
+               sec:authorize="hasAuthority('manage-clients')"
+               class="text-sm px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Statement
+            </a>
             <button th:hx-get="@{/clients/{id}/edit(id=${client.id})}" hx-target="#modal"
+                    sec:authorize="hasAuthority('manage-clients')"
                     class="text-sm px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">Edit</button>
         </div>
     </div>
 
     <!-- Header -->
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-8 mb-6">
-        <div class="flex items-start justify-between">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-8 py-6 flex items-start justify-between">
             <div>
                 <h1 class="text-2xl font-semibold tracking-tight" th:text="${client.name}">Client</h1>
-                <p th:if="${client.email}" class="text-sm text-slate-600 mt-1" th:text="${client.email}">email</p>
-                <p th:if="${client.notes}" class="text-sm text-slate-500 mt-3 whitespace-pre-wrap" th:text="${client.notes}">notes</p>
+                <div class="flex items-center gap-4 mt-2 text-sm text-slate-600">
+                    <span th:if="${client.email}" th:text="${client.email}">email</span>
+                    <span th:if="${client.phone}" class="text-slate-400">|</span>
+                    <span th:if="${client.phone}" th:text="${client.phone}">phone</span>
+                </div>
             </div>
-            <div class="text-right text-xs text-slate-400">
-                <p>Client since</p>
+            <div class="text-right text-sm shrink-0">
+                <p class="text-xs text-slate-400">Payment terms</p>
+                <p class="font-medium" th:text="'Net ' + ${client.paymentTermsDays}">Net 30</p>
+                <p class="text-xs text-slate-400 mt-2">Client since</p>
                 <p class="tabular-nums" th:text="${#temporals.format(client.createdAt, 'MMM d, yyyy')}">—</p>
             </div>
+        </div>
+        <div th:if="${client.billingAddress != null or client.taxId != null}"
+             class="px-8 py-4 border-t border-slate-200 bg-slate-50 grid grid-cols-2 gap-6 text-sm">
+            <div th:if="${client.billingAddress}">
+                <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Billing address</p>
+                <p class="text-slate-700 whitespace-pre-wrap" th:text="${client.billingAddress}">address</p>
+            </div>
+            <div th:if="${client.taxId}">
+                <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Tax ID</p>
+                <p class="text-slate-700 font-mono" th:text="${client.taxId}">id</p>
+            </div>
+        </div>
+        <div th:if="${client.notes}" class="px-8 py-4 border-t border-slate-200 bg-slate-50">
+            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Notes</p>
+            <p class="text-sm text-slate-700 whitespace-pre-wrap" th:text="${client.notes}">notes</p>
         </div>
     </div>
 
@@ -32,25 +62,64 @@
         <div class="bg-white rounded-xl border border-slate-200 p-5">
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total billed</p>
             <p class="font-mono text-xl font-semibold tabular-nums mt-2"
-               th:text="${currency} + ' ' + ${#numbers.formatDecimal(totalBilled, 0, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+               th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(totalBilled, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 p-5">
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Collected</p>
             <p class="font-mono text-xl font-semibold tabular-nums mt-2 text-emerald-600"
-               th:text="${currency} + ' ' + ${#numbers.formatDecimal(totalPaid, 0, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+               th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(totalPaid, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 p-5">
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Outstanding</p>
             <p class="font-mono text-xl font-semibold tabular-nums mt-2"
                th:classappend="${outstanding.signum() > 0} ? 'text-[#ea7c28]' : 'text-slate-700'"
-               th:text="${currency} + ' ' + ${#numbers.formatDecimal(outstanding, 0, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+               th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(outstanding, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 p-5">
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Unbilled time</p>
             <p class="font-mono text-xl font-semibold tabular-nums mt-2"
-               th:text="${#numbers.formatDecimal(unbilledMinutes / 60.0, 0, 'COMMA', 1, 'POINT')} + ' h'">0.0 h</p>
+               th:text="${#numbers.formatDecimal(unbilledMinutes / 60.0, 1, 'COMMA', 1, 'POINT')} + ' h'">0.0 h</p>
             <p class="text-[10px] text-slate-400 mt-1"
-               th:text="'of ' + ${#numbers.formatDecimal(totalMinutes / 60.0, 0, 'COMMA', 1, 'POINT')} + ' h logged'">of 0 h logged</p>
+               th:text="'of ' + ${#numbers.formatDecimal(totalMinutes / 60.0, 1, 'COMMA', 1, 'POINT')} + ' h logged'">of 0 h logged</p>
+        </div>
+    </div>
+
+    <!-- Aging buckets -->
+    <div th:if="${aging.total.signum() > 0}" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="text-sm font-semibold">Receivables aging</h2>
+        </div>
+        <div class="px-6 py-4">
+            <div class="grid grid-cols-5 gap-4 text-center text-sm">
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Current</p>
+                    <p class="font-mono tabular-nums font-medium"
+                       th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(aging.current, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">31–60 days</p>
+                    <p class="font-mono tabular-nums font-medium"
+                       th:classappend="${aging.days31to60.signum() > 0} ? 'text-amber-600' : ''"
+                       th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(aging.days31to60, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">61–90 days</p>
+                    <p class="font-mono tabular-nums font-medium"
+                       th:classappend="${aging.days61to90.signum() > 0} ? 'text-[#ea7c28]' : ''"
+                       th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(aging.days61to90, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">90+ days</p>
+                    <p class="font-mono tabular-nums font-medium"
+                       th:classappend="${aging.over90.signum() > 0} ? 'text-red-600' : ''"
+                       th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(aging.over90, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Total</p>
+                    <p class="font-mono tabular-nums font-semibold"
+                       th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(aging.total, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -74,10 +143,13 @@
             </thead>
             <tbody>
                 <tr th:each="p : ${projects}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
-                    <td class="px-6 py-3 font-medium" th:text="${p.name}">Project</td>
+                    <td class="px-6 py-3 font-medium">
+                        <a th:href="@{/projects/{id}(id=${p.id})}"
+                           class="hover:text-[#ea7c28] hover:underline" th:text="${p.name}">Project</a>
+                    </td>
                     <td class="px-6 py-3 text-slate-600 capitalize" th:text="${p.rateType}">hourly</td>
                     <td class="px-6 py-3 text-right font-mono tabular-nums text-slate-600"
-                        th:text="${p.currency} + ' ' + ${#numbers.formatDecimal(p.currentRate, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                        th:text="${csym.apply(p.currency)} + ${#numbers.formatDecimal(p.currentRate, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
                     <td class="px-6 py-3 text-slate-600 capitalize" th:text="${p.billingFrequency ?: '—'}">monthly</td>
                     <td class="px-6 py-3">
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
@@ -104,22 +176,64 @@
                     <th class="text-left px-6 py-3">Issued</th>
                     <th class="text-left px-6 py-3">Due</th>
                     <th class="text-right px-6 py-3">Amount</th>
+                    <th class="text-right px-6 py-3">Balance</th>
                     <th class="text-left px-6 py-3">Status</th>
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="inv : ${invoices}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 cursor-pointer"
-                    th:onclick="|window.location='/invoices/${inv.id}'|">
-                    <td class="px-6 py-3 font-mono" th:text="${inv.reference}">INV-2026-0001</td>
+                <tr th:each="inv : ${invoices}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
+                    <td class="px-6 py-3 font-mono">
+                        <a th:href="@{/invoices/{id}(id=${inv.id})}"
+                           class="text-[#ea7c28] hover:underline" th:text="${inv.reference}">INV-1001</a>
+                    </td>
                     <td class="px-6 py-3 text-slate-600 tabular-nums" th:text="${#temporals.format(inv.issuedAt, 'MMM d, yyyy')}">—</td>
                     <td class="px-6 py-3 text-slate-600 tabular-nums"
                         th:text="${inv.dueAt != null ? #temporals.format(inv.dueAt, 'MMM d, yyyy') : '—'}">—</td>
                     <td class="px-6 py-3 text-right font-mono tabular-nums"
-                        th:text="${inv.currency} + ' ' + ${#numbers.formatDecimal(inv.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                        th:text="${csym.apply(inv.currency)} + ${#numbers.formatDecimal(inv.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                    <td class="px-6 py-3 text-right font-mono tabular-nums"
+                        th:classappend="${inv.balance().signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
+                        th:text="${csym.apply(inv.currency)} + ${#numbers.formatDecimal(inv.balance(), 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
                     <td class="px-6 py-3">
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
                               th:classappend="${inv.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${inv.status == 'overdue'} ? 'bg-red-50 text-red-700' : (${inv.status == 'void'} ? 'bg-slate-100 text-slate-500' : 'bg-[#ea7c28]/10 text-[#ea7c28]'))"
                               th:text="${inv.status}">unpaid</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Expenses -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="text-sm font-semibold">Expenses
+                <span class="text-slate-400 font-normal" th:text="'(' + ${#lists.size(expenses)} + ')'">(0)</span>
+            </h2>
+        </div>
+        <div th:if="${#lists.isEmpty(expenses)}" class="px-6 py-8 text-center text-sm text-slate-400">No expenses recorded.</div>
+        <table th:unless="${#lists.isEmpty(expenses)}" class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
+                    <th class="text-left px-6 py-3">Date</th>
+                    <th class="text-left px-6 py-3">Vendor</th>
+                    <th class="text-left px-6 py-3">Category</th>
+                    <th class="text-right px-6 py-3">Amount</th>
+                    <th class="text-left px-6 py-3">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="ex : ${expenses}" th:if="${exStat.index < 25}"
+                    class="border-b border-slate-100 last:border-b-0">
+                    <td class="px-6 py-3 text-slate-600 tabular-nums" th:text="${#temporals.format(ex.incurredOn, 'MMM d, yyyy')}">—</td>
+                    <td class="px-6 py-3 text-slate-600" th:text="${ex.vendor ?: '—'}">Vendor</td>
+                    <td class="px-6 py-3 text-slate-600 capitalize" th:text="${ex.category}">software</td>
+                    <td class="px-6 py-3 text-right font-mono tabular-nums"
+                        th:text="${csym.apply(ex.currency)} + ${#numbers.formatDecimal(ex.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                    <td class="px-6 py-3">
+                        <span th:if="${ex.billed}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700">billed</span>
+                        <span th:if="${!ex.billed and ex.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[#ea7c28]/10 text-[#ea7c28]">billable</span>
+                        <span th:if="${!ex.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-50 text-slate-400">internal</span>
                     </td>
                 </tr>
             </tbody>
@@ -148,10 +262,13 @@
                 <tr th:each="t : ${timeEntries}" th:if="${tStat.index < 25}"
                     class="border-b border-slate-100 last:border-b-0">
                     <td class="px-6 py-3 text-slate-600 tabular-nums" th:text="${#temporals.format(t.startedAt, 'MMM d')}">—</td>
-                    <td class="px-6 py-3 text-slate-600" th:text="${t.project.name}">Project</td>
+                    <td class="px-6 py-3 text-slate-600">
+                        <a th:href="@{/projects/{id}(id=${t.project.id})}"
+                           class="hover:text-[#ea7c28] hover:underline" th:text="${t.project.name}">Project</a>
+                    </td>
                     <td class="px-6 py-3 text-slate-500 truncate max-w-xs" th:text="${t.description ?: '—'}">—</td>
                     <td class="px-6 py-3 text-right font-mono tabular-nums"
-                        th:text="${t.durationMinutes != null ? #numbers.formatDecimal(t.durationMinutes / 60.0, 0, 'COMMA', 2, 'POINT') + ' h' : '—'}">—</td>
+                        th:text="${t.durationMinutes != null ? #numbers.formatDecimal(t.durationMinutes / 60.0, 1, 'COMMA', 2, 'POINT') + ' h' : '—'}">—</td>
                     <td class="px-6 py-3">
                         <span th:if="${t.endedAt == null}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700">running</span>
                         <span th:if="${t.endedAt != null and t.billed}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">billed</span>

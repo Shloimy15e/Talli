@@ -1,5 +1,6 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head th:replace="~{layout :: head(${project.name})}"></head>
   <body th:replace="~{layout :: page('projects', ~{::section})}">
     <section x-data="{ editing: false }">
@@ -24,16 +25,18 @@
               <span class="capitalize" th:text="${project.rateType}">hourly</span>
               <span class="text-slate-400 mx-2">·</span>
               <span class="font-mono"
-                    th:text="${project.currency} + ' ' + ${#numbers.formatDecimal(project.currentRate, 0, 'COMMA', 2, 'POINT')}
+                    th:text="${csym.apply(project.currency)} + ${#numbers.formatDecimal(project.currentRate, 1, 'COMMA', 2, 'POINT')}
                              + (${project.rateType == 'hourly'} ? '/hr' : (${project.rateType == 'retainer'} ? '/mo' : ''))">USD 0.00</span>
             </p>
           </div>
           <div class="flex items-center gap-2">
             <button @click="editing = !editing"
+                    sec:authorize="hasAuthority('manage-projects')"
                     class="text-sm text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300 px-3 py-1.5 rounded-lg"
                     th:text="${project.rateType == 'fixed' ? 'Change contract amount' : 'Change rate'}">Change rate</button>
             <button th:hx-get="@{/projects/{id}/edit(id=${project.id})}"
                     hx-target="#modal" hx-swap="innerHTML"
+                    sec:authorize="hasAuthority('manage-projects')"
                     class="text-sm text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300 px-3 py-1.5 rounded-lg">
               Edit
             </button>
@@ -71,22 +74,22 @@
         <div class="bg-white rounded-xl border border-slate-200 px-5 py-4">
           <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Billed to date</p>
           <p class="font-mono text-xl tabular-nums"
-             th:text="${project.currency} + ' ' + ${#numbers.formatDecimal(summary.billedToDate, 0, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+             th:text="${csym.apply(project.currency)} + ${#numbers.formatDecimal(summary.billedToDate, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
         <div th:if="${summary.unbilledValue != null}" class="bg-white rounded-xl border border-slate-200 px-5 py-4">
           <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Unbilled value</p>
           <p class="font-mono text-xl tabular-nums text-[#ea7c28]"
-             th:text="${project.currency} + ' ' + ${#numbers.formatDecimal(summary.unbilledValue, 0, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+             th:text="${csym.apply(project.currency)} + ${#numbers.formatDecimal(summary.unbilledValue, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
         <div th:if="${summary.remaining != null}" class="bg-white rounded-xl border border-slate-200 px-5 py-4">
           <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Remaining on contract</p>
           <p class="font-mono text-xl tabular-nums"
-             th:text="${project.currency} + ' ' + ${#numbers.formatDecimal(summary.remaining, 0, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+             th:text="${csym.apply(project.currency)} + ${#numbers.formatDecimal(summary.remaining, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
         <div th:if="${summary.monthBilled != null}" class="bg-white rounded-xl border border-slate-200 px-5 py-4">
           <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Billed this month</p>
           <p class="font-mono text-xl tabular-nums"
-             th:text="${project.currency} + ' ' + ${#numbers.formatDecimal(summary.monthBilled, 0, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+             th:text="${csym.apply(project.currency)} + ${#numbers.formatDecimal(summary.monthBilled, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
       </div>
 
@@ -126,7 +129,7 @@
                           th:text="${inv.status}">unpaid</span>
                   </td>
                   <td class="px-6 py-3 text-right font-mono tabular-nums"
-                      th:text="${inv.currency} + ' ' + ${#numbers.formatDecimal(inv.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                      th:text="${csym.apply(inv.currency)} + ${#numbers.formatDecimal(inv.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
                 </tr>
               </tbody>
             </table>
@@ -157,7 +160,7 @@
                       th:text="${#temporals.format(e.startedAt, 'MMM d, yyyy')}">Apr 14, 2026</td>
                   <td class="px-6 py-3" th:text="${e.description ?: '—'}">Description</td>
                   <td class="px-6 py-3 text-right font-mono tabular-nums"
-                      th:text="${e.durationMinutes != null ? #numbers.formatDecimal(e.durationMinutes / 60.0, 0, 'COMMA', 2, 'POINT') : '—'}">0.00</td>
+                      th:text="${e.durationMinutes != null ? #numbers.formatDecimal(e.durationMinutes / 60.0, 1, 'COMMA', 2, 'POINT') : '—'}">0.00</td>
                   <td class="px-6 py-3 text-right">
                     <span th:if="${e.billed}"
                           class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700">
@@ -196,7 +199,7 @@
                    class="text-[#ea7c28] hover:underline truncate flex-1">
                   <span th:text="${m.filename}">sow.pdf</span>
                   <span class="text-slate-400 text-xs ml-2"
-                        th:text="${#numbers.formatDecimal(m.sizeBytes / 1024.0, 0, 'COMMA', 1, 'POINT') + ' KB'}">12 KB</span>
+                        th:text="${#numbers.formatDecimal(m.sizeBytes / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB'}">12 KB</span>
                 </a>
                 <form th:action="@{/media/{id}/delete(id=${m.id})}" method="post" class="inline"
                       onsubmit="return confirm('Delete this document?')">

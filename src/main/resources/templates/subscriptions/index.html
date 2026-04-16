@@ -1,5 +1,6 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head th:replace="~{layout :: head('Subscriptions')}"></head>
   <body th:replace="~{layout :: page('subscriptions', ~{::section})}">
     <section>
@@ -10,10 +11,11 @@
           <p class="text-sm text-slate-500 mt-1">
             <span th:text="${#lists.size(active)}">0</span> active
             <span class="text-slate-300 mx-1">·</span>
-            <span class="font-mono" th:text="'$' + ${#numbers.formatDecimal(monthlyTotal, 0, 'COMMA', 2, 'POINT')} + '/mo'">$0.00/mo</span>
+            <span class="font-mono" th:text="'$' + ${#numbers.formatDecimal(monthlyTotal, 1, 'COMMA', 2, 'POINT')} + '/mo'">$0.00/mo</span>
           </p>
         </div>
-        <button hx-get="/subscriptions/new" hx-target="#modal" hx-swap="innerHTML"
+        <button sec:authorize="hasAuthority('manage-expenses')"
+                hx-get="/subscriptions/new" hx-target="#modal" hx-swap="innerHTML"
                 class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
           New Subscription
@@ -46,7 +48,7 @@
                 <div class="text-xs text-slate-500" th:text="${s.category}">category</div>
               </td>
               <td class="px-6 py-4 font-mono text-sm tabular-nums"
-                  th:text="${s.currency} + ' ' + ${#numbers.formatDecimal(s.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                  th:text="${s.currency} + ' ' + ${#numbers.formatDecimal(s.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
               <td class="px-6 py-4 text-sm text-slate-600 capitalize" th:text="${s.cycle}">monthly</td>
               <td class="px-6 py-4 text-sm">
                 <span th:if="${s.nextDueOn != null and !s.nextDueOn.isAfter(today)}"
@@ -78,7 +80,8 @@
                     </button>
                   </form>
                   <!-- Secondary actions on hover -->
-                  <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2">
+                  <div sec:authorize="hasAuthority('manage-expenses')"
+                       class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2">
                     <button th:hx-get="@{/subscriptions/{id}/edit(id=${s.id})}" hx-target="#modal"
                             class="text-xs text-slate-500 hover:text-slate-900">Edit</button>
                     <form th:action="@{/subscriptions/{id}/cancel(id=${s.id})}" method="post" class="inline"
@@ -108,7 +111,7 @@
                   <div class="text-xs text-slate-400" th:text="'Cancelled ' + ${#temporals.format(s.cancelledOn, 'MMM d, yyyy')}">Cancelled</div>
                 </td>
                 <td class="px-6 py-3 font-mono text-sm text-slate-500 tabular-nums"
-                    th:text="${s.currency} + ' ' + ${#numbers.formatDecimal(s.amount, 0, 'COMMA', 2, 'POINT')} + ' / ' + ${s.cycle}">USD 0.00 / monthly</td>
+                    th:text="${s.currency} + ' ' + ${#numbers.formatDecimal(s.amount, 1, 'COMMA', 2, 'POINT')} + ' / ' + ${s.cycle}">USD 0.00 / monthly</td>
                 <td class="px-6 py-3 text-right">
                   <form th:action="@{/subscriptions/{id}/reactivate(id=${s.id})}" method="post" class="inline">
                     <button type="submit" class="text-xs text-[#ea7c28] hover:underline">Reactivate</button>

@@ -1,5 +1,6 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head th:replace="~{layout :: head('Expenses')}"></head>
   <body th:replace="~{layout :: page('expenses', ~{::section})}">
     <section>
@@ -10,10 +11,11 @@
           <p class="text-sm text-slate-500 mt-1">
             <span th:text="${#temporals.format(monthLabel, 'MMMM yyyy')}">This month</span>
             <span class="text-slate-300 mx-1">·</span>
-            <span class="font-mono" th:text="'$' + ${#numbers.formatDecimal(monthTotal, 0, 'COMMA', 2, 'POINT')}">$0.00</span>
+            <span class="font-mono" th:text="'$' + ${#numbers.formatDecimal(monthTotal, 1, 'COMMA', 2, 'POINT')}">$0.00</span>
           </p>
         </div>
-        <button hx-get="/expenses/new" hx-target="#modal" hx-swap="innerHTML"
+        <button sec:authorize="hasAuthority('manage-expenses')"
+                hx-get="/expenses/new" hx-target="#modal" hx-swap="innerHTML"
                 class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
           Log Expense
@@ -49,7 +51,7 @@
               </td>
               <td class="px-6 py-4 text-sm text-slate-600 capitalize" th:text="${e.category}">software</td>
               <td class="px-6 py-4 font-mono text-sm tabular-nums"
-                  th:text="${e.currency} + ' ' + ${#numbers.formatDecimal(e.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                  th:text="${e.currency} + ' ' + ${#numbers.formatDecimal(e.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
               <td class="px-6 py-4 text-xs">
                 <span th:if="${e.subscription != null}"
                       class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#ea7c28]/10 text-[#ea7c28]">
@@ -58,7 +60,8 @@
                 <span th:if="${e.subscription == null}" class="text-slate-400">Manual</span>
               </td>
               <td class="px-6 py-4 text-right">
-                <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2 justify-end">
+                <div sec:authorize="hasAuthority('manage-expenses')"
+                     class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2 justify-end">
                   <button th:hx-get="@{/expenses/{id}/edit(id=${e.id})}" hx-target="#modal"
                           class="text-xs text-slate-500 hover:text-slate-900">Edit</button>
                   <form th:action="@{/expenses/{id}/delete(id=${e.id})}" method="post" class="inline"

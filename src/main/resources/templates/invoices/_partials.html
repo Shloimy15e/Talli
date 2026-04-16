@@ -11,7 +11,7 @@
            class="text-[#ea7c28] hover:underline truncate flex-1">
           <span th:text="${m.filename}">file.pdf</span>
           <span class="text-slate-400 text-xs ml-2"
-                th:text="${#numbers.formatDecimal(m.sizeBytes / 1024.0, 0, 'COMMA', 1, 'POINT') + ' KB'}">12 KB</span>
+                th:text="${#numbers.formatDecimal(m.sizeBytes / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB'}">12 KB</span>
         </a>
         <form th:action="@{/media/{id}/delete(id=${m.id})}" method="post" class="inline"
               onsubmit="return confirm('Delete this attachment?')">

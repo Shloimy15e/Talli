@@ -50,7 +50,7 @@
                       Amount due
                     </p>
                     <p style="margin:0; font-size:28px; font-weight:600; color:#161f30; font-family: 'SF Mono', Menlo, Consolas, monospace; letter-spacing:-0.01em;"
-                       th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(invoice.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+                       th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(invoice.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
                     <p style="margin:6px 0 0; font-size:13px; color:#64748b;">
                       Reference
                       <span style="font-family: 'SF Mono', Menlo, Consolas, monospace; color:#1a1a1a;"

@@ -1,13 +1,20 @@
 package dev.dynamiq.talli.controller;
 
 import dev.dynamiq.talli.model.Client;
+import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
+import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
+import dev.dynamiq.talli.service.ClientService;
+import dev.dynamiq.talli.service.PdfService;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -24,15 +31,24 @@ public class ClientController {
     private final ProjectRepository projectRepository;
     private final InvoiceRepository invoiceRepository;
     private final TimeEntryRepository timeEntryRepository;
+    private final ExpenseRepository expenseRepository;
+    private final ClientService clientService;
+    private final PdfService pdfService;
 
     public ClientController(ClientRepository clientRepository,
                             ProjectRepository projectRepository,
                             InvoiceRepository invoiceRepository,
-                            TimeEntryRepository timeEntryRepository) {
+                            TimeEntryRepository timeEntryRepository,
+                            ExpenseRepository expenseRepository,
+                            ClientService clientService,
+                            PdfService pdfService) {
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.invoiceRepository = invoiceRepository;
         this.timeEntryRepository = timeEntryRepository;
+        this.expenseRepository = expenseRepository;
+        this.clientService = clientService;
+        this.pdfService = pdfService;
     }
 
     // List page
@@ -85,16 +101,20 @@ public class ClientController {
                 .findFirst()
                 .orElse("USD");
 
+        List<Expense> expenses = expenseRepository.findByClientIdOrderByIncurredOnDesc(id);
+
         model.addAttribute("client", client);
         model.addAttribute("projects", projects);
         model.addAttribute("invoices", invoices);
         model.addAttribute("timeEntries", timeEntries);
+        model.addAttribute("expenses", expenses);
         model.addAttribute("totalBilled", totalBilled);
         model.addAttribute("totalPaid", totalPaid);
         model.addAttribute("outstanding", outstanding);
         model.addAttribute("unbilledMinutes", unbilledMinutes);
         model.addAttribute("totalMinutes", totalMinutes);
         model.addAttribute("currency", currency);
+        model.addAttribute("aging", clientService.aging(invoices));
         return "clients/show";
     }
 
@@ -137,6 +157,26 @@ public class ClientController {
         existing.setPaymentTermsDays(client.getPaymentTermsDays());
         clientRepository.save(existing);
         return "redirect:/clients";
+    }
+
+    // Statement PDF — streams directly to browser as download.
+    @GetMapping("/{id}/statement")
+    public ResponseEntity<byte[]> statement(@PathVariable Long id) {
+        Client client = clientRepository.findById(id).orElseThrow();
+        List<Invoice> invoices = invoiceRepository.findByClientIdOrderByIssuedAtDescIdDesc(id);
+        List<Project> projects = projectRepository.findByClientId(id);
+        String currency = projects.stream()
+                .map(Project::getCurrency)
+                .filter(c -> c != null && !c.isBlank())
+                .findFirst().orElse("USD");
+
+        byte[] pdf = pdfService.renderStatement(client, invoices, clientService.aging(invoices), currency);
+        String filename = "Statement-" + client.getName().replaceAll("[^a-zA-Z0-9]", "-") + ".pdf";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
     }
 
     // Delete

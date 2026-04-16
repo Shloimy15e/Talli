@@ -261,11 +261,11 @@
         <tr th:each="item : ${items}">
             <td th:text="${item.description ?: '—'}">Description</td>
             <td class="r">
-                <span th:text="${#numbers.formatDecimal(item.unitCount, 0, 'COMMA', 2, 'POINT')}">0.00</span>
+                <span th:text="${#numbers.formatDecimal(item.unitCount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
                 <span th:if="${item.unit}" class="unit-suffix" th:text="${item.unit}">hr</span>
             </td>
-            <td class="r" th:text="${#numbers.formatDecimal(item.unitPrice, 0, 'COMMA', 2, 'POINT')}">0.00</td>
-            <td class="r" th:text="${#numbers.formatDecimal(item.total, 0, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td class="r" th:text="${#numbers.formatDecimal(item.unitPrice, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td class="r" th:text="${#numbers.formatDecimal(item.total, 1, 'COMMA', 2, 'POINT')}">0.00</td>
         </tr>
         <tr th:if="${#lists.isEmpty(items)}">
             <td colspan="4" style="text-align:center; padding:22pt 0; color:#888; font-style:italic;">No line items.</td>
@@ -280,15 +280,15 @@
         <table class="totals">
             <tr class="subtotal">
                 <td class="lbl">Subtotal</td>
-                <td class="val" th:text="${#numbers.formatDecimal(invoice.amount, 0, 'COMMA', 2, 'POINT')}">0.00</td>
+                <td class="val" th:text="${#numbers.formatDecimal(invoice.amount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
             </tr>
             <tr class="paid" th:if="${invoice.amountPaid != null and invoice.amountPaid.signum() > 0}">
                 <td class="lbl">Paid</td>
-                <td class="val" th:text="'− ' + ${#numbers.formatDecimal(invoice.amountPaid, 0, 'COMMA', 2, 'POINT')}">− 0.00</td>
+                <td class="val" th:text="'− ' + ${#numbers.formatDecimal(invoice.amountPaid, 1, 'COMMA', 2, 'POINT')}">− 0.00</td>
             </tr>
             <tr class="grand">
                 <td class="lbl" th:text="${balance.signum() > 0} ? 'Balance due' : 'Total'">Balance due</td>
-                <td class="val" th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(balance.signum() > 0 ? balance : invoice.amount, 0, 'COMMA', 2, 'POINT')}">USD 0.00</td>
+                <td class="val" th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(balance.signum() > 0 ? balance : invoice.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
             </tr>
         </table>
     </div>

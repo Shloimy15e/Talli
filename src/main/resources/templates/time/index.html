@@ -1,5 +1,6 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head th:replace="~{layout :: head('Time')}"></head>
   <body th:replace="~{layout :: page('time', ~{::section})}">
     <section>
@@ -9,7 +10,8 @@
           <h1 class="text-2xl font-semibold tracking-tight">Time</h1>
           <p class="text-sm text-slate-500 mt-1" th:text="${#lists.size(view.entries)} + ' entr' + (${#lists.size(view.entries)} == 1 ? 'y' : 'ies')">0 entries</p>
         </div>
-        <button hx-get="/time/new" hx-target="#modal" hx-swap="innerHTML"
+        <button sec:authorize="hasAuthority('manage-time')"
+                hx-get="/time/new" hx-target="#modal" hx-swap="innerHTML"
                 class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
           Log Time
@@ -42,7 +44,7 @@
         <div class="bg-white rounded-xl border border-slate-200 p-4">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Unbilled</p>
           <p class="text-2xl font-semibold mt-1 font-mono tabular-nums text-[#ea7c28]"
-             th:text="'$' + ${#numbers.formatDecimal(view.unbilledValue, 0, 'COMMA', 2, 'POINT')}">$0.00</p>
+             th:text="'$' + ${#numbers.formatDecimal(view.unbilledValue, 1, 'COMMA', 2, 'POINT')}">$0.00</p>
           <p class="text-[11px] text-slate-500 mt-0.5 tabular-nums">
             <span th:text="${view.unbilledMinutes / 60} + 'h ' + ${view.unbilledMinutes % 60} + 'm'">0h 0m</span>
           </p>
@@ -86,7 +88,9 @@
       </div>
 
       <!-- Quick-start form when no timer is running -->
-      <div th:if="${running == null and !#lists.isEmpty(projects)}" class="mb-6 p-4 bg-white border border-slate-200 rounded-xl">
+      <div th:if="${running == null and !#lists.isEmpty(projects)}"
+           sec:authorize="hasAuthority('manage-time')"
+           class="mb-6 p-4 bg-white border border-slate-200 rounded-xl">
         <form th:action="@{/time/start}" method="post" class="flex items-center gap-3">
           <select name="projectId" required
                   class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
@@ -118,7 +122,7 @@
             <div class="flex items-center gap-4 text-xs font-mono tabular-nums">
               <span class="text-slate-500" th:text="${g.minutes / 60} + 'h ' + ${g.minutes % 60} + 'm'">4h 30m</span>
               <span th:if="${g.value.signum() > 0}" class="text-[#ea7c28] font-semibold"
-                    th:text="'$' + ${#numbers.formatDecimal(g.value, 0, 'COMMA', 2, 'POINT')}">$450.00</span>
+                    th:text="'$' + ${#numbers.formatDecimal(g.value, 1, 'COMMA', 2, 'POINT')}">$450.00</span>
             </div>
           </div>
 
@@ -147,10 +151,11 @@
                        th:text="${e.durationMinutes / 60} + 'h ' + ${e.durationMinutes % 60} + 'm'">1h 30m</div>
                   <div th:if="${e.billable and view.entryValues.get(e.id) != null}"
                        class="text-xs text-slate-500"
-                       th:text="'$' + ${#numbers.formatDecimal(view.entryValues.get(e.id), 0, 'COMMA', 2, 'POINT')}">$150.00</div>
+                       th:text="'$' + ${#numbers.formatDecimal(view.entryValues.get(e.id), 1, 'COMMA', 2, 'POINT')}">$150.00</div>
                 </td>
                 <td class="px-6 py-3 text-right w-24">
-                  <div class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2 justify-end">
+                  <div sec:authorize="hasAuthority('manage-time')"
+                       class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2 justify-end">
                     <button th:hx-get="@{/time/{id}/edit(id=${e.id})}" hx-target="#modal"
                             class="text-xs text-slate-500 hover:text-slate-900">Edit</button>
                     <form th:action="@{/time/{id}/delete(id=${e.id})}" method="post" class="inline"

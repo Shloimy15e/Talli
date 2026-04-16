@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8"/>
+    <style>
+        @page { size: letter; margin: 0.6in 0.7in; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body { font-family: Helvetica, Arial, sans-serif; color: #1a1a1a; font-size: 10pt; line-height: 1.45; }
+
+        .header { display: table; width: 100%; margin-bottom: 28pt; }
+        .header .left  { display: table-cell; vertical-align: top; width: 50%; }
+        .header .right { display: table-cell; vertical-align: top; width: 50%; text-align: right; }
+        .brand-name { font-size: 14pt; font-weight: bold; color: #161f30; }
+        .doc-title { font-size: 20pt; font-weight: bold; color: #161f30; margin-top: 6pt; }
+        .meta { color: #64748b; font-size: 9pt; margin-top: 4pt; }
+
+        .bill-to { margin-bottom: 24pt; }
+        .block-label { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; font-weight: 600; margin-bottom: 4pt; }
+        .party-name { font-size: 11pt; font-weight: 600; }
+        .party-detail { font-size: 9pt; color: #475569; }
+
+        .aging-table { width: 100%; border-collapse: collapse; margin-bottom: 24pt; }
+        .aging-table th { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; font-weight: 600; padding: 6pt 8pt; border-bottom: 2px solid #e2e8f0; text-align: right; }
+        .aging-table th:first-child { text-align: left; }
+        .aging-table td { padding: 8pt; font-size: 10pt; font-family: 'Courier New', monospace; text-align: right; border-bottom: 1px solid #f1f5f9; }
+        .aging-table td:first-child { text-align: left; font-family: Helvetica, Arial, sans-serif; }
+        .aging-total td { font-weight: bold; border-top: 2px solid #1a1a1a; border-bottom: none; }
+
+        .inv-table { width: 100%; border-collapse: collapse; }
+        .inv-table th { font-size: 8pt; text-transform: uppercase; letter-spacing: 0.06em; color: #64748b; font-weight: 600; padding: 6pt 8pt; border-bottom: 2px solid #e2e8f0; text-align: left; }
+        .inv-table th.num { text-align: right; }
+        .inv-table td { padding: 6pt 8pt; font-size: 9pt; border-bottom: 1px solid #f1f5f9; }
+        .inv-table td.num { text-align: right; font-family: 'Courier New', monospace; }
+        .inv-table td.ref { font-family: 'Courier New', monospace; }
+
+        .status { display: inline-block; padding: 1pt 6pt; border-radius: 8pt; font-size: 8pt; font-weight: 600; text-transform: capitalize; }
+        .status-unpaid  { background: #fff7ed; color: #ea7c28; }
+        .status-overdue { background: #fef2f2; color: #dc2626; }
+        .status-paid    { background: #f0fdf4; color: #16a34a; }
+        .status-void    { background: #f1f5f9; color: #64748b; }
+
+        .footer { margin-top: 32pt; padding-top: 12pt; border-top: 1px solid #e2e8f0; font-size: 8pt; color: #94a3b8; text-align: center; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+    <div class="left">
+        <div class="brand-name">Dynamiq Solutions</div>
+        <div class="doc-title">Account Statement</div>
+        <div class="meta" th:text="'Generated ' + ${#temporals.format(today, 'MMMM d, yyyy')}">Generated April 16, 2026</div>
+    </div>
+    <div class="right">
+        <div class="block-label">Statement for</div>
+        <div class="party-name" th:text="${client.name}">Client Co.</div>
+        <div th:if="${client.email}" class="party-detail" th:text="${client.email}">email</div>
+        <div th:if="${client.billingAddress}" class="party-detail" style="white-space: pre-wrap; margin-top: 4pt;" th:text="${client.billingAddress}">address</div>
+    </div>
+</div>
+
+<!-- Aging summary -->
+<div class="bill-to">
+    <div class="block-label">Aging summary</div>
+</div>
+<table class="aging-table">
+    <thead>
+        <tr>
+            <th>Bucket</th>
+            <th>Amount</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Current (0–30 days)</td>
+            <td th:text="${currency} + ' ' + ${#numbers.formatDecimal(aging.current, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+        </tr>
+        <tr>
+            <td>31–60 days</td>
+            <td th:text="${currency} + ' ' + ${#numbers.formatDecimal(aging.days31to60, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+        </tr>
+        <tr>
+            <td>61–90 days</td>
+            <td th:text="${currency} + ' ' + ${#numbers.formatDecimal(aging.days61to90, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+        </tr>
+        <tr>
+            <td>90+ days</td>
+            <td th:text="${currency} + ' ' + ${#numbers.formatDecimal(aging.over90, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+        </tr>
+        <tr class="aging-total">
+            <td>Total outstanding</td>
+            <td th:text="${currency} + ' ' + ${#numbers.formatDecimal(aging.total, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+        </tr>
+    </tbody>
+</table>
+
+<!-- Invoice list -->
+<div class="bill-to">
+    <div class="block-label">Invoices</div>
+</div>
+<table class="inv-table">
+    <thead>
+        <tr>
+            <th>Reference</th>
+            <th>Issued</th>
+            <th>Due</th>
+            <th class="num">Amount</th>
+            <th class="num">Paid</th>
+            <th class="num">Balance</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:each="inv : ${invoices}">
+            <td class="ref" th:text="${inv.reference}">INV-1001</td>
+            <td th:text="${#temporals.format(inv.issuedAt, 'MMM d, yyyy')}">—</td>
+            <td th:text="${inv.dueAt != null ? #temporals.format(inv.dueAt, 'MMM d, yyyy') : '—'}">—</td>
+            <td class="num" th:text="${currency} + ' ' + ${#numbers.formatDecimal(inv.amount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td class="num" th:text="${currency} + ' ' + ${#numbers.formatDecimal(inv.amountPaid, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td class="num" th:text="${currency} + ' ' + ${#numbers.formatDecimal(inv.balance(), 1, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td>
+                <span class="status"
+                      th:classappend="${inv.status == 'paid'} ? 'status-paid' : (${inv.status == 'overdue'} ? 'status-overdue' : (${inv.status == 'void'} ? 'status-void' : 'status-unpaid'))"
+                      th:text="${inv.status}">unpaid</span>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="footer">
+    Dynamiq Solutions &#183; This statement reflects invoices as of the date generated.
+</div>
+
+</body>
+</html>
