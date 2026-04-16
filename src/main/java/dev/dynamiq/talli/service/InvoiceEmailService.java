@@ -4,8 +4,10 @@ import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.Media;
+import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
+import dev.dynamiq.talli.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,15 +22,18 @@ public class InvoiceEmailService {
     private final InvoiceRepository invoiceRepository;
     private final MediaService mediaService;
     private final EmailRepository emailRepository;
+    private final UserRepository userRepository;
 
     public InvoiceEmailService(EmailService emailService,
                                InvoiceRepository invoiceRepository,
                                MediaService mediaService,
-                               EmailRepository emailRepository) {
+                               EmailRepository emailRepository,
+                               UserRepository userRepository) {
         this.emailService = emailService;
         this.invoiceRepository = invoiceRepository;
         this.mediaService = mediaService;
         this.emailRepository = emailRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -50,17 +55,25 @@ public class InvoiceEmailService {
         String subject = "Invoice " + invoice.getReference() + " from Dynamiq Solutions";
         Map<String, Object> vars = Map.of("invoice", invoice, "client", client);
 
+        // BCC active users linked to this client (skip the primary recipient to avoid duplicates)
+        List<String> bcc = userRepository.findByClientIdAndEnabledTrue(client.getId()).stream()
+                .map(User::getEmail)
+                .filter(e -> e != null && !e.equalsIgnoreCase(client.getEmail()))
+                .distinct()
+                .toList();
+
         Email log = new Email();
         log.setClient(client);
         log.setInvoice(invoice);
         log.setToAddress(client.getEmail());
+        if (!bcc.isEmpty()) log.setBcc(String.join(", ", bcc));
         log.setSubject(subject);
         log.setStatus("pending");
         log.setBody("");
 
         try {
             String renderedBody = emailService.sendTemplateWithAttachment(
-                    client.getEmail(), subject, "invoice", vars,
+                    client.getEmail(), bcc, subject, "invoice", vars,
                     bytes, pdf.getFilename(), "application/pdf");
 
             LocalDateTime now = LocalDateTime.now();

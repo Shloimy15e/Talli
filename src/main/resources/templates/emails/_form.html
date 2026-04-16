@@ -20,11 +20,12 @@
                   class="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
         </div>
 
-        <form th:action="@{/emails}" method="post" class="p-6 space-y-5">
+        <form th:action="@{/emails}" method="post" class="p-6 space-y-5"
+              x-data="{ clientId: '' }">
 
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Client (optional)</label>
-            <select name="clientId"
+            <select name="clientId" x-model="clientId"
                     onchange="if(this.value) { document.getElementById('toAddress').value = this.options[this.selectedIndex].dataset.email || ''; }"
                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
               <option value="">— None —</option>
@@ -40,6 +41,25 @@
           </div>
 
           <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">BCC (optional)</label>
+            <div x-show="clientId" x-cloak th:if="${!#lists.isEmpty(users)}"
+                 class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5 mb-2">
+              <label th:each="u : ${users}"
+                     th:if="${u.client != null}"
+                     th:attr="data-client-id=${u.client.id}"
+                     x-show="$el.dataset.clientId === clientId"
+                     class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <input type="checkbox" name="bccUserId" th:value="${u.id}"
+                       class="w-4 h-4 rounded border-slate-300 text-[#ea7c28] focus:ring-[#ea7c28]/30">
+                <span th:text="${u.name + ' — ' + u.email}">User</span>
+              </label>
+            </div>
+            <input type="text" name="bccManual"
+                   placeholder="Additional email addresses (comma-separated)"
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+          </div>
+
+          <div>
             <label for="subject" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Subject</label>
             <input type="text" id="subject" name="subject" required
                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
@@ -50,6 +70,7 @@
             <textarea id="body" name="body" rows="8" required
                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
           </div>
+
 
           <div class="flex items-center justify-end gap-3 pt-2">
             <button type="button" @click="$dispatch('close-modal')"

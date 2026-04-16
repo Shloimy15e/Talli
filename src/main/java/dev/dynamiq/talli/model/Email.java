@@ -22,6 +22,10 @@ public class Email {
     @Column(name = "to_address", nullable = false)
     private String toAddress;
 
+    /** Comma-separated BCC addresses. */
+    @Column(columnDefinition = "TEXT")
+    private String bcc;
+
     @Column(nullable = false)
     private String subject;
 
@@ -75,6 +79,14 @@ public class Email {
 
     public void setToAddress(String toAddress) {
         this.toAddress = toAddress;
+    }
+
+    public String getBcc() {
+        return bcc;
+    }
+
+    public void setBcc(String bcc) {
+        this.bcc = bcc;
     }
 
     public String getSubject() {

@@ -33,10 +33,18 @@ public class EmailService {
     // Plain text email
     public void sendPlain(String to, String subject, String body)
             throws MessagingException, UnsupportedEncodingException {
+        sendPlain(to, java.util.List.of(), subject, body);
+    }
+
+    public void sendPlain(String to, java.util.List<String> bcc, String subject, String body)
+            throws MessagingException, UnsupportedEncodingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         helper.setFrom(fromAddress, fromName);
         helper.setTo(to);
+        if (bcc != null && !bcc.isEmpty()) {
+            helper.setBcc(bcc.toArray(new String[0]));
+        }
         helper.setSubject(subject);
         helper.setText(body, false);
         mailSender.send(message);
@@ -70,18 +78,33 @@ public class EmailService {
                                              byte[] attachmentBytes, String attachmentFilename,
                                              String attachmentMime)
             throws MessagingException, UnsupportedEncodingException {
+        return sendTemplateWithAttachment(to, java.util.List.of(), subject, templateName,
+                variables, attachmentBytes, attachmentFilename, attachmentMime);
+    }
+
+    /**
+     * HTML email with a single attachment and optional BCC list. Returns the
+     * rendered body so callers can persist it to the Email log row.
+     */
+    public String sendTemplateWithAttachment(String to, java.util.List<String> bcc,
+                                             String subject, String templateName,
+                                             Map<String, Object> variables,
+                                             byte[] attachmentBytes, String attachmentFilename,
+                                             String attachmentMime)
+            throws MessagingException, UnsupportedEncodingException {
         Context context = new Context();
         context.setVariables(variables);
-        // Always make the configured sender info available to templates.
         context.setVariable("fromAddress", fromAddress);
         context.setVariable("fromName", fromName);
         String html = templateEngine.process("emails/" + templateName, context);
 
         MimeMessage message = mailSender.createMimeMessage();
-        // multipart=true is what lets us attach files alongside the HTML body.
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         helper.setFrom(fromAddress, fromName);
         helper.setTo(to);
+        if (bcc != null && !bcc.isEmpty()) {
+            helper.setBcc(bcc.toArray(new String[0]));
+        }
         helper.setSubject(subject);
         helper.setText(html, true);
         helper.addAttachment(attachmentFilename, new ByteArrayResource(attachmentBytes), attachmentMime);
