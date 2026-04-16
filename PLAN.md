@@ -51,17 +51,17 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 
 - ✅ Role enforcement: SecurityConfig has 30+ granular route → permission rules matching HTTP method to specific permissions. V19 removes `manage-clients` from bookkeeper. Standalone emails page restricted to admin. Every sidebar nav link + action button (New/Edit/Delete/Void/Generate/Send/Record/Timer) guarded with `sec:authorize` across all templates.
 - ✅ Test coverage: ClientServiceTest (6 tests: aging buckets), PaymentServiceTest (7 tests: record/delete/transitions/validation), InvoiceServiceTest additions (6 tests: void/idempotent/expenses/expense-only invoices).
+- ✅ Index page improvements: client index KPI tiles + search, invoice index status/client filters + search, expense index pagination.
+- ✅ Lucide icon conversion: all inline SVGs replaced with `data-lucide` attributes, icons added to all action buttons (Edit/Delete/Void/Stop/Start/Remove/back arrows) — 55 Lucide refs across 13 templates.
 
 ## Now — WIP
 
-**Index page improvements** — client index needs KPI tiles + search. Invoice index needs status/client/date filters. Expense index needs filters.
+**Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
 
 ## Next up (ordered)
 
-1. **Index page improvements** (WIP) — client index KPI tiles + search. Invoice/expense index filters.
-2. **Remaining Lucide icon conversion** (WIP) — action buttons, flash icons across show/index pages.
-3. **Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
-4. **Reports page** — monthly/yearly revenue, per-client P&L, time utilization.
+1. **Media Phase C** (WIP) — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`.
+2. **Reports page** — monthly/yearly revenue, per-client P&L, time utilization.
 
 ## Deliberately skipped for Dynamiq's shape
 
