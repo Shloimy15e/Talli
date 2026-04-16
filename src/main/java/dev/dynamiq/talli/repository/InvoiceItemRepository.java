@@ -15,12 +15,17 @@ public interface InvoiceItemRepository extends JpaRepository<InvoiceItem, Long> 
 
     List<InvoiceItem> findByProjectIdOrderByIdDesc(Long projectId);
 
-    @Query("select coalesce(sum(i.total), 0) from InvoiceItem i where i.project.id = :projectId")
+    @Query("""
+           select coalesce(sum(i.total), 0) from InvoiceItem i
+           where i.project.id = :projectId
+             and i.invoice.status <> 'void'
+           """)
     BigDecimal sumTotalByProjectId(@Param("projectId") Long projectId);
 
     @Query("""
            select coalesce(sum(i.total), 0) from InvoiceItem i
            where i.project.id = :projectId
+             and i.invoice.status <> 'void'
              and i.invoice.issuedAt >= :from and i.invoice.issuedAt < :to
            """)
     BigDecimal sumTotalByProjectIdBetween(@Param("projectId") Long projectId,

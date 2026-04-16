@@ -33,6 +33,16 @@ public class Payment {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    /** 'direct' = fresh cash. 'credit' = applied from a client_credit. */
+    @Column(nullable = false)
+    private String source = "direct";
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "credit_id")
+    private ClientCredit credit;
+
+    public boolean isFromCredit() { return "credit".equals(source); }
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -79,4 +89,10 @@ public class Payment {
 
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getSource() { return source; }
+    public void setSource(String source) { this.source = source; }
+
+    public ClientCredit getCredit() { return credit; }
+    public void setCredit(ClientCredit credit) { this.credit = credit; }
 }

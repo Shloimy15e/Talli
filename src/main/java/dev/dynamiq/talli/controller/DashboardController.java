@@ -2,6 +2,7 @@ package dev.dynamiq.talli.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.dynamiq.talli.service.ClientCreditService;
 import dev.dynamiq.talli.service.DashboardService;
 import dev.dynamiq.talli.service.ReportService;
 import org.springframework.stereotype.Controller;
@@ -15,11 +16,14 @@ public class DashboardController {
 
     private final DashboardService dashboardService;
     private final ReportService reportService;
+    private final ClientCreditService clientCreditService;
     private final ObjectMapper objectMapper;
 
-    public DashboardController(DashboardService dashboardService, ReportService reportService, ObjectMapper objectMapper) {
+    public DashboardController(DashboardService dashboardService, ReportService reportService,
+                               ClientCreditService clientCreditService, ObjectMapper objectMapper) {
         this.dashboardService = dashboardService;
         this.reportService = reportService;
+        this.clientCreditService = clientCreditService;
         this.objectMapper = objectMapper;
     }
 
@@ -54,6 +58,7 @@ public class DashboardController {
                 objectMapper.writeValueAsString(dashboardService.billableBreakdown()));
 
         model.addAttribute("totalReceivables", dashboardService.totalReceivables());
+        model.addAttribute("creditsHeld", clientCreditService.totalHeld());
 
         model.addAttribute("quarterlyRevenueJson",
                 objectMapper.writeValueAsString(reportService.quarterlyRevenue(12)));

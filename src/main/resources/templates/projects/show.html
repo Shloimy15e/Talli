@@ -3,12 +3,16 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head th:replace="~{layout :: head(${project.name})}"></head>
   <body th:replace="~{layout :: page('projects', ~{::section})}">
-    <section x-data="{ editing: false }">
+    <section x-data="{ editing: false, billing: false }">
 
       <div class="mb-6">
         <a th:href="@{/projects}" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
           <i data-lucide="arrow-left" class="w-4 h-4"></i> Projects</a>
       </div>
+
+      <div th:if="${generateError}"
+           class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"
+           th:text="${generateError}">Error.</div>
 
       <!-- Header -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
@@ -21,7 +25,9 @@
                     th:text="${project.status}">status</span>
             </div>
             <p class="text-sm text-slate-600">
-              <span th:text="${project.client.name}">Client</span>
+              <a th:href="@{/clients/{id}(id=${project.client.id})}"
+                 class="hover:text-[#ea7c28] hover:underline"
+                 th:text="${project.client.name}">Client</a>
               <span class="text-slate-400 mx-2">·</span>
               <span class="capitalize" th:text="${project.rateType}">hourly</span>
               <span class="text-slate-400 mx-2">·</span>
@@ -31,7 +37,13 @@
             </p>
           </div>
           <div class="flex items-center gap-2">
-            <button @click="editing = !editing"
+            <button th:if="${project.rateType == 'fixed'}"
+                    @click="billing = !billing; editing = false"
+                    sec:authorize="hasAuthority('manage-invoices')"
+                    class="inline-flex items-center gap-1.5 text-sm font-medium bg-[#ea7c28] hover:bg-[#d66f20] text-white px-3 py-1.5 rounded-lg transition">
+              <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> Bill fixed amount
+            </button>
+            <button @click="editing = !editing; billing = false"
                     sec:authorize="hasAuthority('manage-projects')"
                     class="text-sm text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300 px-3 py-1.5 rounded-lg"
                     th:text="${project.rateType == 'fixed' ? 'Change contract amount' : 'Change rate'}">Change rate</button>
@@ -68,6 +80,45 @@
             </div>
           </form>
           <p class="text-xs text-slate-500 mt-2">A dated change-order line will be appended to the project notes.</p>
+        </div>
+
+        <!-- Inline bill-fixed form -->
+        <div x-show="billing" x-cloak class="px-8 py-5 border-t border-slate-200 bg-slate-50"
+             th:if="${project.rateType == 'fixed'}">
+          <form th:action="@{/invoices/generate-fixed}" method="post"
+                class="grid grid-cols-12 gap-3 items-end">
+            <input type="hidden" name="projectId" th:value="${project.id}">
+            <div class="col-span-3">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Amount</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-mono"
+                      th:text="${csym.apply(project.currency)}">$</span>
+                <input type="number" step="0.01" min="0.01" name="amount" required
+                       th:value="${summary != null and summary.remaining != null ? summary.remaining : project.currentRate}"
+                       class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+              </div>
+              <p class="text-xs text-slate-500 mt-1" th:if="${summary != null and summary.remaining != null}">
+                Remaining on contract:
+                <span class="font-mono tabular-nums"
+                      th:text="${csym.apply(project.currency)} + ${#numbers.formatDecimal(summary.remaining, 1, 'COMMA', 2, 'POINT')}">USD 0.00</span>
+              </p>
+            </div>
+            <div class="col-span-7">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Description (optional)</label>
+              <input type="text" name="description"
+                     th:placeholder="${project.name} + ' — contract work'"
+                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+            </div>
+            <div class="col-span-2 flex gap-2">
+              <button type="button" @click="billing = false"
+                      class="text-sm text-slate-600 hover:text-slate-900 px-3 py-2">Cancel</button>
+              <button type="submit"
+                      class="inline-flex items-center gap-1.5 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> Generate
+              </button>
+            </div>
+          </form>
+          <p class="text-xs text-slate-500 mt-2">Creates an invoice for the amount above. Use for deposits, milestones, or final delivery.</p>
         </div>
       </div>
 

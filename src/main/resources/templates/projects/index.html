@@ -130,11 +130,10 @@
                    class="hover:text-[#ea7c28] hover:underline"
                    th:text="${project.name}">Name</a>
               </td>
-              <td
-                class="px-6 py-4 text-slate-600"
-                th:text="${project.client.name}"
-              >
-                Client
+              <td class="px-6 py-4 text-slate-600">
+                <a th:href="@{/clients/{id}(id=${project.client.id})}"
+                   class="hover:text-[#ea7c28] hover:underline"
+                   th:text="${project.client.name}">Client</a>
               </td>
               <td class="px-6 py-4 font-mono text-sm text-[#ea7c28]">
                 <span th:text="${project.currentRate}">0</span>

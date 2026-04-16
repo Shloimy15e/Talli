@@ -100,7 +100,11 @@
                      class="font-mono font-medium text-[#ea7c28] hover:underline"
                      th:text="${i.reference}">INV-1001</a>
                 </td>
-                <td class="px-6 py-4 text-sm font-medium" th:text="${i.client.name}">Client</td>
+                <td class="px-6 py-4 text-sm font-medium">
+                  <a th:href="@{/clients/{id}(id=${i.client.id})}"
+                     class="hover:text-[#ea7c28] hover:underline"
+                     th:text="${i.client.name}">Client</a>
+                </td>
                 <td class="px-6 py-4 text-sm text-slate-600 tabular-nums"
                     th:text="${#temporals.format(i.issuedAt, 'MMM d, yyyy')}">Apr 14, 2026</td>
                 <td class="px-6 py-4 text-sm text-slate-600 tabular-nums"

@@ -103,12 +103,15 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/expenses/**").hasAuthority("view-expenses")
 
                 // Invoices — generate, void, delete, create, email, pdf
-                .requestMatchers(HttpMethod.POST, "/invoices", "/invoices/generate", "/invoices/*/void", "/invoices/*/delete", "/invoices/*/pdf", "/invoices/*/attachments").hasAuthority("manage-invoices")
+                .requestMatchers(HttpMethod.POST, "/invoices", "/invoices/generate", "/invoices/generate-fixed", "/invoices/*/void", "/invoices/*/delete", "/invoices/*/pdf", "/invoices/*/attachments").hasAuthority("manage-invoices")
                 .requestMatchers(HttpMethod.POST, "/invoices/*/email").hasAuthority("send-emails")
                 .requestMatchers(HttpMethod.GET, "/invoices/**").hasAuthority("view-invoices")
 
                 // Payments
-                .requestMatchers(HttpMethod.POST, "/invoices/*/payments", "/invoices/*/payments/*/delete").hasAuthority("manage-payments")
+                .requestMatchers(HttpMethod.POST, "/invoices/*/payments", "/invoices/*/payments/*/delete", "/invoices/*/apply-credit").hasAuthority("manage-payments")
+
+                // Client credits
+                .requestMatchers(HttpMethod.POST, "/clients/*/credits", "/clients/*/credits/*/delete").hasAuthority("manage-payments")
 
                 // Subscriptions
                 .requestMatchers(HttpMethod.POST, "/subscriptions", "/subscriptions/*/delete", "/subscriptions/*").hasAuthority("manage-expenses")

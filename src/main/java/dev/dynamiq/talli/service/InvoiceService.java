@@ -316,6 +316,42 @@ public class InvoiceService {
      * Build and persist a fresh invoice with the standard header fields.
      * Callers fill in line items + total afterwards.
      */
+    /**
+     * Generate an invoice for a fixed-rate project for an arbitrary amount.
+     * Used for deposits, milestone payments, or final delivery billing.
+     * The amount is the user's call — no contract-cap enforcement here,
+     * the UI surfaces "remaining to bill" so the operator knows.
+     */
+    @Transactional
+    public Invoice generateFixed(Long projectId, BigDecimal amount, String description) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero");
+        }
+        Project project = projectRepository.findById(projectId).orElseThrow();
+        if (!project.isFixed()) {
+            throw new IllegalStateException("Project is not fixed-rate");
+        }
+        Client client = project.getClient();
+        LocalDate today = LocalDate.now();
+
+        Invoice invoice = newInvoiceShell(client, today, today, project.getCurrency());
+
+        InvoiceItem item = new InvoiceItem();
+        item.setInvoice(invoice);
+        item.setProject(project);
+        item.setDescription(description != null && !description.isBlank()
+                ? description
+                : project.getName() + " — contract work");
+        item.setUnit("fixed");
+        item.setUnitCount(BigDecimal.ONE);
+        item.setUnitPrice(amount);
+        item.setTotal(amount);
+        invoiceItemRepository.save(item);
+
+        invoice.setAmount(amount);
+        return invoiceRepository.save(invoice);
+    }
+
     private Invoice newInvoiceShell(Client client, LocalDate periodStart, LocalDate periodEnd, String currency) {
         LocalDate today = LocalDate.now();
         int terms = client.getPaymentTermsDays() == null ? 30 : client.getPaymentTermsDays();

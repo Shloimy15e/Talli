@@ -31,9 +31,13 @@
           <div>
             <p class="text-xs font-semibold uppercase tracking-wider text-[#ea7c28]">Currently tracking</p>
             <p class="text-sm font-medium text-slate-900 mt-1">
-              <span th:text="${running.project.name}">Project</span>
+              <a th:href="@{/projects/{id}(id=${running.project.id})}"
+                 class="hover:text-[#ea7c28] hover:underline"
+                 th:text="${running.project.name}">Project</a>
               <span class="text-slate-400">·</span>
-              <span class="text-slate-500" th:text="${running.project.client.name}">Client</span>
+              <a th:href="@{/clients/{id}(id=${running.project.client.id})}"
+                 class="text-slate-500 hover:text-[#ea7c28] hover:underline"
+                 th:text="${running.project.client.name}">Client</a>
             </p>
           </div>
         </div>
@@ -310,9 +314,13 @@
               <td class="px-6 py-3 text-sm text-slate-500 w-32"
                   th:text="${#temporals.format(e.startedAt, 'MMM d, HH:mm')}">Mar 12, 14:30</td>
               <td class="px-6 py-3 text-sm">
-                <span class="font-medium" th:text="${e.project.name}">Project</span>
+                <a th:href="@{/projects/{id}(id=${e.project.id})}"
+                   class="font-medium hover:text-[#ea7c28] hover:underline"
+                   th:text="${e.project.name}">Project</a>
                 <span class="text-slate-400 mx-1">·</span>
-                <span class="text-slate-500" th:text="${e.project.client.name}">Client</span>
+                <a th:href="@{/clients/{id}(id=${e.project.client.id})}"
+                   class="text-slate-500 hover:text-[#ea7c28] hover:underline"
+                   th:text="${e.project.client.name}">Client</a>
               </td>
               <td class="px-6 py-3 text-sm text-slate-500" th:text="${e.description} ?: ''">desc</td>
               <td class="px-6 py-3 font-mono text-sm text-[#ea7c28] text-right w-24">

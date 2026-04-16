@@ -10,6 +10,7 @@ import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
+import dev.dynamiq.talli.service.ClientCreditService;
 import dev.dynamiq.talli.service.ClientService;
 import dev.dynamiq.talli.service.PdfService;
 import dev.dynamiq.talli.service.ReminderService;
@@ -37,6 +38,7 @@ public class ClientController {
     private final ClientService clientService;
     private final PdfService pdfService;
     private final ReminderService reminderService;
+    private final ClientCreditService clientCreditService;
 
     public ClientController(ClientRepository clientRepository,
                             ProjectRepository projectRepository,
@@ -45,9 +47,11 @@ public class ClientController {
                             ExpenseRepository expenseRepository,
                             ClientService clientService,
                             PdfService pdfService,
-                            ReminderService reminderService) {
+                            ReminderService reminderService,
+                            ClientCreditService clientCreditService) {
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
+        this.clientCreditService = clientCreditService;
         this.invoiceRepository = invoiceRepository;
         this.timeEntryRepository = timeEntryRepository;
         this.expenseRepository = expenseRepository;
@@ -140,6 +144,11 @@ public class ClientController {
         model.addAttribute("totalMinutes", totalMinutes);
         model.addAttribute("currency", currency);
         model.addAttribute("aging", clientService.aging(invoices));
+        var creditPairs = clientCreditService.listForClient(id).stream()
+                .map(c -> new CreditWithRemaining(c, clientCreditService.remainingBalance(c.getId())))
+                .toList();
+        model.addAttribute("credits", creditPairs);
+        model.addAttribute("creditAvailable", clientCreditService.availableForClient(id, currency));
         return "clients/show";
     }
 
@@ -225,4 +234,7 @@ public class ClientController {
         clientRepository.deleteById(id);
         return "redirect:/clients";
     }
+
+    public record CreditWithRemaining(dev.dynamiq.talli.model.ClientCredit credit,
+                                      BigDecimal remaining) {}
 }

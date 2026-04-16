@@ -3,7 +3,7 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <head th:replace="~{layout :: head('Invoice ' + ${invoice.reference})}"></head>
   <body th:replace="~{layout :: page('invoices', ~{::section})}">
-    <section x-data="{ sendModal: false, payModal: false }">
+    <section x-data="{ sendModal: false, payModal: false, creditModal: false }">
 
       <div class="mb-6 flex items-center justify-between">
         <a th:href="@{/invoices}" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
@@ -57,7 +57,9 @@
                     th:classappend="${invoice.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${invoice.status == 'overdue'} ? 'bg-red-50 text-red-700' : (${invoice.status == 'void'} ? 'bg-slate-100 text-slate-500' : 'bg-[#ea7c28]/10 text-[#ea7c28]'))"
                     th:text="${invoice.status}">unpaid</span>
             </div>
-            <p class="text-sm text-slate-600" th:text="${invoice.client.name}">Client</p>
+            <a th:href="@{/clients/{id}(id=${invoice.client.id})}"
+               class="text-sm text-slate-600 hover:text-[#ea7c28] hover:underline"
+               th:text="${invoice.client.name}">Client</a>
           </div>
 
           <div class="flex items-start gap-6 shrink-0">
@@ -69,34 +71,57 @@
           </div>
         </div>
 
-        <!-- Action bar -->
-        <div class="px-8 py-3 border-b border-slate-200 bg-slate-50 flex items-center gap-2">
+        <!-- Action bar — one primary only on actions YOU initiate (PDF, email).
+             Record payment / Apply credit stay ghost — they're reactive to client behavior. -->
+        <div class="px-8 py-3 border-b border-slate-200 bg-slate-50 flex items-center gap-1.5"
+             th:with="noPdf=${#lists.isEmpty(invoiceDocs)},
+                      hasClientEmail=${invoice.client.email != null and !#strings.isEmpty(invoice.client.email)},
+                      unpaid=${invoice.status != 'paid' and invoice.status != 'void'},
+                      primaryAction=${noPdf ? 'pdf' : (invoice.sentAt == null and hasClientEmail ? 'email' : 'none')}">
+
+          <!-- Generate PDF -->
           <form th:action="@{/invoices/{id}/pdf(id=${invoice.id})}" method="post"
                 sec:authorize="hasAuthority('manage-invoices')">
             <button type="submit"
-                    class="inline-flex items-center gap-2 text-sm bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition">
+                    th:classappend="${primaryAction == 'pdf'}
+                      ? 'bg-[#ea7c28] hover:bg-[#d66f20] text-white'
+                      : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-700'"
+                    class="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg transition">
               <i data-lucide="download" class="w-4 h-4"></i>
-              <span th:text="${#lists.isEmpty(invoiceDocs) ? 'Generate PDF' : 'Regenerate PDF'}">Generate PDF</span>
+              <span th:text="${noPdf ? 'Generate PDF' : 'Regenerate PDF'}">Generate PDF</span>
             </button>
           </form>
 
-          <!-- Send email — opens modal. Disabled if no PDF or no client email. -->
+          <!-- Send / Resend email -->
           <button type="button" @click="sendModal = true"
                   sec:authorize="hasAuthority('send-emails')"
-                  th:disabled="${#lists.isEmpty(invoiceDocs) or invoice.client.email == null or #strings.isEmpty(invoice.client.email)}"
-                  th:title="${#lists.isEmpty(invoiceDocs) ? 'Generate a PDF first' : (invoice.client.email == null or #strings.isEmpty(invoice.client.email) ? 'Client has no email address' : '')}"
-                  class="inline-flex items-center gap-2 text-sm bg-[#ea7c28] hover:bg-[#d66f20] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded-lg transition">
+                  th:disabled="${noPdf or !hasClientEmail}"
+                  th:title="${noPdf ? 'Generate a PDF first' : (!hasClientEmail ? 'Client has no email address' : '')}"
+                  th:classappend="${primaryAction == 'email'}
+                    ? 'bg-[#ea7c28] hover:bg-[#d66f20] text-white'
+                    : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-700'"
+                  class="inline-flex items-center gap-2 text-sm disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition">
             <i data-lucide="mail" class="w-4 h-4"></i>
             <span th:text="${invoice.sentAt != null ? 'Resend email' : 'Send email'}">Send email</span>
           </button>
 
+          <!-- Record payment — reactive, always ghost -->
           <button type="button" @click="payModal = true"
                   sec:authorize="hasAuthority('manage-payments')"
-                  th:disabled="${invoice.status == 'paid' or invoice.status == 'void'}"
+                  th:disabled="${!unpaid}"
                   th:title="${invoice.status == 'paid' ? 'Already paid in full' : (invoice.status == 'void' ? 'Invoice is void' : '')}"
-                  class="inline-flex items-center gap-2 text-sm bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded-lg transition">
+                  class="inline-flex items-center gap-2 text-sm bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition">
             <i data-lucide="dollar-sign" class="w-4 h-4"></i>
             Record payment
+          </button>
+
+          <!-- Apply credit — only shown when a matching credit exists and invoice is unpaid -->
+          <button type="button" @click="creditModal = true"
+                  sec:authorize="hasAuthority('manage-payments')"
+                  th:if="${!#lists.isEmpty(availableCredits) and unpaid}"
+                  class="inline-flex items-center gap-2 text-sm bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition">
+            <i data-lucide="wallet" class="w-4 h-4"></i>
+            Apply credit
           </button>
 
           <span th:if="${invoice.sentAt != null}" class="text-xs text-slate-500 ml-auto"
@@ -360,8 +385,12 @@
               <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Amount</label>
                 <input type="number" step="0.01" min="0.01" name="amount" required
-                       th:value="${balance}"
+                       th:value="${balance}" th:max="${balance}"
                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500">
+                <p class="text-[10px] text-slate-400 mt-1">
+                  Max <span class="font-mono tabular-nums"
+                    th:text="${csym.apply(invoice.currency)} + ${#numbers.formatDecimal(balance, 1, 'COMMA', 2, 'POINT')}">USD 0.00</span>
+                </p>
               </div>
             </div>
 
@@ -404,6 +433,95 @@
               <button type="submit"
                       class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
                 Record
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Apply credit modal -->
+      <div x-show="creditModal" x-cloak
+           class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+           @click.self="creditModal = false"
+           @keydown.escape.window="creditModal = false">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+             th:attr="data-balance=${balance}"
+             x-data="{
+               creditId: '',
+               creditRemaining: 0,
+               amount: '',
+               balance: Number($el.dataset.balance),
+               applicable() { return Math.min(this.creditRemaining || 0, this.balance || 0); },
+               onSelect(ev) {
+                 const opt = ev.target.selectedOptions[0];
+                 this.creditRemaining = Number(opt.dataset.remaining || 0);
+                 this.amount = this.applicable().toFixed(2);
+               },
+               setMax() { this.amount = this.applicable().toFixed(2); }
+             }"
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100">
+          <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+            <h2 class="text-lg font-semibold">Apply client credit</h2>
+            <button type="button" @click="creditModal = false"
+                    class="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
+          </div>
+          <form th:action="@{/invoices/{id}/apply-credit(id=${invoice.id}, _csrf=${_csrf.token})}" method="post"
+                class="px-6 py-5 space-y-4 text-sm">
+
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Credit</label>
+              <select name="creditId" x-model="creditId" required @change="onSelect($event)"
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                <option value="" disabled selected>Pick a credit…</option>
+                <option th:each="ac : ${availableCredits}"
+                        th:value="${ac.credit.id}"
+                        th:attr="data-remaining=${ac.remaining}"
+                        th:text="|${#temporals.format(ac.credit.receivedAt, 'MMM d, yyyy')} · ${ac.credit.project != null ? ac.credit.project.name + ' · ' : ''}${csym.apply(ac.credit.currency)}${#numbers.formatDecimal(ac.remaining, 1, 'COMMA', 2, 'POINT')} remaining${ac.credit.description != null ? ' · ' + ac.credit.description : ''}|">Credit</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Date</label>
+                <input type="date" name="paidAt"
+                       th:value="${#temporals.format(#temporals.createNowForTimeZone('UTC'), 'yyyy-MM-dd')}"
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+              </div>
+              <div>
+                <label class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                  <span>Amount</span>
+                  <button type="button" class="text-[10px] text-[#ea7c28] hover:underline normal-case tracking-normal font-medium"
+                          @click="setMax()" x-show="creditId">Max</button>
+                </label>
+                <input type="number" step="0.01" min="0.01" name="amount" x-model="amount" required
+                       :max="applicable()"
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                <p class="text-[10px] text-slate-400 mt-1" x-show="creditId">
+                  Max <span class="font-mono tabular-nums" x-text="applicable().toFixed(2)">0.00</span>
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Notes</label>
+              <textarea name="notes" rows="2" placeholder="Optional"
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+            </div>
+
+            <div class="text-xs text-slate-500 px-3 py-2 rounded bg-slate-50 border border-slate-200">
+              Outstanding balance:
+              <span class="font-mono tabular-nums font-medium"
+                    th:text="${csym.apply(invoice.currency)} + ${#numbers.formatDecimal(balance, 1, 'COMMA', 2, 'POINT')}">USD 0.00</span>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-2">
+              <button type="button" @click="creditModal = false"
+                      class="text-sm text-slate-600 hover:text-slate-900 px-4 py-2">Cancel</button>
+              <button type="submit"
+                      class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                Apply
               </button>
             </div>
           </form>

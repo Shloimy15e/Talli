@@ -5,6 +5,7 @@ import dev.dynamiq.talli.model.InvoiceItem;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.service.ClientCreditService;
 import dev.dynamiq.talli.service.InvoiceEmailService;
 import dev.dynamiq.talli.service.InvoiceService;
 import dev.dynamiq.talli.service.MediaService;
@@ -37,6 +38,7 @@ public class InvoiceController {
     private final InvoiceEmailService invoiceEmailService;
     private final EmailRepository emailRepository;
     private final PaymentService paymentService;
+    private final ClientCreditService clientCreditService;
 
     public InvoiceController(InvoiceService invoiceService,
             ClientRepository clientRepository,
@@ -44,10 +46,12 @@ public class InvoiceController {
             MediaService mediaService, PdfService pdfService,
             InvoiceEmailService invoiceEmailService,
             EmailRepository emailRepository,
-            PaymentService paymentService) {
+            PaymentService paymentService,
+            ClientCreditService clientCreditService) {
         this.invoiceService = invoiceService;
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
+        this.clientCreditService = clientCreditService;
         this.mediaService = mediaService;
         this.pdfService = pdfService;
         this.invoiceEmailService = invoiceEmailService;
@@ -120,8 +124,25 @@ public class InvoiceController {
         model.addAttribute("paymentProofs", mediaService.forOwner(invoice, "payment_proofs"));
         model.addAttribute("emailHistory", emailRepository.findByInvoiceIdOrderByCreatedAtDesc(id));
         model.addAttribute("payments", paymentService.listForInvoice(id));
+
+        // Credits available for THIS invoice: same client, same currency, nonzero
+        // remaining, and either unscoped OR scoped to a project that this invoice bills for.
+        var invoiceProjectIds = invoiceService.itemsFor(id).stream()
+                .map(it -> it.getProject() == null ? null : it.getProject().getId())
+                .filter(pid -> pid != null)
+                .collect(java.util.stream.Collectors.toSet());
+        var availableCredits = clientCreditService.listForClient(invoice.getClient().getId()).stream()
+                .filter(c -> c.getCurrency().equals(invoice.getCurrency()))
+                .filter(c -> c.getProject() == null || invoiceProjectIds.contains(c.getProject().getId()))
+                .map(c -> new AvailableCredit(c, clientCreditService.remainingBalance(c.getId())))
+                .filter(a -> a.remaining().signum() > 0)
+                .toList();
+        model.addAttribute("availableCredits", availableCredits);
+
         return "invoices/show";
     }
+
+    public record AvailableCredit(dev.dynamiq.talli.model.ClientCredit credit, BigDecimal remaining) {}
 
     @PostMapping("/{id}/void")
     public String voidInvoice(@PathVariable("id") Long id) {
@@ -175,6 +196,20 @@ public class InvoiceController {
         }
     }
 
+    @PostMapping("/generate-fixed")
+    public String generateFixed(@RequestParam("projectId") Long projectId,
+            @RequestParam("amount") BigDecimal amount,
+            @RequestParam(value = "description", required = false) String description,
+            RedirectAttributes flash) {
+        try {
+            Invoice invoice = invoiceService.generateFixed(projectId, amount, description);
+            return "redirect:/invoices/" + invoice.getId();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            flash.addFlashAttribute("generateError", e.getMessage());
+            return "redirect:/projects/" + projectId;
+        }
+    }
+
     @PostMapping("/{id}/pdf")
     public String generatePdf(@PathVariable Long id) {
         Invoice invoice = invoiceService.get(id);
@@ -220,6 +255,24 @@ public class InvoiceController {
                                 RedirectAttributes flash) {
         paymentService.delete(paymentId);
         flash.addFlashAttribute("paymentSuccess", "Payment removed.");
+        return "redirect:/invoices/" + id;
+    }
+
+    @PostMapping("/{id}/apply-credit")
+    public String applyCredit(@PathVariable Long id,
+                              @RequestParam("creditId") Long creditId,
+                              @RequestParam("amount") BigDecimal amount,
+                              @RequestParam(value = "paidAt", required = false) String paidAt,
+                              @RequestParam(value = "notes", required = false) String notes,
+                              RedirectAttributes flash) {
+        try {
+            paymentService.applyCredit(id, creditId,
+                    (paidAt == null || paidAt.isBlank()) ? null : parseDate(paidAt),
+                    amount, emptyToNull(notes));
+            flash.addFlashAttribute("paymentSuccess", "Credit applied.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            flash.addFlashAttribute("paymentError", e.getMessage());
+        }
         return "redirect:/invoices/" + id;
     }
 
