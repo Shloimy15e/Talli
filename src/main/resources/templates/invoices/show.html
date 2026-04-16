@@ -273,7 +273,8 @@
             </div>
             <form th:action="@{/invoices/{id}/payments/{pid}/delete(id=${invoice.id}, pid=${p.id})}" method="post"
                   onsubmit="return confirm('Remove this payment? Invoice balance will be recomputed.')">
-              <button type="submit" class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+              <button type="submit" class="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-red-600">
+                <i data-lucide="x" class="w-3 h-3"></i> Remove</button>
             </form>
           </li>
         </ul>

@@ -41,7 +41,8 @@
           <span class="font-mono text-3xl font-semibold text-slate-900 tabular-nums" x-text="elapsed">00:00:00</span>
           <form th:action="@{/time/{id}/stop(id=${running.id})}" method="post">
             <button type="submit"
-                    class="bg-slate-900 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition">Stop</button>
+                    class="inline-flex items-center gap-1.5 bg-slate-900 hover:bg-slate-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition">
+              <i data-lucide="square" class="w-3.5 h-3.5"></i> Stop</button>
           </form>
         </div>
       </div>
