@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="header">
+    <svg class="header-logo" viewBox="0 0 64 64" width="22" height="22">
+      <g fill="#ea7c28">
+        <rect x="16" y="36" width="8" height="16" rx="2"/>
+        <rect x="28" y="24" width="8" height="28" rx="2"/>
+        <rect x="40" y="12" width="8" height="40" rx="2"/>
+      </g>
+    </svg>
+    <span class="header-title">Settings</span>
+    <button class="header-btn" id="backBtn" title="Back to timer">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="settings-page">
+    <div id="feedback" class="feedback"></div>
+
+    <div class="field-group">
+      <label for="serverUrl">Server URL</label>
+      <input type="url" id="serverUrl" placeholder="https://your-app.up.railway.app">
+    </div>
+
+    <div class="field-group">
+      <label for="apiToken">API Token</label>
+      <input type="password" id="apiToken" placeholder="talli_...">
+    </div>
+
+    <div class="settings-footer">
+      <button class="btn btn-secondary" id="testBtn">Test Connection</button>
+      <button class="btn btn-primary" id="saveBtn">Save</button>
+    </div>
+
+    <div id="connectionStatus" class="connection-status"></div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>

@@ -69,10 +69,11 @@ public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    /** Only apply this filter to /api/** paths. */
+    /** Only apply this filter to /api/** paths, and skip CORS preflight (OPTIONS) requests. */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getServletPath().startsWith("/api/");
+        return !request.getServletPath().startsWith("/api/")
+                || "OPTIONS".equalsIgnoreCase(request.getMethod());
     }
 
     private void sendUnauthorized(HttpServletResponse response, String message) throws IOException {

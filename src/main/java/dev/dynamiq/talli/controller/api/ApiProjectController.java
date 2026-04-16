@@ -18,10 +18,10 @@ public class ApiProjectController {
         this.projectRepository = projectRepository;
     }
 
+    /** Active projects ordered by most recent time entry. */
     @GetMapping
     public List<ProjectResponse> list() {
-        return projectRepository.findAll().stream()
-                .filter(p -> "active".equals(p.getStatus()))
+        return projectRepository.findActiveOrderedByRecentActivity().stream()
                 .map(p -> new ProjectResponse(
                         p.getId(),
                         p.getName(),
