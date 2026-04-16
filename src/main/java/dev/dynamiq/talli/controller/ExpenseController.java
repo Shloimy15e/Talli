@@ -6,6 +6,8 @@ import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.service.MediaService;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -33,11 +35,13 @@ public class ExpenseController {
     }
 
     @GetMapping
-    public String index(Model model) {
+    public String index(@RequestParam(defaultValue = "0") int page, Model model) {
         LocalDate today = LocalDate.now();
         LocalDate monthStart = today.withDayOfMonth(1);
 
-        model.addAttribute("expenses", expenseRepository.findAllByOrderByIncurredOnDesc());
+        Page<Expense> expensePage = expenseRepository.findAllByOrderByIncurredOnDesc(PageRequest.of(page, 25));
+        model.addAttribute("expenses", expensePage.getContent());
+        model.addAttribute("page", expensePage);
         model.addAttribute("monthTotal", expenseRepository.sumAmountBetween(monthStart, today));
         model.addAttribute("monthLabel", monthStart);
         return "expenses/index";

@@ -6,48 +6,43 @@
     <section x-data="{ sendModal: false, payModal: false }">
 
       <div class="mb-6 flex items-center justify-between">
-        <a th:href="@{/invoices}" class="text-sm text-slate-500 hover:text-slate-900">← Invoices</a>
+        <a th:href="@{/invoices}" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> Invoices</a>
         <div class="flex items-center gap-2">
           <form th:if="${invoice.status != 'void'}"
                 th:action="@{/invoices/{id}/void(id=${invoice.id})}" method="post"
                 sec:authorize="hasAuthority('manage-invoices')"
                 onsubmit="return confirm('Void this invoice? Linked time entries will return to unbilled.')">
             <button type="submit"
-                    class="text-sm text-red-600 hover:text-red-800 px-3 py-1.5">Void</button>
+                    class="inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-800 px-3 py-1.5">
+              <i data-lucide="ban" class="w-4 h-4"></i> Void</button>
           </form>
           <form th:if="${invoice.status == 'void'}"
                 th:action="@{/invoices/{id}/delete(id=${invoice.id})}" method="post"
                 sec:authorize="hasAuthority('manage-invoices')"
                 onsubmit="return confirm('Permanently delete this voided invoice?')">
             <button type="submit"
-                    class="text-sm text-red-600 hover:text-red-800 px-3 py-1.5">Delete</button>
+                    class="inline-flex items-center gap-1 text-sm text-red-600 hover:text-red-800 px-3 py-1.5">
+              <i data-lucide="trash-2" class="w-4 h-4"></i> Delete</button>
           </form>
         </div>
       </div>
 
       <!-- Flash -->
       <div th:if="${emailSuccess}" class="mb-6 px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-        </svg>
+        <i data-lucide="check" class="w-4 h-4"></i>
         <span th:text="${emailSuccess}">Invoice emailed.</span>
       </div>
       <div th:if="${emailError}" class="mb-6 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800 flex items-center gap-2">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
         <span th:text="${emailError}">error</span>
       </div>
       <div th:if="${paymentSuccess}" class="mb-6 px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-        </svg>
+        <i data-lucide="check" class="w-4 h-4"></i>
         <span th:text="${paymentSuccess}">Payment recorded.</span>
       </div>
       <div th:if="${paymentError}" class="mb-6 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800 flex items-center gap-2">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
         <span th:text="${paymentError}">error</span>
       </div>
 
@@ -80,9 +75,7 @@
                 sec:authorize="hasAuthority('manage-invoices')">
             <button type="submit"
                     class="inline-flex items-center gap-2 text-sm bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
-              </svg>
+              <i data-lucide="download" class="w-4 h-4"></i>
               <span th:text="${#lists.isEmpty(invoiceDocs) ? 'Generate PDF' : 'Regenerate PDF'}">Generate PDF</span>
             </button>
           </form>
@@ -93,9 +86,7 @@
                   th:disabled="${#lists.isEmpty(invoiceDocs) or invoice.client.email == null or #strings.isEmpty(invoice.client.email)}"
                   th:title="${#lists.isEmpty(invoiceDocs) ? 'Generate a PDF first' : (invoice.client.email == null or #strings.isEmpty(invoice.client.email) ? 'Client has no email address' : '')}"
                   class="inline-flex items-center gap-2 text-sm bg-[#ea7c28] hover:bg-[#d66f20] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded-lg transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-            </svg>
+            <i data-lucide="mail" class="w-4 h-4"></i>
             <span th:text="${invoice.sentAt != null ? 'Resend email' : 'Send email'}">Send email</span>
           </button>
 
@@ -104,9 +95,7 @@
                   th:disabled="${invoice.status == 'paid' or invoice.status == 'void'}"
                   th:title="${invoice.status == 'paid' ? 'Already paid in full' : (invoice.status == 'void' ? 'Invoice is void' : '')}"
                   class="inline-flex items-center gap-2 text-sm bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white px-3 py-1.5 rounded-lg transition">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
+            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
             Record payment
           </button>
 
@@ -460,9 +449,7 @@
             <form th:action="@{/invoices/{id}/email(id=${invoice.id}, _csrf=${_csrf.token})}" method="post">
               <button type="submit"
                       class="inline-flex items-center gap-2 text-sm bg-[#ea7c28] hover:bg-[#d66f20] text-white font-medium px-4 py-2 rounded-lg transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l9 6 9-6M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
+                <i data-lucide="send" class="w-4 h-4"></i>
                 Send now
               </button>
             </form>

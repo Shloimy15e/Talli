@@ -54,7 +54,27 @@ public class ClientController {
     // List page
     @GetMapping
     public String index(Model model) {
-        model.addAttribute("clients", clientRepository.findAll());
+        List<Client> clients = clientRepository.findAll();
+        model.addAttribute("clients", clients);
+
+        // Aggregate KPIs across all clients.
+        List<Invoice> allInvoices = invoiceRepository.findAllByOrderByIssuedAtDescIdDesc();
+        BigDecimal totalBilled = allInvoices.stream()
+                .filter(i -> !"void".equals(i.getStatus()))
+                .map(Invoice::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalCollected = allInvoices.stream()
+                .map(Invoice::getAmountPaid)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalOutstanding = totalBilled.subtract(totalCollected);
+        long activeProjects = projectRepository.findAll().stream()
+                .filter(p -> "active".equals(p.getStatus()))
+                .count();
+
+        model.addAttribute("totalBilled", totalBilled);
+        model.addAttribute("totalCollected", totalCollected);
+        model.addAttribute("totalOutstanding", totalOutstanding);
+        model.addAttribute("activeProjects", activeProjects);
         return "clients/index";
     }
 

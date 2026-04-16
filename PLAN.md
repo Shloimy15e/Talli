@@ -49,31 +49,19 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Customer statements: PDF generation via `PdfService.renderStatement`, inline download at `/clients/{id}/statement`
 - ✅ Client portal: separate layout (no sidebar), dashboard with KPIs + aging + invoices + projects, invoice detail view, statement PDF download, login routing (client users → `/portal`)
 
-## Now — urgent fix
+- ✅ Role enforcement: SecurityConfig has 30+ granular route → permission rules matching HTTP method to specific permissions. V19 removes `manage-clients` from bookkeeper. Standalone emails page restricted to admin. Every sidebar nav link + action button (New/Edit/Delete/Void/Generate/Send/Record/Timer) guarded with `sec:authorize` across all templates.
+- ✅ Test coverage: ClientServiceTest (6 tests: aging buckets), PaymentServiceTest (7 tests: record/delete/transitions/validation), InvoiceServiceTest additions (6 tests: void/idempotent/expenses/expense-only invoices).
 
-**Role enforcement is broken.** `SecurityConfig` only enforces `view-dashboard` as the catch-all for non-portal routes. A bookkeeper can create/delete clients, projects, time entries — anything an admin can do. The 17 permissions exist in the DB and are loaded into Spring Security authorities, but only 3 are checked at the URL level (`portal-access`, `manage-users`, `view-dashboard`).
+## Now — WIP
 
-**Fix:** Add granular route → permission mappings in `SecurityConfig`:
-- `POST /clients/**` → `manage-clients`, `GET /clients/**` → `view-clients`
-- `POST /projects/**` → `manage-projects`, `GET /projects/**` → `view-projects`
-- `POST /time/**` → `manage-time`, `GET /time/**` → `view-time`
-- `POST /expenses/**` → `manage-expenses`, `GET /expenses/**` → `view-expenses`
-- `POST /invoices/**` → `manage-invoices`, `GET /invoices/**` → `view-invoices`
-- `POST /invoices/*/payments/**` → `manage-payments`, payments list → `view-payments`
-- `POST /invoices/*/email` → `send-emails`
-- `/admin/users/**` → `manage-users`
-- `/dashboard` → `view-dashboard`
-
-Also hide sidebar items + action buttons for users without the relevant permission using `sec:authorize`.
+**Index page improvements** — client index needs KPI tiles + search. Invoice index needs status/client/date filters. Expense index needs filters.
 
 ## Next up (ordered)
 
-1. **Fix role enforcement** (now) — SecurityConfig granular permissions + template guards.
-2. **Index page improvements** — client index needs KPI tiles + search. Invoice index needs status/client/date filters. Expense index needs filters.
-3. **Remaining Lucide icon conversion** — action buttons, flash icons across show/index pages.
-4. **Test coverage** — InvoiceServiceTest needs void/expense coverage, PaymentService/ClientService/PortalController untested.
-5. **Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
-6. **Reports page** — monthly/yearly revenue, per-client P&L, time utilization.
+1. **Index page improvements** (WIP) — client index KPI tiles + search. Invoice/expense index filters.
+2. **Remaining Lucide icon conversion** (WIP) — action buttons, flash icons across show/index pages.
+3. **Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
+4. **Reports page** — monthly/yearly revenue, per-client P&L, time utilization.
 
 ## Deliberately skipped for Dynamiq's shape
 
