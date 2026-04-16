@@ -94,6 +94,12 @@
              th:classappend="${totalReceivables.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
              th:text="'$' + ${#numbers.formatDecimal(totalReceivables, 1, 'COMMA', 2, 'POINT')}">$0.00</p>
           <p class="text-xs text-slate-500 mt-1">outstanding</p>
+          <p th:if="${creditsHeld != null and creditsHeld.signum() > 0}"
+             class="text-xs text-slate-500 mt-1 pt-1 border-t border-slate-100">
+            <span class="font-mono tabular-nums text-slate-700"
+                  th:text="'$' + ${#numbers.formatDecimal(creditsHeld, 1, 'COMMA', 2, 'POINT')}">$0.00</span>
+            held as client credit
+          </p>
         </a>
 
         <a th:href="@{/expenses}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">

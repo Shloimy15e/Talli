@@ -2,6 +2,7 @@ package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.Payment;
+import dev.dynamiq.talli.repository.ClientCreditRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.PaymentRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,7 +31,8 @@ class PaymentServiceTest {
         invoiceRepository = mock(InvoiceRepository.class);
         ExchangeRateService exchangeRateService = mock(ExchangeRateService.class);
         when(exchangeRateService.getRate(any())).thenReturn(java.math.BigDecimal.ONE);
-        service = new PaymentService(paymentRepository, invoiceRepository, exchangeRateService);
+        ClientCreditRepository creditRepository = mock(ClientCreditRepository.class);
+        service = new PaymentService(paymentRepository, invoiceRepository, exchangeRateService, creditRepository);
 
         invoice = new Invoice();
         invoice.setId(1L);
@@ -70,12 +72,13 @@ class PaymentServiceTest {
     }
 
     @Test
-    void record_transitionsToPaidWhenOverpaid() {
-        when(paymentRepository.sumAmountByInvoiceId(1L)).thenReturn(new BigDecimal("1200.00"));
-
-        service.record(1L, LocalDate.now(), new BigDecimal("1200.00"), "check", null, null);
-
-        assertThat(invoice.getStatus()).isEqualTo("paid");
+    void record_rejectsOverpayment() {
+        // Invoice total 1000, balance 1000 — attempting to record 1200 must throw.
+        assertThatThrownBy(() -> service.record(1L, LocalDate.now(),
+                new BigDecimal("1200.00"), "check", null, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("exceeds outstanding balance");
+        verify(paymentRepository, never()).save(any(Payment.class));
     }
 
     @Test

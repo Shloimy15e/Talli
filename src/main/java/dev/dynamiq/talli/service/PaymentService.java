@@ -38,11 +38,17 @@ public class PaymentService {
 
     /**
      * Record a direct payment (fresh cash) against an invoice.
+     * Caps at the outstanding balance — can't overpay.
      */
     @Transactional
     public Payment record(Long invoiceId, LocalDate paidAt, BigDecimal amount,
                           String method, String reference, String notes) {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow();
+        BigDecimal balance = invoice.balance();
+        if (amount != null && amount.compareTo(balance) > 0) {
+            throw new IllegalStateException(
+                    "Payment (" + amount + ") exceeds outstanding balance (" + balance + ").");
+        }
         Payment payment = buildPayment(invoice, paidAt, amount, method, reference, notes);
         payment.setSource("direct");
         payment = paymentRepository.save(payment);
