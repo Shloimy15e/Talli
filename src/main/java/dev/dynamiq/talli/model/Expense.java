@@ -4,10 +4,16 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "expenses")
 public class Expense implements HasMedia {
+
+    public static final List<String> CATEGORIES = List.of(
+            "software", "hardware", "travel", "meals",
+            "contractors", "office", "marketing", "taxes", "other"
+    );
 
      @Override
     public String mediaOwnerType() {

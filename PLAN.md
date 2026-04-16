@@ -53,18 +53,17 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Test coverage: ClientServiceTest (6 tests: aging buckets), PaymentServiceTest (7 tests: record/delete/transitions/validation), InvoiceServiceTest additions (6 tests: void/idempotent/expenses/expense-only invoices).
 - ✅ Index page improvements: client index KPI tiles + search, invoice index status/client filters + search, expense index pagination.
 - ✅ Lucide icon conversion: all inline SVGs replaced with `data-lucide` attributes, icons added to all action buttons (Edit/Delete/Void/Stop/Start/Remove/back arrows) — 55 Lucide refs across 13 templates.
+- ✅ Media Phase C: `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver` env var. AWS SDK v2 with path-style access for R2 compatibility.
+- ✅ Reports page: `ReportService` + `ReportController` with monthly/yearly revenue, per-client P&L, time utilization, expense breakdown. Filterable by date range.
 
 ## Now — WIP
 
-**Media Phase C** — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`. Required before prod since Railway disk is ephemeral.
+**CSV/Excel expense import** — upload bank export, map columns, preview, import as expenses. `ImportService` (shared parser) + `ImportController`.
 
 ## Next up (ordered)
 
-1. **Media Phase C** (WIP) — `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver`.
-2. **Data import** — two parts:
-   - **Google Sheets historic import**: one-time migration of existing Dynamiq billing data (clients, projects, invoices, time, expenses, payments) from the current spreadsheet workflow into Talli. Likely a CLI command or admin page with column-mapping.
-   - **Excel/CSV import for expenses & incomes**: ongoing feature. Upload bank export (Excel/CSV), map columns, preview rows, import as expenses or payments. Handles duplicates, date parsing, currency.
-3. **Reports page** — monthly/yearly revenue, per-client P&L, time utilization.
+1. **CSV/Excel expense import** (WIP) — `ImportController` with upload → column-mapping preview → confirm flow. Apache POI for .xlsx, custom CSV parser. Admin-only.
+2. **Google Sheets historic migration** — separate `MigrationController`. Multi-tab workbook → clients, projects, invoices, time entries, expenses, payments. One-time use, handles FK relationships and dependency ordering. Shares `ImportService.parse()` for per-sheet parsing.
 
 ## Deliberately skipped for Dynamiq's shape
 
@@ -78,7 +77,6 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 
 - **Chrome extension** — one-click time tracking + quick expense entry via REST API
 - **Raycast extension** — log time, add expense, look up clients
-- **Reports** — monthly/yearly revenue, per-client P&L, time utilization
 - **Currency conversion** — show revenue in a base currency alongside original
 - **Multi-org (maybe)** — only if another service business with the same shape of needs wants Talli. Not for product/e-commerce businesses (those would fork). Keeps the app simple.
 

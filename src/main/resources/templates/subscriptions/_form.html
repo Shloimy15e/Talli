@@ -31,7 +31,7 @@
               <label for="category" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Category</label>
               <select id="category" name="category" required
                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-                <option th:each="c : ${ {'software', 'hardware', 'travel', 'meals', 'contractors', 'office', 'marketing', 'taxes', 'other'} }"
+                <option th:each="c : ${T(dev.dynamiq.talli.model.Expense).CATEGORIES}"
                         th:value="${c}" th:text="${c}" th:selected="${subscription.category == c}">software</option>
               </select>
             </div>

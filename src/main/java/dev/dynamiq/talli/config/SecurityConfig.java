@@ -30,6 +30,7 @@ public class SecurityConfig {
 
                 // Admin
                 .requestMatchers("/admin/users/**").hasAuthority("manage-users")
+                .requestMatchers("/admin/import/**").hasAuthority("manage-users")
 
                 // Clients — POST = write, GET = read
                 .requestMatchers(HttpMethod.POST, "/clients", "/clients/*/delete", "/clients/*").hasAuthority("manage-clients")

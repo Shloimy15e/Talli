@@ -1,0 +1,51 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Import Results')}"></head>
+  <body th:replace="~{layout :: page('import', ~{::section})}">
+    <section>
+
+      <div class="mb-8">
+        <h1 class="text-2xl font-semibold tracking-tight">Import Complete</h1>
+      </div>
+
+      <!-- Success summary -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-5">
+          <div class="grid grid-cols-2 gap-6">
+            <div class="bg-emerald-50 rounded-lg p-4">
+              <p class="text-xs uppercase tracking-wider text-emerald-600 font-semibold">Imported</p>
+              <p class="text-3xl font-semibold text-emerald-700 mt-1" th:text="${importedCount ?: 0}">0</p>
+              <p class="text-xs text-emerald-600 mt-1">expenses created</p>
+            </div>
+            <div class="bg-slate-50 rounded-lg p-4">
+              <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Skipped</p>
+              <p class="text-3xl font-semibold text-slate-700 mt-1" th:text="${skippedCount ?: 0}">0</p>
+              <p class="text-xs text-slate-500 mt-1">rows skipped (blank or invalid)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Errors -->
+      <div th:if="${importErrors != null and !importErrors.isEmpty()}"
+           class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h2 class="font-semibold text-sm text-red-700">Errors</h2>
+        </div>
+        <ul class="px-6 py-4 space-y-1">
+          <li th:each="err : ${importErrors}" class="text-sm text-red-700 font-mono" th:text="${err}">error</li>
+        </ul>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="/admin/import"
+           class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+          <i data-lucide="upload" class="w-4 h-4"></i>
+          Import more
+        </a>
+        <a href="/expenses" class="text-sm text-slate-500 hover:text-slate-900">View expenses</a>
+      </div>
+
+    </section>
+  </body>
+</html>
