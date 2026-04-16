@@ -30,7 +30,7 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Spatie-style roles/permissions: 4 roles (admin, bookkeeper, accountant, client), 17 permissions, `@ManyToMany` pivots, `thymeleaf-extras-springsecurity6` for `sec:authorize`
 - ✅ Email-based user invitations: admin invites by email+name+roles → UUID token → branded invite email → set-password page → login. Inline new-client creation when inviting client-role users.
 - ✅ User profile page (edit name/email, change password)
-- ✅ Flyway migrations (V1–V18), PostgreSQL, spring-dotenv
+- ✅ Flyway migrations (V1–V20), PostgreSQL, spring-dotenv
 - ✅ Dockerfile + Railway deployment
 - ✅ Thymeleaf + Tailwind + HTMX + Alpine + Lucide Icons + Inter font + Dynamiq branding
 - ✅ `@ControllerAdvice` for currency symbols (`$`, `₪`, `€`, `£` via `csym` function)
@@ -55,15 +55,14 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 - ✅ Lucide icon conversion: all inline SVGs replaced with `data-lucide` attributes, icons added to all action buttons (Edit/Delete/Void/Stop/Start/Remove/back arrows) — 55 Lucide refs across 13 templates.
 - ✅ Media Phase C: `S3MediaStorage` for Cloudflare R2, switchable via `app.storage.driver` env var. AWS SDK v2 with path-style access for R2 compatibility.
 - ✅ Reports page: `ReportService` + `ReportController` with monthly/yearly revenue, per-client P&L, time utilization, expense breakdown. Filterable by date range.
+- ✅ CSV/Excel expense import: `ImportService` (CSV + Excel parser via Apache POI) + `ImportController` with 3-step admin flow (upload → column-mapping preview with auto-mapping → confirm). Validates categories, supports 9 date formats.
+- ✅ Historic data migration: `MigrationService` + `MigrationController` — multi-sheet xlsx upload → preview (transformed data, client normalization via regex rules in `ClientMapping`) → confirm → dependency-ordered import (clients → projects → invoices+payments → time entries → subscriptions+expenses). Time entries link to invoice projects. Subscriptions generate monthly expense records. `SpreadsheetUtil` for shared parse helpers. Unit tests for ClientMapping, SpreadsheetUtil, MigrationService.
+- ✅ Exchange rate support (V20): `ExchangeRateService` with 1h-cached current rates (open.er-api.com) + historic rates (fawazahmed0/currency-api). `exchange_rate` column on invoices + payments. Dashboard/reports convert all aggregates to USD: received at payment-date rate, outstanding at current rate. Backfill endpoint for existing data. Net line fixed to cash basis (received − expenses).
+- ✅ UI improvements: invoice index pagination (25/page) with server-side search + status pill filters. Time index pagination (30/page) with client/project dropdowns + status pills, currency-aware values (per-entry native currency, totals in USD), hh:mm chart formatting. Quarterly + yearly breakdown tables and quarterly bar chart on reports. Quarterly chart on dashboard. Currency symbols (`csym`) on expense/subscription index. `expenseCategories` via `@ControllerAdvice` (fixes T() SpEL DevTools bug). Cancelled subscriptions visible in collapsible section.
 
 ## Now — WIP
 
-**CSV/Excel expense import** — upload bank export, map columns, preview, import as expenses. `ImportService` (shared parser) + `ImportController`.
-
-## Next up (ordered)
-
-1. **CSV/Excel expense import** (WIP) — `ImportController` with upload → column-mapping preview → confirm flow. Apache POI for .xlsx, custom CSV parser. Admin-only.
-2. **Google Sheets historic migration** — separate `MigrationController`. Multi-tab workbook → clients, projects, invoices, time entries, expenses, payments. One-time use, handles FK relationships and dependency ordering. Shares `ImportService.parse()` for per-sheet parsing.
+**Dashboard/reports cleanup** — reduce noise, improve information hierarchy.
 
 ## Deliberately skipped for Dynamiq's shape
 
@@ -77,7 +76,7 @@ A live skills tracker lives in Claude's memory at `feedback_java_learning_split.
 
 - **Chrome extension** — one-click time tracking + quick expense entry via REST API
 - **Raycast extension** — log time, add expense, look up clients
-- **Currency conversion** — show revenue in a base currency alongside original
+- ~~**Currency conversion**~~ — done (V20, ExchangeRateService)
 - **Multi-org (maybe)** — only if another service business with the same shape of needs wants Talli. Not for product/e-commerce businesses (those would fork). Keeps the app simple.
 
 ## Deliberately not doing
