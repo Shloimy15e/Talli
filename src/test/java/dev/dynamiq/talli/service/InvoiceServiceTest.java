@@ -1,6 +1,7 @@
 package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Client;
+import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
 import dev.dynamiq.talli.model.Project;
@@ -354,5 +355,129 @@ class InvoiceServiceTest {
                 .findByProjectIdAndBillableTrueAndBilledFalseAndEndedAtIsNotNullAndStartedAtBetweenOrderByStartedAtAsc(
                         eq(projectId), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(entries);
+    }
+
+    // --- voidInvoice ---
+
+    @Test
+    void voidInvoice_setsStatusAndUnmarksTimeEntries() {
+        Invoice inv = new Invoice();
+        inv.setId(10L);
+        inv.setStatus("unpaid");
+        when(invoiceRepository.findById(10L)).thenReturn(Optional.of(inv));
+
+        TimeEntry e1 = new TimeEntry();
+        e1.setBilled(true);
+        e1.setInvoice(inv);
+        TimeEntry e2 = new TimeEntry();
+        e2.setBilled(true);
+        e2.setInvoice(inv);
+        when(timeEntryRepository.findByInvoiceId(10L)).thenReturn(List.of(e1, e2));
+        when(expenseRepository.findByInvoiceId(10L)).thenReturn(List.of());
+
+        service.voidInvoice(10L);
+
+        assertThat(inv.getStatus()).isEqualTo("void");
+        assertThat(e1.getBilled()).isFalse();
+        assertThat(e1.getInvoice()).isNull();
+        assertThat(e2.getBilled()).isFalse();
+    }
+
+    @Test
+    void voidInvoice_unmarksExpenses() {
+        Invoice inv = new Invoice();
+        inv.setId(10L);
+        inv.setStatus("unpaid");
+        when(invoiceRepository.findById(10L)).thenReturn(Optional.of(inv));
+        when(timeEntryRepository.findByInvoiceId(10L)).thenReturn(List.of());
+
+        Expense ex = new Expense();
+        ex.setBilled(true);
+        ex.setInvoice(inv);
+        when(expenseRepository.findByInvoiceId(10L)).thenReturn(List.of(ex));
+
+        service.voidInvoice(10L);
+
+        assertThat(ex.getBilled()).isFalse();
+        assertThat(ex.getInvoice()).isNull();
+    }
+
+    @Test
+    void voidInvoice_idempotent() {
+        Invoice inv = new Invoice();
+        inv.setId(10L);
+        inv.setStatus("void");
+        when(invoiceRepository.findById(10L)).thenReturn(Optional.of(inv));
+
+        service.voidInvoice(10L); // should not throw or change anything
+
+        assertThat(inv.getStatus()).isEqualTo("void");
+        verify(timeEntryRepository, never()).findByInvoiceId(any());
+    }
+
+    @Test
+    void delete_throwsIfNotVoided() {
+        Invoice inv = new Invoice();
+        inv.setId(10L);
+        inv.setStatus("unpaid");
+        when(invoiceRepository.findById(10L)).thenReturn(Optional.of(inv));
+
+        assertThatThrownBy(() -> service.delete(10L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Void first");
+    }
+
+    // --- generateForClient with expenses ---
+
+    @Test
+    void generateForClient_includesBillableExpenses() {
+        Project hourly = hourlyProject(10L, "Web", "USD", "100");
+        when(clientRepository.findById(1L)).thenReturn(Optional.of(client));
+        when(projectRepository.findByClientId(1L)).thenReturn(List.of(hourly));
+        stubEntriesFor(10L, List.of(entry(hourly, LocalDateTime.of(2026, 4, 5, 9, 0), 60)));
+
+        Expense expense = new Expense();
+        expense.setAmount(new BigDecimal("75.00"));
+        expense.setCurrency("USD");
+        expense.setVendor("AWS");
+        expense.setDescription("Hosting");
+        expense.setCategory("software");
+        expense.setBillable(true);
+        expense.setBilled(false);
+        when(expenseRepository.findByClientIdAndBillableTrueAndBilledFalseAndIncurredOnBetweenOrderByIncurredOnAsc(
+                eq(1L), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(List.of(expense));
+
+        Invoice result = service.generateForClient(1L,
+                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30));
+
+        // 1h @ $100 = $100 + $75 expense = $175 total
+        assertThat(result.getAmount()).isEqualByComparingTo("175.00");
+        assertThat(expense.getBilled()).isTrue();
+        assertThat(expense.getInvoice()).isEqualTo(result);
+
+        // Should have saved 2 items: 1 time + 1 expense
+        verify(invoiceItemRepository, times(2)).save(any(InvoiceItem.class));
+    }
+
+    @Test
+    void generateForClient_expenseOnlyInvoice() {
+        when(clientRepository.findById(1L)).thenReturn(Optional.of(client));
+        when(projectRepository.findByClientId(1L)).thenReturn(List.of()); // no projects
+
+        Expense expense = new Expense();
+        expense.setAmount(new BigDecimal("50.00"));
+        expense.setCurrency("USD");
+        expense.setCategory("software");
+        expense.setBillable(true);
+        expense.setBilled(false);
+        when(expenseRepository.findByClientIdAndBillableTrueAndBilledFalseAndIncurredOnBetweenOrderByIncurredOnAsc(
+                eq(1L), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(List.of(expense));
+
+        Invoice result = service.generateForClient(1L,
+                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30));
+
+        assertThat(result.getAmount()).isEqualByComparingTo("50.00");
     }
 }
