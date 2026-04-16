@@ -19,8 +19,9 @@
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
         <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
           <h2 class="text-sm font-semibold">Account</h2>
-          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#ea7c28]/10 text-[#ea7c28]"
-                th:text="${user.role}">ADMIN</span>
+          <span th:each="r : ${user.roles}"
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#ea7c28]/10 text-[#ea7c28] capitalize ml-1"
+                th:text="${r.name}">admin</span>
         </div>
 
         <form th:action="@{/profile}" method="post" class="p-6 space-y-5">

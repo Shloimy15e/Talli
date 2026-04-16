@@ -1,5 +1,6 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
   <body>
     <!-- Fragment: sidebar(active)
      Pass the active section name from the page so we can highlight it.
@@ -192,6 +193,23 @@
           Emails
         </a>
       </nav>
+
+      <!-- Admin section — only shown if user has manage-users -->
+      <div sec:authorize="hasAuthority('manage-users')" class="mt-6">
+        <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-2 mb-2">Admin</p>
+        <nav class="space-y-0.5">
+          <a th:href="@{/admin/users}"
+             th:classappend="${active == 'users'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
+             class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                 th:style="${active == 'users'} ? 'color: #ea7c28'">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            Users
+          </a>
+        </nav>
+      </div>
 
       <!-- Spacer pushes account section to bottom -->
       <div class="flex-1"></div>
