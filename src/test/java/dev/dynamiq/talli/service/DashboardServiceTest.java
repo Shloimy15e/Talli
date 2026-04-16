@@ -1,10 +1,14 @@
 package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Expense;
+import dev.dynamiq.talli.model.Invoice;
+import dev.dynamiq.talli.model.Payment;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ExpenseRepository;
+import dev.dynamiq.talli.repository.InvoiceRepository;
+import dev.dynamiq.talli.repository.PaymentRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.SubscriptionRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
@@ -33,6 +37,8 @@ class DashboardServiceTest {
     private TimeEntryRepository timeEntryRepository;
     private ExpenseRepository expenseRepository;
     private SubscriptionRepository subscriptionRepository;
+    private InvoiceRepository invoiceRepository;
+    private PaymentRepository paymentRepository;
     private DashboardService service;
 
     private Project projectA;
@@ -45,6 +51,8 @@ class DashboardServiceTest {
         timeEntryRepository = mock(TimeEntryRepository.class);
         expenseRepository = mock(ExpenseRepository.class);
         subscriptionRepository = mock(SubscriptionRepository.class);
+        invoiceRepository = mock(InvoiceRepository.class);
+        paymentRepository = mock(PaymentRepository.class);
 
         projectA = new Project();
         projectA.setId(1L);
@@ -58,7 +66,8 @@ class DashboardServiceTest {
 
         service = new DashboardService(
                 clientRepository, projectRepository, timeEntryRepository,
-                expenseRepository, subscriptionRepository);
+                expenseRepository, subscriptionRepository,
+                invoiceRepository, paymentRepository);
     }
 
     @Test
@@ -147,20 +156,33 @@ class DashboardServiceTest {
     }
 
     @Test
-    void revenueVsExpenses_computesRevenueFromBillableTimeAndRate() {
+    void revenueVsExpenses_sourcesFromInvoicesAndPayments() {
         LocalDate today = LocalDate.now();
         LocalDate firstOfThisMonth = today.withDayOfMonth(1);
 
-        // 60 billable minutes on projectA @ $100/hr = $100 this month
-        TimeEntry billable = entry(projectA, firstOfThisMonth.atTime(9, 0), firstOfThisMonth.atTime(10, 0), 60, true, false);
-        // 60 non-billable — should not contribute to revenue
-        TimeEntry nonBillable = entry(projectA, firstOfThisMonth.atTime(11, 0), firstOfThisMonth.atTime(12, 0), 60, false, false);
+        // Invoice issued this month for $500 — should count as invoiced revenue.
+        Invoice inv = new Invoice();
+        inv.setIssuedAt(firstOfThisMonth);
+        inv.setAmount(new BigDecimal("500.00"));
+        inv.setStatus("unpaid");
+
+        // Void invoice — should NOT count.
+        Invoice voided = new Invoice();
+        voided.setIssuedAt(firstOfThisMonth);
+        voided.setAmount(new BigDecimal("200.00"));
+        voided.setStatus("void");
+
+        // Payment received this month for $300.
+        Payment pmt = new Payment();
+        pmt.setPaidAt(firstOfThisMonth.plusDays(5));
+        pmt.setAmount(new BigDecimal("300.00"));
 
         Expense ex = new Expense();
         ex.setAmount(new BigDecimal("40.00"));
         ex.setIncurredOn(firstOfThisMonth.plusDays(1));
 
-        when(timeEntryRepository.findAll()).thenReturn(List.of(billable, nonBillable));
+        when(invoiceRepository.findAll()).thenReturn(List.of(inv, voided));
+        when(paymentRepository.findAll()).thenReturn(List.of(pmt));
         when(expenseRepository.findByIncurredOnBetweenOrderByIncurredOnDesc(
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any()))
@@ -170,9 +192,10 @@ class DashboardServiceTest {
 
         assertThat(result).hasSize(3);
         MonthFinancials thisMonth = result.get(2);
-        assertThat(thisMonth.revenue()).isEqualByComparingTo("100.00");
+        assertThat(thisMonth.invoiced()).isEqualByComparingTo("500.00");  // void excluded
+        assertThat(thisMonth.received()).isEqualByComparingTo("300.00");
         assertThat(thisMonth.expenses()).isEqualByComparingTo("40.00");
-        assertThat(thisMonth.net()).isEqualByComparingTo("60.00");
+        assertThat(thisMonth.net()).isEqualByComparingTo("460.00");  // invoiced - expenses
     }
 
     @Test

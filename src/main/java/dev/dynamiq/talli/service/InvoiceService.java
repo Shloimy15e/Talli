@@ -1,11 +1,13 @@
 package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Client;
+import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
+import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.InvoiceItemRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
@@ -31,17 +33,20 @@ public class InvoiceService {
     private final TimeEntryRepository timeEntryRepository;
     private final ProjectRepository projectRepository;
     private final ClientRepository clientRepository;
+    private final ExpenseRepository expenseRepository;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
             InvoiceItemRepository invoiceItemRepository,
             TimeEntryRepository timeEntryRepository,
             ProjectRepository projectRepository,
-            ClientRepository clientRepository) {
+            ClientRepository clientRepository,
+            ExpenseRepository expenseRepository) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceItemRepository = invoiceItemRepository;
         this.timeEntryRepository = timeEntryRepository;
         this.projectRepository = projectRepository;
         this.clientRepository = clientRepository;
+        this.expenseRepository = expenseRepository;
     }
 
     public List<Invoice> listAll() {
@@ -78,9 +83,45 @@ public class InvoiceService {
         return invoice;
     }
 
+    /**
+     * Void an invoice: sets status to "void", un-marks all linked time entries
+     * so they return to the unbilled pool and can be re-invoiced. Payments are
+     * left on the record for audit — PaymentService won't recompute status on
+     * a voided invoice.
+     */
+    @Transactional
+    public void voidInvoice(Long id) {
+        Invoice invoice = invoiceRepository.findById(id).orElseThrow();
+        if ("void".equals(invoice.getStatus())) return; // idempotent
+
+        invoice.setStatus("void");
+
+        // Release linked time entries back to "unbilled".
+        for (var entry : timeEntryRepository.findByInvoiceId(id)) {
+            entry.setBilled(false);
+            entry.setInvoice(null);
+            entry.setInvoiceItem(null);
+        }
+
+        // Release billable expenses linked to this invoice.
+        for (Expense expense : expenseRepository.findByInvoiceId(id)) {
+            expense.setBilled(false);
+            expense.setInvoice(null);
+        }
+    }
+
+    /**
+     * Hard-delete — only allowed on voided invoices. Time entries were already
+     * un-marked during void, so no leak. Cascades delete invoice_items + payments
+     * via DB FK constraints.
+     */
     @Transactional
     public void delete(Long id) {
-        invoiceRepository.deleteById(id);
+        Invoice invoice = invoiceRepository.findById(id).orElseThrow();
+        if (!"void".equals(invoice.getStatus())) {
+            throw new IllegalStateException("Only voided invoices can be deleted. Void first.");
+        }
+        invoiceRepository.delete(invoice);
     }
 
     /**
@@ -132,9 +173,19 @@ public class InvoiceService {
             lines.add(new EligibleLine(project, entries, hours, rate, lineTotal));
         }
 
-        if (lines.isEmpty()) {
+        // Billable expenses for this client in the period.
+        List<Expense> billableExpenses = expenseRepository
+                .findByClientIdAndBillableTrueAndBilledFalseAndIncurredOnBetweenOrderByIncurredOnAsc(
+                        clientId, periodStart, periodEnd);
+
+        if (lines.isEmpty() && billableExpenses.isEmpty()) {
             throw new IllegalStateException(
                     "No billable work to invoice for " + client.getName() + " in this period");
+        }
+
+        // If we only have expenses and no time lines, derive currency from first expense.
+        if (currency == null && !billableExpenses.isEmpty()) {
+            currency = billableExpenses.get(0).getCurrency();
         }
 
         Invoice invoice = newInvoiceShell(client, periodStart, periodEnd, currency);
@@ -161,6 +212,26 @@ public class InvoiceService {
             }
 
             total = total.add(line.total());
+        }
+
+        // Expense pass-through lines — one per billable expense, at cost.
+        for (Expense expense : billableExpenses) {
+            String desc = (expense.getVendor() != null ? expense.getVendor() + " — " : "")
+                    + (expense.getDescription() != null ? expense.getDescription() : expense.getCategory());
+
+            InvoiceItem item = new InvoiceItem();
+            item.setInvoice(invoice);
+            item.setProject(expense.getProject());
+            item.setDescription(desc);
+            item.setUnit("ea");
+            item.setUnitCount(BigDecimal.ONE);
+            item.setUnitPrice(expense.getAmount());
+            item.setTotal(expense.getAmount());
+            invoiceItemRepository.save(item);
+
+            expense.setInvoice(invoice);
+            expense.setBilled(true);
+            total = total.add(expense.getAmount());
         }
 
         invoice.setAmount(total);

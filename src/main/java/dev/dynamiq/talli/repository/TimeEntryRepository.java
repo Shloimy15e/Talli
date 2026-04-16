@@ -12,6 +12,8 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
     List<TimeEntry> findAllByOrderByStartedAtDesc();
     Optional<TimeEntry> findFirstByEndedAtIsNullOrderByStartedAtDesc(); // the currently running entry, if any
 
+    List<TimeEntry> findByInvoiceId(Long invoiceId);
+
     // Billable, unbilled, ended, within a window — the candidates for an invoice.
     List<TimeEntry> findByProjectIdAndBillableTrueAndBilledFalseAndEndedAtIsNotNullAndStartedAtBetweenOrderByStartedAtAsc(
             Long projectId, LocalDateTime from, LocalDateTime to);

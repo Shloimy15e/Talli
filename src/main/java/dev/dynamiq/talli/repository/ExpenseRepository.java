@@ -15,6 +15,11 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     List<Expense> findByClientIdOrderByIncurredOnDesc(Long clientId);
 
+    List<Expense> findByClientIdAndBillableTrueAndBilledFalseAndIncurredOnBetweenOrderByIncurredOnAsc(
+            Long clientId, LocalDate from, LocalDate to);
+
+    List<Expense> findByInvoiceId(Long invoiceId);
+
     List<Expense> findByProjectIdOrderByIncurredOnDesc(Long projectId);
 
     List<Expense> findBySubscriptionIdOrderByIncurredOnDesc(Long subscriptionId);

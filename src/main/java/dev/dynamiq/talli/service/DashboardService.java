@@ -1,9 +1,13 @@
 package dev.dynamiq.talli.service;
 
+import dev.dynamiq.talli.model.Invoice;
+import dev.dynamiq.talli.model.Payment;
 import dev.dynamiq.talli.model.Subscription;
 import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ExpenseRepository;
+import dev.dynamiq.talli.repository.InvoiceRepository;
+import dev.dynamiq.talli.repository.PaymentRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.SubscriptionRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
@@ -37,17 +41,23 @@ public class DashboardService {
     private final TimeEntryRepository timeEntryRepository;
     private final ExpenseRepository expenseRepository;
     private final SubscriptionRepository subscriptionRepository;
+    private final InvoiceRepository invoiceRepository;
+    private final PaymentRepository paymentRepository;
 
     public DashboardService(ClientRepository clientRepository,
                             ProjectRepository projectRepository,
                             TimeEntryRepository timeEntryRepository,
                             ExpenseRepository expenseRepository,
-                            SubscriptionRepository subscriptionRepository) {
+                            SubscriptionRepository subscriptionRepository,
+                            InvoiceRepository invoiceRepository,
+                            PaymentRepository paymentRepository) {
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.timeEntryRepository = timeEntryRepository;
         this.expenseRepository = expenseRepository;
         this.subscriptionRepository = subscriptionRepository;
+        this.invoiceRepository = invoiceRepository;
+        this.paymentRepository = paymentRepository;
     }
 
     public long countClients() {
@@ -152,48 +162,65 @@ public class DashboardService {
                 .toList();
     }
 
+    /**
+     * Revenue (invoiced, accrual) vs expenses by month. Revenue = sum of
+     * non-void invoice amounts bucketed by issuedAt month. Expenses = sum of
+     * expense amounts bucketed by incurredOn month.
+     */
     public List<MonthFinancials> revenueVsExpenses(int months) {
-        // Revenue proxy: billable time × project.currentRate (no invoicing yet — swap to billed=true when invoicing lands).
         LocalDate today = LocalDate.now();
         YearMonth startMonth = YearMonth.from(today).minusMonths(months - 1L);
 
-        Map<YearMonth, BigDecimal> revenueByMonth = new LinkedHashMap<>();
+        Map<YearMonth, BigDecimal> invoicedByMonth = new LinkedHashMap<>();
+        Map<YearMonth, BigDecimal> receivedByMonth = new LinkedHashMap<>();
         Map<YearMonth, BigDecimal> expensesByMonth = new LinkedHashMap<>();
         for (int i = 0; i < months; i++) {
             YearMonth ym = startMonth.plusMonths(i);
-            revenueByMonth.put(ym, BigDecimal.ZERO);
+            invoicedByMonth.put(ym, BigDecimal.ZERO);
+            receivedByMonth.put(ym, BigDecimal.ZERO);
             expensesByMonth.put(ym, BigDecimal.ZERO);
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        for (TimeEntry e : timeEntryRepository.findAll()) {
-            if (!Boolean.TRUE.equals(e.getBillable())) continue;
-            if (e.getStartedAt() == null || e.getProject() == null) continue;
-            YearMonth ym = YearMonth.from(e.getStartedAt());
-            if (!revenueByMonth.containsKey(ym)) continue;
-
-            BigDecimal rate = e.getProject().getCurrentRate();
-            if (rate == null) continue;
-            BigDecimal minutes = BigDecimal.valueOf(minutesFor(e, now));
-            BigDecimal amount = rate.multiply(minutes).divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-            revenueByMonth.merge(ym, amount, BigDecimal::add);
+        // Invoiced revenue — bucketed by issuedAt month, excluding void.
+        for (Invoice inv : invoiceRepository.findAll()) {
+            if ("void".equals(inv.getStatus())) continue;
+            if (inv.getIssuedAt() == null || inv.getAmount() == null) continue;
+            YearMonth ym = YearMonth.from(inv.getIssuedAt());
+            invoicedByMonth.computeIfPresent(ym, (k, v) -> v.add(inv.getAmount()));
         }
 
+        // Cash received — bucketed by paidAt month.
+        for (Payment p : paymentRepository.findAll()) {
+            if (p.getPaidAt() == null || p.getAmount() == null) continue;
+            YearMonth ym = YearMonth.from(p.getPaidAt());
+            receivedByMonth.computeIfPresent(ym, (k, v) -> v.add(p.getAmount()));
+        }
+
+        // Expenses.
         LocalDate rangeStart = startMonth.atDay(1);
         for (var ex : expenseRepository.findByIncurredOnBetweenOrderByIncurredOnDesc(rangeStart, today)) {
             if (ex.getAmount() == null || ex.getIncurredOn() == null) continue;
             YearMonth ym = YearMonth.from(ex.getIncurredOn());
-            expensesByMonth.merge(ym, ex.getAmount(), BigDecimal::add);
+            expensesByMonth.computeIfPresent(ym, (k, v) -> v.add(ex.getAmount()));
         }
 
         DateTimeFormatter monthFmt = DateTimeFormatter.ofPattern("MMM yyyy");
         List<MonthFinancials> out = new ArrayList<>(months);
-        for (YearMonth ym : revenueByMonth.keySet()) {
-            BigDecimal rev = revenueByMonth.get(ym);
+        for (YearMonth ym : invoicedByMonth.keySet()) {
+            BigDecimal inv = invoicedByMonth.get(ym);
+            BigDecimal rec = receivedByMonth.get(ym);
             BigDecimal exp = expensesByMonth.get(ym);
-            out.add(new MonthFinancials(ym.format(monthFmt), rev, exp, rev.subtract(exp)));
+            out.add(new MonthFinancials(ym.format(monthFmt), inv, rec, exp, inv.subtract(exp)));
         }
         return out;
+    }
+
+    /** Total outstanding balance across all unpaid/overdue invoices. */
+    public BigDecimal totalReceivables() {
+        return invoiceRepository.findAll().stream()
+                .filter(i -> "unpaid".equals(i.getStatus()) || "overdue".equals(i.getStatus()))
+                .map(Invoice::balance)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public BillableBreakdown billableBreakdown() {

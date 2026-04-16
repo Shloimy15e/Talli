@@ -50,6 +50,8 @@ public class DashboardController {
         model.addAttribute("billableBreakdownJson",
                 objectMapper.writeValueAsString(dashboardService.billableBreakdown()));
 
+        model.addAttribute("totalReceivables", dashboardService.totalReceivables());
+
         return "dashboard/index";
     }
 }

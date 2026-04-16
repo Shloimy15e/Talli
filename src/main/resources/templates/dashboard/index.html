@@ -80,8 +80,16 @@
 
       </div>
 
-      <!-- Money-out tiles -->
-      <div class="grid grid-cols-3 gap-4 mb-6">
+      <!-- Financial tiles -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+
+        <a th:href="@{/invoices}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Receivables</p>
+          <p class="text-3xl font-semibold mt-2 font-mono tabular-nums"
+             th:classappend="${totalReceivables.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
+             th:text="'$' + ${#numbers.formatDecimal(totalReceivables, 0, 'COMMA', 2, 'POINT')}">$0.00</p>
+          <p class="text-xs text-slate-500 mt-1">outstanding</p>
+        </a>
 
         <a th:href="@{/expenses}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Expenses This Month</p>
@@ -126,8 +134,7 @@
 
         <div class="col-span-2 bg-white rounded-xl border border-slate-200 p-5">
           <div class="flex items-center justify-between mb-4">
-            <h2 class="text-sm font-semibold">Revenue, expenses & net (last 6 months)</h2>
-            <span class="text-xs text-slate-500">revenue proxied from billable time</span>
+            <h2 class="text-sm font-semibold">Invoiced, received & expenses (last 6 months)</h2>
           </div>
           <canvas id="chartFinancials" th:attr="data-chart=${revenueVsExpensesJson}" height="110"></canvas>
         </div>
@@ -205,7 +212,8 @@
               data: {
                 labels: data.map(d => d.month),
                 datasets: [
-                  { type: 'bar', label: 'Revenue',  data: data.map(d => Number(d.revenue)),  backgroundColor: orange, borderRadius: 4 },
+                  { type: 'bar', label: 'Invoiced',  data: data.map(d => Number(d.invoiced)),  backgroundColor: orange, borderRadius: 4 },
+                  { type: 'bar', label: 'Received', data: data.map(d => Number(d.received)), backgroundColor: green,  borderRadius: 4 },
                   { type: 'bar', label: 'Expenses', data: data.map(d => Number(d.expenses)), backgroundColor: red,    borderRadius: 4 },
                   { type: 'line', label: 'Net', data: data.map(d => Number(d.net)), borderColor: navy, backgroundColor: navy, tension: 0.3, pointRadius: 4 },
                 ],

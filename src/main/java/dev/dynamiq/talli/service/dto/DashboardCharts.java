@@ -9,7 +9,7 @@ public class DashboardCharts {
 
     public record ProjectMinutes(String project, int minutes) {}
 
-    public record MonthFinancials(String month, BigDecimal revenue, BigDecimal expenses, BigDecimal net) {}
+    public record MonthFinancials(String month, BigDecimal invoiced, BigDecimal received, BigDecimal expenses, BigDecimal net) {}
 
     public record BillableBreakdown(int billable, int nonBillable) {}
 

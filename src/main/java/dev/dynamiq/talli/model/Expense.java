@@ -53,6 +53,10 @@ public class Expense implements HasMedia {
     @Column(name = "receipt_url", columnDefinition = "TEXT")
     private String receiptUrl;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id")
+    private Invoice invoice;
+
     @Column(nullable = false)
     private Boolean billable = false;
 
@@ -171,6 +175,9 @@ public class Expense implements HasMedia {
     public void setReceiptUrl(String receiptUrl) {
         this.receiptUrl = receiptUrl;
     }
+
+    public Invoice getInvoice() { return invoice; }
+    public void setInvoice(Invoice invoice) { this.invoice = invoice; }
 
     public Boolean getBillable() {
         return billable;

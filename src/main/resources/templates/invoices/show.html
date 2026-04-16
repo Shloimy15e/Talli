@@ -7,8 +7,15 @@
       <div class="mb-6 flex items-center justify-between">
         <a th:href="@{/invoices}" class="text-sm text-slate-500 hover:text-slate-900">← Invoices</a>
         <div class="flex items-center gap-2">
-          <form th:action="@{/invoices/{id}/delete(id=${invoice.id})}" method="post"
-                onsubmit="return confirm('Delete this invoice? All items will be removed.')">
+          <form th:if="${invoice.status != 'void'}"
+                th:action="@{/invoices/{id}/void(id=${invoice.id})}" method="post"
+                onsubmit="return confirm('Void this invoice? Linked time entries will return to unbilled.')">
+            <button type="submit"
+                    class="text-sm text-red-600 hover:text-red-800 px-3 py-1.5">Void</button>
+          </form>
+          <form th:if="${invoice.status == 'void'}"
+                th:action="@{/invoices/{id}/delete(id=${invoice.id})}" method="post"
+                onsubmit="return confirm('Permanently delete this voided invoice?')">
             <button type="submit"
                     class="text-sm text-red-600 hover:text-red-800 px-3 py-1.5">Delete</button>
           </form>

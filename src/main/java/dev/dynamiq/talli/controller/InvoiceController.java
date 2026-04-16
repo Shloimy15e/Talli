@@ -115,9 +115,20 @@ public class InvoiceController {
         return "invoices/show";
     }
 
+    @PostMapping("/{id}/void")
+    public String voidInvoice(@PathVariable("id") Long id) {
+        invoiceService.voidInvoice(id);
+        return "redirect:/invoices/" + id;
+    }
+
     @PostMapping("/{id}/delete")
-    public String delete(@PathVariable("id") Long id) {
-        invoiceService.delete(id);
+    public String delete(@PathVariable("id") Long id, RedirectAttributes flash) {
+        try {
+            invoiceService.delete(id);
+        } catch (IllegalStateException e) {
+            flash.addFlashAttribute("error", e.getMessage());
+            return "redirect:/invoices/" + id;
+        }
         return "redirect:/invoices";
     }
 
