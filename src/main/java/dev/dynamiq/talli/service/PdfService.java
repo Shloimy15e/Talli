@@ -58,10 +58,13 @@ public class PdfService {
 
     private byte[] htmlToPdf(String html) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            // Base URI pointing at classpath static resources so <img src="/dynamiq-logo.svg"> resolves.
+            String baseUri = getClass().getResource("/static/").toExternalForm();
+
             PdfRendererBuilder builder = new PdfRendererBuilder();
             builder.useFastMode();
             builder.useSVGDrawer(new BatikSVGDrawer());
-            builder.withHtmlContent(html, null);
+            builder.withHtmlContent(html, baseUri);
             builder.toStream(out);
             builder.run();
             return out.toByteArray();

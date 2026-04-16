@@ -171,7 +171,10 @@ public class InvoiceController {
     public String generatePdf(@PathVariable Long id) {
         Invoice invoice = invoiceService.get(id);
         byte[] bytes = pdfService.renderInvoice(invoice, invoiceService.itemsFor(id));
-        mediaService.attachBytes(invoice, bytes, invoice.getReference() + ".pdf", "application/pdf",    "documents");
+
+        // Replace existing PDF (Spatie singleFile style) — delete old documents first.
+        mediaService.forOwner(invoice, "documents").forEach(mediaService::delete);
+        mediaService.attachBytes(invoice, bytes, invoice.getReference() + ".pdf", "application/pdf", "documents");
         return "redirect:/invoices/" + id;
     }
 
