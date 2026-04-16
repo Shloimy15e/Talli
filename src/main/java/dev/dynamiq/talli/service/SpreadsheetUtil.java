@@ -32,11 +32,12 @@ public final class SpreadsheetUtil {
         if (s == null || s.isBlank()) return null;
         s = s.trim();
 
-        // Excel serial number (e.g. 45697)
+        // Excel serial number (e.g. 45697 = March 2, 2025)
+        // Excel epoch is Dec 30, 1899 (accounts for the Lotus 123 leap year bug)
         if (s.matches("\\d{5,}")) {
             try {
                 long serial = Long.parseLong(s);
-                return LocalDate.ofEpochDay(serial - 25569);
+                return LocalDate.of(1899, 12, 30).plusDays(serial);
             } catch (Exception ignored) {}
         }
 

@@ -168,6 +168,8 @@ class DashboardServiceTest {
         Invoice inv = new Invoice();
         inv.setIssuedAt(firstOfThisMonth);
         inv.setAmount(new BigDecimal("500.00"));
+        inv.setCurrency("USD");
+        inv.setExchangeRate(BigDecimal.ONE);
         inv.setStatus("unpaid");
 
         // Void invoice — should NOT count.
@@ -180,6 +182,8 @@ class DashboardServiceTest {
         Payment pmt = new Payment();
         pmt.setPaidAt(firstOfThisMonth.plusDays(5));
         pmt.setAmount(new BigDecimal("300.00"));
+        pmt.setInvoice(inv);
+        pmt.setExchangeRate(BigDecimal.ONE);
 
         Expense ex = new Expense();
         ex.setAmount(new BigDecimal("40.00"));
@@ -199,7 +203,7 @@ class DashboardServiceTest {
         assertThat(thisMonth.invoiced()).isEqualByComparingTo("500.00");  // void excluded
         assertThat(thisMonth.received()).isEqualByComparingTo("300.00");
         assertThat(thisMonth.expenses()).isEqualByComparingTo("40.00");
-        assertThat(thisMonth.net()).isEqualByComparingTo("460.00");  // invoiced - expenses
+        assertThat(thisMonth.net()).isEqualByComparingTo("260.00");  // received - expenses (cash basis)
     }
 
     @Test

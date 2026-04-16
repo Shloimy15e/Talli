@@ -108,9 +108,14 @@ class InvoiceServiceTest {
 
     @Test
     void delete_delegatesToRepository() {
+        Invoice voided = new Invoice();
+        voided.setId(3L);
+        voided.setStatus("void");
+        when(invoiceRepository.findById(3L)).thenReturn(java.util.Optional.of(voided));
+
         service.delete(3L);
 
-        verify(invoiceRepository).deleteById(3L);
+        verify(invoiceRepository).delete(voided);
     }
 
     // --- create ---
