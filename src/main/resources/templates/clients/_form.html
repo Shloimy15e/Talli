@@ -51,6 +51,22 @@
             <p class="text-[11px] text-slate-400 mt-1">Net 30 is US B2B services standard. Used for invoice due dates.</p>
           </div>
 
+          <!-- Reminder settings -->
+          <div class="border-t border-slate-200 pt-4">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Payment reminders</p>
+            <label class="flex items-center gap-2 cursor-pointer mb-3">
+              <input type="checkbox" th:field="*{remindersEnabled}"
+                     class="w-4 h-4 rounded border-slate-300 text-[#ea7c28] focus:ring-[#ea7c28]/30">
+              <span class="text-sm text-slate-700">Auto-send payment reminders for overdue invoices</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <span class="text-sm text-slate-500">Every</span>
+              <input type="number" th:field="*{reminderIntervalDays}" min="1" max="365" placeholder="—"
+                     class="w-24 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+              <span class="text-sm text-slate-500">days (blank = use global default)</span>
+            </div>
+          </div>
+
           <div>
             <label for="notes" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Notes</label>
             <textarea id="notes" th:field="*{notes}" rows="3"

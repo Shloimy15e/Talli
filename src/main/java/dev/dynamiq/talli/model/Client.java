@@ -31,6 +31,16 @@ public class Client {
     @Column(name = "payment_terms_days", nullable = false)
     private Integer paymentTermsDays = 30;
 
+    @Column(name = "reminders_enabled", nullable = false)
+    private Boolean remindersEnabled = true;
+
+    /** Override global reminder interval. Null = use global default. */
+    @Column(name = "reminder_interval_days")
+    private Integer reminderIntervalDays;
+
+    @Column(name = "last_reminder_at")
+    private LocalDateTime lastReminderAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -108,6 +118,15 @@ public class Client {
     public Integer getPaymentTermsDays() {
         return paymentTermsDays;
     }
+
+    public Boolean getRemindersEnabled() { return remindersEnabled; }
+    public void setRemindersEnabled(Boolean remindersEnabled) { this.remindersEnabled = remindersEnabled; }
+
+    public Integer getReminderIntervalDays() { return reminderIntervalDays; }
+    public void setReminderIntervalDays(Integer reminderIntervalDays) { this.reminderIntervalDays = reminderIntervalDays; }
+
+    public LocalDateTime getLastReminderAt() { return lastReminderAt; }
+    public void setLastReminderAt(LocalDateTime lastReminderAt) { this.lastReminderAt = lastReminderAt; }
 
     public void setPaymentTermsDays(Integer paymentTermsDays) {
         this.paymentTermsDays = paymentTermsDays;

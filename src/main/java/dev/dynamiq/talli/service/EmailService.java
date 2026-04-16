@@ -54,6 +54,13 @@ public class EmailService {
     // Template path: src/main/resources/templates/emails/{templateName}.html
     public void sendTemplate(String to, String subject, String templateName, Map<String, Object> variables)
             throws MessagingException, UnsupportedEncodingException {
+        sendTemplate(to, java.util.List.of(), subject, templateName, variables);
+    }
+
+    /** HTML template email with optional BCC. Returns the rendered body for logging. */
+    public String sendTemplate(String to, java.util.List<String> bcc,
+                               String subject, String templateName, Map<String, Object> variables)
+            throws MessagingException, UnsupportedEncodingException {
         Context context = new Context();
         context.setVariables(variables);
         context.setVariable("fromAddress", fromAddress);
@@ -64,9 +71,13 @@ public class EmailService {
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         helper.setFrom(fromAddress, fromName);
         helper.setTo(to);
+        if (bcc != null && !bcc.isEmpty()) {
+            helper.setBcc(bcc.toArray(new String[0]));
+        }
         helper.setSubject(subject);
-        helper.setText(html, true); // true = HTML
+        helper.setText(html, true);
         mailSender.send(message);
+        return html;
     }
 
     /**

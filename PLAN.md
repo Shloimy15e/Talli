@@ -6,13 +6,9 @@ Internal PSA (Professional Services Automation) tool for Dynamiq Solutions — c
 
 Opinionated for service businesses. Other Shloimy-owned businesses (product/e-commerce) will fork Talli and adapt the primitives if they want similar tooling — no attempt at generic multi-industry support here.
 
-## Two parallel goals
+## Mode: ship
 
-**1. Replace the spreadsheet workflow** — the actual product goal. Ship usable features.
-
-**2. Learn Java** — the codebase doubles as a learning vehicle. Idiomatic Spring Boot, not just "make it work." Default mode is now regular AI-assisted coding — Claude writes the code. Only pause to teach when something genuinely novel comes up.
-
-A live skills tracker lives in Claude's memory at `feedback_java_learning_split.md`.
+Single focus — ship features for Dynamiq's workflow. Java learning goal was retired 2026-04-16 ("Java is not anymore foreign"). AI writes the code, no teaching detours. Quality still matters; tutorials don't.
 
 ## Guiding principle
 

@@ -23,10 +23,11 @@ import org.springframework.stereotype.Component;
 public class ScheduledJobs {
 
     private final InvoiceService invoiceService;
-    // Add ProjectService / others when needed for retainer generation.
+    private final ReminderService reminderService;
 
-    public ScheduledJobs(InvoiceService invoiceService) {
+    public ScheduledJobs(InvoiceService invoiceService, ReminderService reminderService) {
         this.invoiceService = invoiceService;
+        this.reminderService = reminderService;
     }
 
     /**
@@ -37,6 +38,16 @@ public class ScheduledJobs {
     @Scheduled(cron = "0 0 6 * * *")
     public void markOverdueInvoices() {
         invoiceService.markOverdue();
+    }
+
+    /**
+     * Daily 06:30 — send reminders to clients with overdue invoices, throttled per
+     * client by their reminder interval (global default via app.reminders.interval-days
+     * property, overridable per client).
+     */
+    @Scheduled(cron = "0 30 6 * * *")
+    public void sendPaymentReminders() {
+        reminderService.sendDueReminders();
     }
 
     /**

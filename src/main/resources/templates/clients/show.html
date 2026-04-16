@@ -15,6 +15,15 @@
                 <i data-lucide="file-text" class="w-4 h-4"></i>
                 Statement
             </a>
+            <form th:action="@{/clients/{id}/send-reminder(id=${client.id})}" method="post" class="inline"
+                  sec:authorize="hasAuthority('send-emails')"
+                  onsubmit="return confirm('Send a payment reminder to this client now? This will include all unpaid invoices.');">
+                <button type="submit"
+                        class="text-sm px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 inline-flex items-center gap-1.5">
+                    <i data-lucide="bell" class="w-4 h-4"></i>
+                    Send Reminder
+                </button>
+            </form>
             <button th:hx-get="@{/clients/{id}/edit(id=${client.id})}" hx-target="#modal"
                     sec:authorize="hasAuthority('manage-clients')"
                     class="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50">

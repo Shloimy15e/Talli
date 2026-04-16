@@ -12,6 +12,8 @@ import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import dev.dynamiq.talli.service.ClientService;
 import dev.dynamiq.talli.service.PdfService;
+import dev.dynamiq.talli.service.ReminderService;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,6 +36,7 @@ public class ClientController {
     private final ExpenseRepository expenseRepository;
     private final ClientService clientService;
     private final PdfService pdfService;
+    private final ReminderService reminderService;
 
     public ClientController(ClientRepository clientRepository,
                             ProjectRepository projectRepository,
@@ -41,13 +44,15 @@ public class ClientController {
                             TimeEntryRepository timeEntryRepository,
                             ExpenseRepository expenseRepository,
                             ClientService clientService,
-                            PdfService pdfService) {
+                            PdfService pdfService,
+                            ReminderService reminderService) {
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.invoiceRepository = invoiceRepository;
         this.timeEntryRepository = timeEntryRepository;
         this.expenseRepository = expenseRepository;
         this.clientService = clientService;
+        this.reminderService = reminderService;
         this.pdfService = pdfService;
     }
 
@@ -175,6 +180,8 @@ public class ClientController {
         existing.setTaxId(client.getTaxId());
         existing.setNotes(client.getNotes());
         existing.setPaymentTermsDays(client.getPaymentTermsDays());
+        existing.setRemindersEnabled(client.getRemindersEnabled() != null ? client.getRemindersEnabled() : true);
+        existing.setReminderIntervalDays(client.getReminderIntervalDays());
         clientRepository.save(existing);
         return "redirect:/clients";
     }
@@ -197,6 +204,19 @@ public class ClientController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
+    }
+
+    // Manually send a payment reminder right now (ignores throttle, includes all unpaid)
+    @PostMapping("/{id}/send-reminder")
+    public String sendReminder(@PathVariable Long id, RedirectAttributes flash) {
+        Client client = clientRepository.findById(id).orElseThrow();
+        try {
+            reminderService.sendNow(client);
+            flash.addFlashAttribute("success", "Reminder sent to " + client.getName());
+        } catch (IllegalStateException e) {
+            flash.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/clients/" + id;
     }
 
     // Delete
