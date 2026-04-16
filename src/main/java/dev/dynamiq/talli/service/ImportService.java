@@ -18,12 +18,60 @@ public class ImportService {
 
     public record ParsedFile(List<String> headers, List<Map<String, String>> rows) {}
 
+    public record ParsedWorkbook(Map<String, ParsedFile> sheets) {}
+
     public ParsedFile parse(MultipartFile file) throws IOException {
         String name = file.getOriginalFilename();
         if (name != null && (name.endsWith(".xlsx") || name.endsWith(".xls"))) {
             return parseExcel(file.getInputStream());
         }
         return parseCsv(file.getInputStream());
+    }
+
+    /** Parse all sheets from an xlsx workbook. */
+    public ParsedWorkbook parseAllSheets(MultipartFile file) throws IOException {
+        try (Workbook wb = new XSSFWorkbook(file.getInputStream())) {
+            Map<String, ParsedFile> sheets = new LinkedHashMap<>();
+            for (int i = 0; i < wb.getNumberOfSheets(); i++) {
+                Sheet sheet = wb.getSheetAt(i);
+                sheets.put(sheet.getSheetName(), parseSheet(sheet, wb));
+            }
+            return new ParsedWorkbook(sheets);
+        }
+    }
+
+    private ParsedFile parseSheet(Sheet sheet, Workbook wb) {
+        // Find the header row: first non-blank row with at least 2 non-empty cells
+        Row headerRow = null;
+        int headerIdx = 0;
+        for (int r = 0; r <= Math.min(5, sheet.getLastRowNum()); r++) {
+            Row row = sheet.getRow(r);
+            if (row == null) continue;
+            int nonEmpty = 0;
+            for (Cell cell : row) {
+                if (!cellToString(cell, wb).isBlank()) nonEmpty++;
+            }
+            if (nonEmpty >= 2) { headerRow = row; headerIdx = r; break; }
+        }
+        if (headerRow == null) return new ParsedFile(List.of(), List.of());
+
+        List<String> headers = new ArrayList<>();
+        for (Cell cell : headerRow) {
+            headers.add(cellToString(cell, wb));
+        }
+
+        List<Map<String, String>> rows = new ArrayList<>();
+        for (int r = headerIdx + 1; r <= sheet.getLastRowNum(); r++) {
+            Row row = sheet.getRow(r);
+            if (row == null || isBlankRow(row)) continue;
+            Map<String, String> map = new LinkedHashMap<>();
+            for (int c = 0; c < headers.size(); c++) {
+                Cell cell = row.getCell(c, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK);
+                map.put(headers.get(c), cellToString(cell, wb));
+            }
+            rows.add(map);
+        }
+        return new ParsedFile(headers, rows);
     }
 
     private ParsedFile parseExcel(InputStream in) throws IOException {

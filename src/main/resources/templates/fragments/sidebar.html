@@ -96,6 +96,12 @@
             <i data-lucide="upload" class="w-5 h-5" th:style="${active == 'import'} ? 'color: #ea7c28'"></i>
             Import
           </a>
+          <a th:href="@{/admin/migration}"
+             th:classappend="${active == 'migration'} ? 'bg-[#222a3c] text-white' : 'text-slate-400 hover:bg-[#1c2434] hover:text-slate-200'"
+             class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition">
+            <i data-lucide="database" class="w-5 h-5" th:style="${active == 'migration'} ? 'color: #ea7c28'"></i>
+            Migration
+          </a>
         </nav>
       </div>
 

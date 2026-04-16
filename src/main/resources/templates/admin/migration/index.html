@@ -1,0 +1,76 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Data Migration')}"></head>
+  <body th:replace="~{layout :: page('import', ~{::section})}">
+    <section>
+
+      <div class="mb-8">
+        <h1 class="text-2xl font-semibold tracking-tight">Data Migration</h1>
+        <p class="text-sm text-slate-500 mt-1">Import historic data from a multi-sheet Excel workbook. Creates clients, projects, time entries, invoices, payments, subscriptions, and expenses.</p>
+      </div>
+
+      <div th:if="${error}" class="mb-6 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800 flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+        <span th:text="${error}">error</span>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden max-w-xl">
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h2 class="font-semibold text-sm">Upload workbook</h2>
+        </div>
+        <form action="/admin/migration/upload" method="post" enctype="multipart/form-data"
+              class="px-6 py-5 space-y-4">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">File</label>
+            <input type="file" name="file" required accept=".xlsx,.xls"
+                   class="w-full text-sm text-slate-700 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer">
+            <p class="text-xs text-slate-400 mt-2">Excel workbook with sheets: Projects, Invoices, Monthly Expenses, One Time Expenses.</p>
+          </div>
+
+          <div class="flex items-center justify-end pt-2">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+              <i data-lucide="upload" class="w-4 h-4"></i>
+              Upload &amp; Preview
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Backfill exchange rates -->
+      <div class="mt-6 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden max-w-xl">
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h2 class="font-semibold text-sm">Backfill exchange rates</h2>
+          <p class="text-xs text-slate-400 mt-1">Fetch historic rates from ECB for all non-USD invoices and payments that still have a default rate of 1.0.</p>
+        </div>
+        <div class="px-6 py-4 flex items-center justify-between">
+          <div th:if="${backfillInvoices != null}" class="text-sm text-emerald-700">
+            Updated <span th:text="${backfillInvoices}">0</span> invoices, <span th:text="${backfillPayments}">0</span> payments.
+          </div>
+          <form action="/admin/migration/backfill-rates" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit"
+                    class="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg border border-slate-200 transition"
+                    onclick="return confirm('This will fetch historic rates for all non-USD invoices/payments. May take a moment.')">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              Backfill Rates
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="mt-6 bg-slate-50 rounded-xl border border-slate-200 p-5 max-w-xl">
+        <h3 class="text-sm font-semibold text-slate-700 mb-2">Expected sheet structure</h3>
+        <ul class="text-xs text-slate-500 space-y-1.5">
+          <li><span class="font-medium text-slate-600">Projects</span> &mdash; time entries: Date, Client, Billable Minutes, Rate, Currency, Total Charge, Notes, Invoiced</li>
+          <li><span class="font-medium text-slate-600">Invoices</span> &mdash; Client, Project, Invoice Sent, Payment Due Date, Paid At, $, Requested Amount, Amount Paid, Still Owed, Notes</li>
+          <li><span class="font-medium text-slate-600">Monthly Expenses</span> &mdash; subscriptions: Name, Role, Cost, From, To, Notes</li>
+          <li><span class="font-medium text-slate-600">One Time Expenses</span> &mdash; Name, Role, Cost, Notes, Date</li>
+        </ul>
+      </div>
+
+    </section>
+  </body>
+</html>
