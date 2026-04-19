@@ -3,6 +3,7 @@ package dev.dynamiq.talli.controller.api;
 import dev.dynamiq.talli.controller.api.dto.StartTimerRequest;
 import dev.dynamiq.talli.controller.api.dto.TimeEntryResponse;
 import dev.dynamiq.talli.controller.api.dto.TimerStatusResponse;
+import dev.dynamiq.talli.controller.api.dto.UpdateDescriptionRequest;
 import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import dev.dynamiq.talli.service.TimeEntryService;
@@ -44,6 +45,13 @@ public class ApiTimeController {
     @PostMapping("/{id}/stop")
     public ResponseEntity<TimeEntryResponse> stopTimer(@PathVariable Long id) {
         TimeEntry entry = timeEntryService.endTimer(id);
+        return ResponseEntity.ok(toResponse(entry));
+    }
+
+    @PostMapping("/{id}/description")
+    public ResponseEntity<TimeEntryResponse> updateDescription(@PathVariable Long id,
+                                                               @RequestBody UpdateDescriptionRequest req) {
+        TimeEntry entry = timeEntryService.updateDescription(id, req.description());
         return ResponseEntity.ok(toResponse(entry));
     }
 

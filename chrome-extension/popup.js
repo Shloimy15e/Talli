@@ -208,7 +208,8 @@ function showTimerRunning() {
   document.getElementById('timerRunning').style.display = 'flex';
   document.getElementById('timerBar').classList.add('running');
 
-  document.getElementById('runningDesc').textContent = currentTimer.description || 'No description';
+  const runningDesc = document.getElementById('runningDesc');
+  runningDesc.value = currentTimer.description || '';
   document.getElementById('runningProject').textContent = currentTimer.projectName || '';
 
   updateElapsed();
@@ -233,6 +234,39 @@ function setupTimerBar() {
     if (e.key === 'Enter') startTimer();
   });
   document.getElementById('stopBtn').addEventListener('click', stopTimer);
+
+  const runningDesc = document.getElementById('runningDesc');
+  runningDesc.addEventListener('blur', saveRunningDescription);
+  runningDesc.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runningDesc.blur();
+    } else if (e.key === 'Escape') {
+      runningDesc.value = currentTimer ? (currentTimer.description || '') : '';
+      runningDesc.blur();
+    }
+  });
+}
+
+async function saveRunningDescription() {
+  if (!currentTimer) return;
+  const next = document.getElementById('runningDesc').value.trim();
+  const prev = currentTimer.description || '';
+  if (next === prev) return;
+
+  try {
+    const res = await apiFetch(`/api/v1/time/${currentTimer.id}/description`, {
+      method: 'POST',
+      body: JSON.stringify({ description: next || null })
+    });
+    if (res.ok) {
+      currentTimer.description = next;
+    } else {
+      document.getElementById('runningDesc').value = prev;
+    }
+  } catch {
+    document.getElementById('runningDesc').value = prev;
+  }
 }
 
 function updateElapsed() {
@@ -357,11 +391,17 @@ function renderProjectList() {
     });
   });
 
-  // Clicking row selects project in the timer bar
+  // Clicking row selects project in the timer bar and prefills its last description
   container.querySelectorAll('.recent-entry').forEach(row => {
     row.addEventListener('click', () => {
-      selectProject(parseInt(row.dataset.projectId));
-      document.getElementById('timerDesc').focus();
+      const projectId = parseInt(row.dataset.projectId);
+      selectProject(projectId);
+      const project = projects.find(p => p.id === projectId);
+      const descInput = document.getElementById('timerDesc');
+      if (project && project.lastDescription && !descInput.value.trim()) {
+        descInput.value = project.lastDescription;
+      }
+      descInput.focus();
     });
   });
 }

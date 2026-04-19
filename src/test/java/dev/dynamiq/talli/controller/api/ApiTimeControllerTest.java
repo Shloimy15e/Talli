@@ -3,6 +3,7 @@ package dev.dynamiq.talli.controller.api;
 import dev.dynamiq.talli.controller.api.dto.StartTimerRequest;
 import dev.dynamiq.talli.controller.api.dto.TimeEntryResponse;
 import dev.dynamiq.talli.controller.api.dto.TimerStatusResponse;
+import dev.dynamiq.talli.controller.api.dto.UpdateDescriptionRequest;
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.model.TimeEntry;
@@ -107,6 +108,37 @@ class ApiTimeControllerTest {
         assertThat(body).isNotNull();
         assertThat(body.endedAt()).isEqualTo(end.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
         assertThat(body.durationMinutes()).isEqualTo(90);
+    }
+
+    @Test
+    void updateDescription_returnsEntryWithUpdatedDescription() {
+        TimeEntry updated = makeEntry(5L, project, LocalDateTime.of(2026, 4, 16, 9, 0), null);
+        updated.setDescription("new text");
+        when(timeEntryService.updateDescription(5L, "new text")).thenReturn(updated);
+
+        ResponseEntity<TimeEntryResponse> response =
+                controller.updateDescription(5L, new UpdateDescriptionRequest("new text"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        TimeEntryResponse body = response.getBody();
+        assertThat(body).isNotNull();
+        assertThat(body.id()).isEqualTo(5L);
+        assertThat(body.description()).isEqualTo("new text");
+        verify(timeEntryService).updateDescription(5L, "new text");
+    }
+
+    @Test
+    void updateDescription_acceptsNullToClear() {
+        TimeEntry updated = makeEntry(5L, project, LocalDateTime.of(2026, 4, 16, 9, 0), null);
+        updated.setDescription(null);
+        when(timeEntryService.updateDescription(5L, null)).thenReturn(updated);
+
+        ResponseEntity<TimeEntryResponse> response =
+                controller.updateDescription(5L, new UpdateDescriptionRequest(null));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().description()).isNull();
     }
 
     @Test

@@ -56,6 +56,13 @@ public class TimeEntryService {
     }
 
     @Transactional
+    public TimeEntry updateDescription(Long id, String description) {
+        TimeEntry entry = timeEntryRepository.findById(id).orElseThrow();
+        entry.setDescription(description);
+        return entry;
+    }
+
+    @Transactional
     public TimeEntry endTimer(Long id) {
         TimeEntry entry = timeEntryRepository.findById(id).orElseThrow();
 

@@ -31,6 +31,18 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
                                  Pageable pageable);
     Optional<TimeEntry> findFirstByEndedAtIsNullOrderByStartedAtDesc(); // the currently running entry, if any
 
+    /**
+     * Latest non-empty description per project. Used by the API to prefill the
+     * timer description when picking from recent projects in the extension.
+     * Uses Postgres DISTINCT ON — the app is Postgres-only (see application.properties).
+     */
+    @Query(value = "SELECT DISTINCT ON (project_id) project_id, description "
+                 + "FROM time_entries "
+                 + "WHERE description IS NOT NULL AND description <> '' "
+                 + "ORDER BY project_id, started_at DESC",
+           nativeQuery = true)
+    List<Object[]> findLatestDescriptionPerProject();
+
     List<TimeEntry> findByInvoiceId(Long invoiceId);
 
     // Billable, unbilled, ended, within a window — the candidates for an invoice.

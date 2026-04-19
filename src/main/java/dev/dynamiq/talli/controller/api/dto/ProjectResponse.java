@@ -5,5 +5,6 @@ public record ProjectResponse(
         String name,
         Long clientId,
         String clientName,
-        String status
+        String status,
+        String lastDescription
 ) {}

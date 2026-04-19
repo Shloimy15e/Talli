@@ -227,12 +227,23 @@ body {
 
 .running-desc {
   display: block;
+  width: 100%;
+  font-family: inherit;
   font-size: 13px;
   font-weight: 500;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 2px 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.running-desc::placeholder { color: var(--text-light); font-weight: 400; }
+
+.running-desc:focus { border-bottom: 1px solid var(--accent); }
 
 .running-project {
   display: block;
