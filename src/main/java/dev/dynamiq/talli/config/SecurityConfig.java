@@ -15,8 +15,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 
+import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -88,7 +91,7 @@ public class SecurityConfig {
 
     @Bean
     @Order(3)
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain filterChain(HttpSecurity http, PersistentTokenRepository persistentTokenRepository) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/logo.svg", "/favicon.ico", "/css/**", "/js/**", "/login", "/invite/**").permitAll()
@@ -162,8 +165,22 @@ public class SecurityConfig {
                 .logoutSuccessUrl("/login?logged-out")
                 .permitAll()
             )
-            .rememberMe(rm -> rm.key("talli-remember-me").tokenValiditySeconds(60 * 60 * 24 * 30));
+            .rememberMe(rm -> rm
+                .key("talli-remember-me")
+                .tokenRepository(persistentTokenRepository)
+                .tokenValiditySeconds(60 * 60 * 24 * 30));
         return http.build();
+    }
+
+    /**
+     * Persistent remember-me tokens — stored in `persistent_logins` so individual
+     * devices can be revoked (delete the row) without invalidating everyone.
+     */
+    @Bean
+    PersistentTokenRepository persistentTokenRepository(DataSource dataSource) {
+        JdbcTokenRepositoryImpl repo = new JdbcTokenRepositoryImpl();
+        repo.setDataSource(dataSource);
+        return repo;
     }
 
     /**
