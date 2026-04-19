@@ -60,6 +60,13 @@ public class EmailController {
         return "emails/index";
     }
 
+    @GetMapping("/{id}")
+    public String show(@PathVariable Long id, Model model) {
+        Email email = emailRepository.findById(id).orElseThrow();
+        model.addAttribute("email", email);
+        return "emails/show";
+    }
+
     @GetMapping("/new")
     public String newForm(Model model) {
         model.addAttribute("email", new Email());
