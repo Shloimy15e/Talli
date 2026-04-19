@@ -74,11 +74,14 @@ public class TimeEntryService {
 
     private void applyFields(TimeEntry entry, Long projectId, LocalDateTime startedAt,
                              LocalDateTime endedAt, String description, Boolean billable) {
-        entry.setProject(projectRepository.findById(projectId).orElseThrow());
+        var project = projectRepository.findById(projectId).orElseThrow();
+        entry.setProject(project);
         entry.setStartedAt(startedAt);
         entry.setEndedAt(endedAt);
         entry.setDescription(description);
-        entry.setBillable(billable);
+        // A non-billable project forces all its time entries non-billable,
+        // regardless of what the form sent.
+        entry.setBillable(Boolean.FALSE.equals(project.getBillable()) ? false : billable);
     }
 
     // --- Index view ---

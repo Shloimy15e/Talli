@@ -8,6 +8,7 @@
            x-data="{
              startedAt: '',
              endedAt: '',
+             projectBillable: true,
              get duration() {
                if (!this.startedAt || !this.endedAt) return null;
                const diff = new Date(this.endedAt) - new Date(this.startedAt);
@@ -18,21 +19,29 @@
                if (h === 0) return m + 'm';
                if (m === 0) return h + 'h';
                return h + 'h ' + m + 'm';
+             },
+             onProjectChange(e) {
+               const opt = e.target.options[e.target.selectedIndex];
+               this.projectBillable = opt.dataset.billable !== 'false';
              }
            }"
-           x-init="startedAt = document.getElementById('startedAt').value; endedAt = document.getElementById('endedAt').value">
+           x-init="startedAt = document.getElementById('startedAt').value; endedAt = document.getElementById('endedAt').value;
+                   const sel = document.getElementById('projectId');
+                   const opt = sel.options[sel.selectedIndex];
+                   projectBillable = opt && opt.dataset.billable !== 'false';">
 
         <form th:action="${action}" method="post" class="p-6 space-y-5">
 
           <div>
             <label for="projectId" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Project</label>
-            <select id="projectId" name="projectId" required
+            <select id="projectId" name="projectId" required @change="onProjectChange($event)"
                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
               <option value="" disabled th:selected="${entry.project == null}">Select a project…</option>
               <option th:each="p : ${projects}"
                       th:value="${p.id}"
                       th:selected="${entry.project != null and entry.project.id == p.id}"
-                      th:text="${p.name} + ' · ' + ${p.client.name}">Project · Client</option>
+                      th:attr="data-billable=${p.billable}"
+                      th:text="${p.name} + ' · ' + ${p.client.name} + (${p.billable} ? '' : '  (non-billable)')">Project · Client</option>
             </select>
           </div>
 
@@ -67,11 +76,14 @@
                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
           </div>
 
-          <label class="flex items-center gap-2 cursor-pointer">
+          <label class="flex items-center gap-2"
+                 :class="projectBillable ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'">
             <input type="checkbox" name="billable" value="true"
                    th:checked="${entry.billable != null ? entry.billable : true}"
+                   :disabled="!projectBillable"
                    class="w-4 h-4 rounded border-slate-300 text-[#ea7c28] focus:ring-[#ea7c28]/30">
             <span class="text-sm text-slate-700">Billable</span>
+            <span x-show="!projectBillable" class="text-xs text-slate-400 italic">(project is non-billable)</span>
           </label>
 
           <div class="flex items-center justify-end gap-3 pt-2">

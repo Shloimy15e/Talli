@@ -41,21 +41,35 @@ public class ProjectController {
         this.projectService = projectService;
     }
 
+    public record ProjectRow(Project project, java.time.LocalDateTime lastActivity) {}
+
     @GetMapping
     public String index(@RequestParam(defaultValue = "0") int page,
                         @RequestParam(required = false) List<String> status,
                         @RequestParam(required = false) List<Long> clientId,
                         @RequestParam(required = false) String search,
+                        @RequestParam(defaultValue = "activity") String sort,
+                        @RequestParam(defaultValue = "desc") String direction,
                         Model model) {
-        var projectPage = projectRepository.findFiltered(status, clientId,
+        String normalizedSort = List.of("activity", "name", "client", "created").contains(sort) ? sort : "activity";
+        String normalizedDir = "asc".equalsIgnoreCase(direction) ? "asc" : "desc";
+
+        var rawPage = projectRepository.findFilteredWithActivity(status, clientId,
                 search != null ? search : "",
+                normalizedSort, normalizedDir,
                 org.springframework.data.domain.PageRequest.of(page, 25));
-        model.addAttribute("projects", projectPage.getContent());
-        model.addAttribute("page", projectPage);
+        var rows = rawPage.getContent().stream()
+                .map(arr -> new ProjectRow((Project) arr[0], (java.time.LocalDateTime) arr[1]))
+                .toList();
+
+        model.addAttribute("rows", rows);
+        model.addAttribute("page", rawPage);
         model.addAttribute("clients", clientRepository.findAll());
         model.addAttribute("filterStatuses", status);
         model.addAttribute("filterClientIds", clientId);
         model.addAttribute("filterSearch", search);
+        model.addAttribute("sort", normalizedSort);
+        model.addAttribute("direction", normalizedDir);
         return "projects/index";
     }
 
@@ -113,6 +127,7 @@ public class ProjectController {
         existing.setCurrentRate(project.getCurrentRate());
         existing.setBillingFrequency(project.getBillingFrequency());
         existing.setStatus(project.getStatus());
+        existing.setBillable(project.getBillable() != null ? project.getBillable() : true);
         existing.setNotes(project.getNotes());
         existing.setCurrency(project.getCurrency());
         projectRepository.save(existing);

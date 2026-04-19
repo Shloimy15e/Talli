@@ -218,6 +218,19 @@
             </select>
           </div>
 
+          <!-- Billable -->
+          <div>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="hidden" name="_billable" value="on">
+              <input type="checkbox" th:field="*{billable}"
+                     class="w-4 h-4 rounded border-slate-300 text-[#ea7c28] focus:ring-[#ea7c28]/30">
+              <span class="text-sm text-slate-700">Billable project</span>
+            </label>
+            <p class="text-[11px] text-slate-400 mt-1">
+              Uncheck for personal/internal projects. All time entries will be non-billable and won't be invoiced.
+            </p>
+          </div>
+
           <!-- Notes -->
           <div>
             <label

@@ -57,6 +57,10 @@ public class Project implements HasMedia {
     @Column(nullable = false)
     private String status = "active";
 
+    /** Non-billable projects are personal/internal. All time entries inherit this. */
+    @Column(nullable = false)
+    private Boolean billable = true;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -140,6 +144,9 @@ public class Project implements HasMedia {
     public void setStatus(String status) {
         this.status = status;
     }
+
+    public Boolean getBillable() { return billable; }
+    public void setBillable(Boolean billable) { this.billable = billable; }
 
     public String getNotes() {
         return notes;

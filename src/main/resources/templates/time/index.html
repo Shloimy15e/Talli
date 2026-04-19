@@ -183,9 +183,13 @@
                 <td class="px-6 py-3 text-xs text-slate-500 tabular-nums w-20"
                     th:text="${#temporals.format(e.startedAt, 'HH:mm')}">14:30</td>
                 <td class="px-6 py-3 text-sm">
-                  <a th:href="@{/projects/{id}(id=${e.project.id})}"
-                     class="block font-medium hover:text-[#ea7c28] hover:underline"
-                     th:text="${e.project.name}">Project</a>
+                  <div class="flex items-center gap-1.5">
+                    <a th:href="@{/projects/{id}(id=${e.project.id})}"
+                       class="font-medium hover:text-[#ea7c28] hover:underline"
+                       th:text="${e.project.name}">Project</a>
+                    <i th:unless="${e.project.billable}" data-lucide="lock"
+                       class="w-3 h-3 text-slate-400 text-nowrap" title="Non-billable"></i>
+                  </div>
                   <a th:href="@{/clients/{id}(id=${e.project.client.id})}"
                      class="block text-xs text-slate-500 hover:text-[#ea7c28] hover:underline"
                      th:text="${e.project.client.name}">Client</a>
@@ -199,7 +203,7 @@
                        th:text="${e.invoice.reference}">INV-1001</a>
                   </span>
                   <span th:if="${!e.billed and e.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Unbilled</span>
-                  <span th:if="${!e.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">Non-billable</span>
+                  <span th:if="${!e.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500 text-nowrap">Non-billable</span>
                 </td>
                 <td class="px-6 py-3 font-mono text-sm text-right w-32">
                   <div th:classappend="${e.billable} ? 'text-[#ea7c28]' : 'text-slate-500'"

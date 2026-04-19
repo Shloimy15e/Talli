@@ -28,17 +28,29 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findActiveOrderedByRecentActivity();
 
     /**
-     * Filtered projects with active-first sorting. Status filter, client filter,
-     * and name/client-name search. Active projects always sort before non-active.
+     * Filtered projects with last-activity timestamp (max TimeEntry.startedAt per project).
+     * Result rows are [Project, lastActivity]. Active-first sort, then requested column.
      */
-    @Query("SELECT p FROM Project p JOIN FETCH p.client c WHERE "
-         + "(:#{#statuses == null || #statuses.isEmpty()} = true OR p.status IN :statuses) AND "
+    @Query("SELECT p, MAX(t.startedAt) FROM Project p JOIN p.client c "
+         + "LEFT JOIN TimeEntry t ON t.project = p "
+         + "WHERE (:#{#statuses == null || #statuses.isEmpty()} = true OR p.status IN :statuses) AND "
          + "(:#{#clientIds == null || #clientIds.isEmpty()} = true OR c.id IN :clientIds) AND "
          + "(:search = '' OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) "
          + "OR LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%'))) "
-         + "ORDER BY CASE WHEN p.status = 'active' THEN 0 ELSE 1 END, p.name ASC")
-    Page<Project> findFiltered(@Param("statuses") List<String> statuses,
-                               @Param("clientIds") List<Long> clientIds,
-                               @Param("search") String search,
-                               Pageable pageable);
+         + "GROUP BY p, c "
+         + "ORDER BY CASE WHEN p.status = 'active' THEN 0 ELSE 1 END, "
+         + "CASE WHEN :sort = 'activity' AND :direction = 'desc' THEN MAX(t.startedAt) END DESC NULLS LAST, "
+         + "CASE WHEN :sort = 'activity' AND :direction = 'asc' THEN MAX(t.startedAt) END ASC NULLS LAST, "
+         + "CASE WHEN :sort = 'name' AND :direction = 'asc' THEN p.name END ASC, "
+         + "CASE WHEN :sort = 'name' AND :direction = 'desc' THEN p.name END DESC, "
+         + "CASE WHEN :sort = 'client' AND :direction = 'asc' THEN c.name END ASC, "
+         + "CASE WHEN :sort = 'client' AND :direction = 'desc' THEN c.name END DESC, "
+         + "CASE WHEN :sort = 'created' AND :direction = 'desc' THEN p.createdAt END DESC, "
+         + "CASE WHEN :sort = 'created' AND :direction = 'asc' THEN p.createdAt END ASC")
+    Page<Object[]> findFilteredWithActivity(@Param("statuses") List<String> statuses,
+                                            @Param("clientIds") List<Long> clientIds,
+                                            @Param("search") String search,
+                                            @Param("sort") String sort,
+                                            @Param("direction") String direction,
+                                            Pageable pageable);
 }

@@ -29,32 +29,42 @@
               <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
                     th:classappend="${project.status == 'active' ? 'bg-green-100 text-green-700' : (project.status == 'paused' ? 'bg-amber-100 text-amber-700' : (project.status == 'completed' ? 'bg-slate-100 text-slate-600' : 'bg-red-100 text-red-700'))}"
                     th:text="${project.status}">status</span>
+              <span th:unless="${project.billable}"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 text-nowrap rounded-full text-xs font-medium bg-slate-100 text-slate-600"
+                    title="Personal / non-billable project">
+                <i data-lucide="lock" class="w-3 h-3"></i>
+                Non-billable
+              </span>
             </div>
             <p class="text-sm text-slate-600">
               <a th:href="@{/clients/{id}(id=${project.client.id})}"
                  class="hover:text-[#ea7c28] hover:underline"
                  th:text="${project.client.name}">Client</a>
-              <span class="text-slate-400 mx-2">·</span>
-              <span class="capitalize" th:text="${project.rateType}">hourly</span>
-              <span class="text-slate-400 mx-2">·</span>
-              <span class="font-mono"
-                    th:text="${csym.apply(project.currency)} + ${#numbers.formatDecimal(project.currentRate, 1, 'COMMA', 2, 'POINT')}
-                             + (${project.rateType == 'hourly'} ? '/hr' : (${project.rateType == 'retainer'} ? '/mo' : ''))">USD 0.00</span>
+              <th:block th:if="${project.billable}">
+                <span class="text-slate-400 mx-2">·</span>
+                <span class="capitalize" th:text="${project.rateType}">hourly</span>
+                <span class="text-slate-400 mx-2">·</span>
+                <span class="font-mono"
+                      th:text="${csym.apply(project.currency)} + ${#numbers.formatDecimal(project.currentRate, 1, 'COMMA', 2, 'POINT')}
+                               + (${project.rateType == 'hourly'} ? '/hr' : (${project.rateType == 'retainer'} ? '/mo' : ''))">USD 0.00</span>
+              </th:block>
             </p>
           </div>
           <div class="flex items-center gap-2">
-            <button th:if="${project.rateType == 'fixed'}"
+            <button th:if="${project.billable and project.rateType == 'fixed'}"
                     @click="billing = !billing; editing = false; depositing = false"
                     sec:authorize="hasAuthority('manage-invoices')"
                     class="inline-flex items-center gap-1.5 text-sm font-medium bg-[#ea7c28] hover:bg-[#d66f20] text-white px-3 py-1.5 rounded-lg transition">
               <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> Bill fixed amount
             </button>
-            <button @click="depositing = !depositing; editing = false; billing = false"
+            <button th:if="${project.billable}"
+                    @click="depositing = !depositing; editing = false; billing = false"
                     sec:authorize="hasAuthority('manage-payments')"
                     class="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300 px-3 py-1.5 rounded-lg">
               <i data-lucide="wallet" class="w-3.5 h-3.5"></i> Record deposit
             </button>
-            <button @click="editing = !editing; billing = false; depositing = false"
+            <button th:if="${project.billable}"
+                    @click="editing = !editing; billing = false; depositing = false"
                     sec:authorize="hasAuthority('manage-projects')"
                     class="text-sm text-slate-600 hover:text-slate-900 border border-slate-200 hover:border-slate-300 px-3 py-1.5 rounded-lg"
                     th:text="${project.rateType == 'fixed' ? 'Change contract amount' : 'Change rate'}">Change rate</button>
@@ -175,7 +185,7 @@
         </div>
       </div>
 
-      <div th:if="${summary != null}" class="grid grid-cols-4 gap-4 mb-6">
+      <div th:if="${project.billable and summary != null}" class="grid grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-xl border border-slate-200 px-5 py-4">
           <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Billed to date</p>
           <p class="font-mono text-xl tabular-nums"
@@ -200,11 +210,12 @@
 
       <div class="grid grid-cols-3 gap-6">
 
-        <!-- Left: time + invoices -->
-        <div class="col-span-2 space-y-6">
+        <!-- Left: time + (invoices if billable) -->
+        <div class="space-y-6"
+             th:classappend="${project.billable} ? 'col-span-2' : 'col-span-3'">
 
-          <!-- Invoices -->
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <!-- Invoices (billable projects only) -->
+          <div th:if="${project.billable}" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-200">
               <h2 class="font-semibold">Invoices</h2>
             </div>
@@ -256,7 +267,7 @@
                   <th class="text-left px-6 py-2">Date</th>
                   <th class="text-left px-6 py-2">Description</th>
                   <th class="text-right px-6 py-2">Hours</th>
-                  <th class="text-right px-6 py-2">Billing</th>
+                  <th th:if="${project.billable}" class="text-right px-6 py-2">Billing</th>
                 </tr>
               </thead>
               <tbody>
@@ -266,7 +277,7 @@
                   <td class="px-6 py-3" th:text="${e.description ?: '—'}">Description</td>
                   <td class="px-6 py-3 text-right font-mono tabular-nums"
                       th:text="${e.durationMinutes != null ? #numbers.formatDecimal(e.durationMinutes / 60.0, 1, 'COMMA', 2, 'POINT') : '—'}">0.00</td>
-                  <td class="px-6 py-3 text-right">
+                  <td th:if="${project.billable}" class="px-6 py-3 text-right">
                     <span th:if="${e.billed}"
                           class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700">
                       <a th:if="${e.invoice != null}" th:href="@{/invoices/{id}(id=${e.invoice.id})}"
@@ -278,7 +289,7 @@
                       Unbilled
                     </span>
                     <span th:if="${!e.billable}"
-                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">
+                          class="inline-flex text-nowrap items-center px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">
                       Non-billable
                     </span>
                   </td>
