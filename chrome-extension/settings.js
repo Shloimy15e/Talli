@@ -6,10 +6,22 @@ const backBtn = document.getElementById('backBtn');
 const feedback = document.getElementById('feedback');
 const connectionStatus = document.getElementById('connectionStatus');
 
-// Load saved settings
-chrome.storage.local.get(['serverUrl', 'apiToken'], (data) => {
-  if (data.serverUrl) serverUrlInput.value = data.serverUrl;
-  if (data.apiToken) apiTokenInput.value = data.apiToken;
+// Load persisted values (saved values + unsaved drafts)
+chrome.storage.local.get(['serverUrl', 'apiToken', 'draftServerUrl', 'draftApiToken'], (data) => {
+  // Prefer drafts if they exist (user was in the middle of editing)
+  if (data.draftServerUrl !== undefined) serverUrlInput.value = data.draftServerUrl;
+  else if (data.serverUrl) serverUrlInput.value = data.serverUrl;
+
+  if (data.draftApiToken !== undefined) apiTokenInput.value = data.draftApiToken;
+  else if (data.apiToken) apiTokenInput.value = data.apiToken;
+});
+
+// Persist drafts as user types — survives popup close (e.g. switching tabs to copy token).
+serverUrlInput.addEventListener('input', () => {
+  chrome.storage.local.set({ draftServerUrl: serverUrlInput.value });
+});
+apiTokenInput.addEventListener('input', () => {
+  chrome.storage.local.set({ draftApiToken: apiTokenInput.value });
 });
 
 saveBtn.addEventListener('click', () => {
@@ -22,6 +34,8 @@ saveBtn.addEventListener('click', () => {
   }
 
   chrome.storage.local.set({ serverUrl, apiToken }, () => {
+    // Clear drafts — they've been committed
+    chrome.storage.local.remove(['draftServerUrl', 'draftApiToken']);
     showFeedback('Settings saved.', 'success');
   });
 });

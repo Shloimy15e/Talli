@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -104,7 +105,7 @@ class ApiTimeControllerTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         TimeEntryResponse body = response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.endedAt()).isEqualTo(end);
+        assertThat(body.endedAt()).isEqualTo(end.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
         assertThat(body.durationMinutes()).isEqualTo(90);
     }
 

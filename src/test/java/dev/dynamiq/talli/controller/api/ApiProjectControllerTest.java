@@ -3,6 +3,7 @@ package dev.dynamiq.talli.controller.api;
 import dev.dynamiq.talli.controller.api.dto.ProjectResponse;
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Project;
+import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,12 +16,14 @@ import static org.mockito.Mockito.*;
 class ApiProjectControllerTest {
 
     private ProjectRepository projectRepository;
+    private ClientRepository clientRepository;
     private ApiProjectController controller;
 
     @BeforeEach
     void setUp() {
         projectRepository = mock(ProjectRepository.class);
-        controller = new ApiProjectController(projectRepository);
+        clientRepository = mock(ClientRepository.class);
+        controller = new ApiProjectController(projectRepository, clientRepository);
     }
 
     @Test

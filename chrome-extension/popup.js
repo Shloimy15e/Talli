@@ -3,8 +3,7 @@
 async function apiFetch(path, options = {}) {
   const { serverUrl, apiToken } = await chrome.storage.local.get(['serverUrl', 'apiToken']);
   if (!serverUrl || !apiToken) {
-    window.location.href = 'settings.html';
-    throw new Error('Not configured');
+    throw new Error('Not configured — set server URL and API token in Settings.');
   }
   const res = await fetch(`${serverUrl}${path}`, {
     ...options,
@@ -15,8 +14,7 @@ async function apiFetch(path, options = {}) {
     }
   });
   if (res.status === 401) {
-    window.location.href = 'settings.html';
-    throw new Error('Invalid API token');
+    throw new Error('Invalid API token.');
   }
   return res;
 }
@@ -24,19 +22,42 @@ async function apiFetch(path, options = {}) {
 // --- State ---
 
 let projects = [];
+let clients = [];
 let selectedProjectId = null;
 let currentTimer = null;
 let elapsedInterval = null;
 
 // --- Init ---
 
-document.addEventListener('DOMContentLoaded', async () => {
+// Settings button is always wired up first — works regardless of API state.
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('settingsBtn').addEventListener('click', () => {
+    window.location.href = 'settings.html';
+  });
+  document.getElementById('errorSettingsBtn').addEventListener('click', () => {
+    window.location.href = 'settings.html';
+  });
+  document.getElementById('retryBtn').addEventListener('click', () => {
+    document.getElementById('errorState').style.display = 'none';
+    document.getElementById('loading').style.display = 'block';
+    initApp();
+  });
+
+  initApp();
+});
+
+async function initApp() {
   try {
     await loadProjects();
     await loadTimer();
     document.getElementById('loading').style.display = 'none';
+    document.getElementById('errorState').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-  } catch {
+  } catch (err) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('errorMessage').textContent = String(err.message || err);
+    document.getElementById('errorState').style.display = 'flex';
     return;
   }
 
@@ -44,9 +65,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupTimerBar();
   setupProjectPicker();
   setupExpenseForm();
-  setupSettings();
+  setupCreateProject();
   renderProjectList();
-});
+}
 
 // --- Mode switching ---
 
@@ -61,26 +82,26 @@ function setupModes() {
   });
 }
 
-function setupSettings() {
-  document.getElementById('settingsBtn').addEventListener('click', () => {
-    window.location.href = 'settings.html';
-  });
-}
-
 // --- Projects ---
 
 async function loadProjects() {
   const res = await apiFetch('/api/v1/projects');
   projects = await res.json();
 
-  // Expense project dropdown
+  // Populate expense project dropdown (clear first since this runs on retry too)
   const expSelect = document.getElementById('expProject');
+  expSelect.innerHTML = '<option value="">None</option>';
   projects.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.id;
     opt.textContent = p.clientName ? `${p.name} (${p.clientName})` : p.name;
     expSelect.appendChild(opt);
   });
+}
+
+async function loadClients() {
+  const res = await apiFetch('/api/v1/clients');
+  clients = await res.json();
 }
 
 // --- Searchable project picker ---
@@ -163,6 +184,12 @@ function selectProject(projectId) {
 
 // --- Timer ---
 
+// Baseline for elapsed-time display — captures the server-computed elapsed
+// at fetch time and the client timestamp at that moment. Eliminates any
+// dependency on server/client clock sync or timezone alignment.
+let elapsedBaselineSeconds = 0;
+let elapsedBaselineClientMs = 0;
+
 async function loadTimer() {
   const res = await apiFetch('/api/v1/time/current');
   if (res.status === 204) {
@@ -170,6 +197,8 @@ async function loadTimer() {
     showTimerStopped();
   } else {
     currentTimer = await res.json();
+    elapsedBaselineSeconds = currentTimer.elapsedSeconds || 0;
+    elapsedBaselineClientMs = Date.now();
     showTimerRunning();
   }
 }
@@ -184,6 +213,7 @@ function showTimerRunning() {
 
   updateElapsed();
   elapsedInterval = setInterval(updateElapsed, 1000);
+  renderProjectList();
 }
 
 function showTimerStopped() {
@@ -194,6 +224,7 @@ function showTimerStopped() {
   document.getElementById('timerRunning').style.display = 'none';
   document.getElementById('timerStopped').style.display = 'flex';
   document.getElementById('timerBar').classList.remove('running');
+  renderProjectList();
 }
 
 function setupTimerBar() {
@@ -206,9 +237,9 @@ function setupTimerBar() {
 
 function updateElapsed() {
   if (!currentTimer) return;
-  const start = new Date(currentTimer.startedAt);
-  const now = new Date();
-  const diff = Math.floor((now - start) / 1000);
+  // Server-authoritative baseline + local increment. No clock sync required.
+  const localDelta = Math.floor((Date.now() - elapsedBaselineClientMs) / 1000);
+  const diff = elapsedBaselineSeconds + localDelta;
   const h = Math.floor(diff / 3600);
   const m = Math.floor((diff % 3600) / 60);
   const s = diff % 60;
@@ -234,6 +265,9 @@ async function startTimer() {
 
     if (res.ok) {
       currentTimer = await res.json();
+      // Fresh start — elapsed is 0 from the client's perspective.
+      elapsedBaselineSeconds = 0;
+      elapsedBaselineClientMs = Date.now();
       document.getElementById('timerDesc').value = '';
       showTimerRunning();
       chrome.runtime.sendMessage({ type: 'timerStarted' });
@@ -268,6 +302,8 @@ async function quickStart(projectId) {
     });
     if (res.ok) {
       currentTimer = await res.json();
+      elapsedBaselineSeconds = 0;
+      elapsedBaselineClientMs = Date.now();
       showTimerRunning();
       chrome.runtime.sendMessage({ type: 'timerStarted' });
     }
@@ -290,23 +326,34 @@ function renderProjectList() {
   container.style.display = 'block';
 
   // Projects already come ordered by most recent time entry from the API
-  container.innerHTML = projects.map(p => `
+  const runningProjectId = currentTimer ? currentTimer.projectId : null;
+  const playIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>';
+  const stopIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>';
+
+  container.innerHTML = projects.map(p => {
+    const isRunning = p.id === runningProjectId;
+    return `
     <div class="recent-entry" data-project-id="${p.id}">
       <div class="recent-entry-info">
         <div class="recent-entry-name">${escapeHtml(p.name)}</div>
         ${p.clientName ? `<div class="recent-entry-client">${escapeHtml(p.clientName)}</div>` : ''}
       </div>
-      <button class="recent-entry-play" data-pid="${p.id}" title="Start timer">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+      <button class="recent-entry-play${isRunning ? ' running' : ''}" data-pid="${p.id}" data-running="${isRunning}" title="${isRunning ? 'Stop timer' : 'Start timer'}">
+        ${isRunning ? stopIcon : playIcon}
       </button>
     </div>
-  `).join('');
+    `;
+  }).join('');
 
-  // Play button starts timer immediately
+  // Play button starts timer, running button stops it
   container.querySelectorAll('.recent-entry-play').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      quickStart(parseInt(btn.dataset.pid));
+      if (btn.dataset.running === 'true') {
+        stopTimer();
+      } else {
+        quickStart(parseInt(btn.dataset.pid));
+      }
     });
   });
 
@@ -368,6 +415,174 @@ function setupExpenseForm() {
     btn.disabled = false;
     btn.textContent = 'Save Expense';
   });
+}
+
+// --- Create project (inline in the project picker dropdown) ---
+
+const BILLING_FREQUENCIES = {
+  hourly: [
+    { value: 'weekly', label: 'Week' },
+    { value: 'biweekly', label: 'Two Weeks' },
+    { value: 'monthly', label: 'Month' }
+  ],
+  retainer: [
+    { value: 'weekly', label: 'Week' },
+    { value: 'biweekly', label: 'Two Weeks' },
+    { value: 'monthly', label: 'Month' }
+  ],
+  fixed: [
+    { value: 'upfront', label: 'Upfront (one-time at start)' },
+    { value: 'delivery', label: 'On delivery (one-time at end)' },
+    { value: 'milestone', label: 'By milestone' }
+  ]
+};
+
+function setupCreateProject() {
+  const openBtn = document.getElementById('openCreateProject');
+  const backBtn = document.getElementById('backToList');
+  const submitBtn = document.getElementById('submitNewProject');
+  const listView = document.getElementById('projectListView');
+  const createView = document.getElementById('projectCreateView');
+  const dropdown = document.getElementById('projectDropdown');
+  const rateTypeSelect = document.getElementById('newProjectRateType');
+  const freqLabel = document.getElementById('newProjectFreqLabel');
+
+  openBtn.addEventListener('click', async () => {
+    if (clients.length === 0) {
+      try {
+        await loadClients();
+      } catch (err) {
+        showCreateProjectError(err.message || String(err));
+        return;
+      }
+    }
+    populateClientDropdown();
+    updateFrequencyOptions(rateTypeSelect.value);
+    listView.style.display = 'none';
+    createView.style.display = 'block';
+    dropdown.classList.add('create-mode');
+    document.getElementById('newProjectName').focus();
+  });
+
+  backBtn.addEventListener('click', () => {
+    createView.style.display = 'none';
+    listView.style.display = 'block';
+    dropdown.classList.remove('create-mode');
+    resetCreateProjectForm();
+  });
+
+  submitBtn.addEventListener('click', submitNewProject);
+
+  rateTypeSelect.addEventListener('change', () => {
+    updateFrequencyOptions(rateTypeSelect.value);
+    freqLabel.textContent = rateTypeSelect.value === 'fixed' ? 'Invoice' : 'Invoice every';
+  });
+
+  // Submit on Enter from text/number fields (but not selects, which have their own Enter behavior)
+  ['newProjectName', 'newProjectRate'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitNewProject();
+    });
+  });
+}
+
+function updateFrequencyOptions(rateType) {
+  const select = document.getElementById('newProjectFrequency');
+  const options = BILLING_FREQUENCIES[rateType] || [];
+  select.innerHTML = options.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+}
+
+function populateClientDropdown() {
+  const select = document.getElementById('newProjectClient');
+  select.innerHTML = '<option value="">Select client...</option>';
+  clients.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    select.appendChild(opt);
+  });
+}
+
+async function submitNewProject() {
+  const name = document.getElementById('newProjectName').value.trim();
+  const clientId = document.getElementById('newProjectClient').value;
+  const rate = document.getElementById('newProjectRate').value;
+  const rateType = document.getElementById('newProjectRateType').value;
+  const currency = document.getElementById('newProjectCurrency').value;
+  const billingFrequency = document.getElementById('newProjectFrequency').value;
+  const billable = document.getElementById('newProjectBillable').checked;
+
+  if (!name) return showCreateProjectError('Name is required');
+  if (!clientId) return showCreateProjectError('Pick a client');
+  if (!rate || parseFloat(rate) <= 0) return showCreateProjectError('Enter a rate');
+
+  const btn = document.getElementById('submitNewProject');
+  btn.disabled = true;
+  btn.textContent = 'Creating...';
+
+  try {
+    const res = await apiFetch('/api/v1/projects', {
+      method: 'POST',
+      body: JSON.stringify({
+        name,
+        clientId: parseInt(clientId),
+        rateType,
+        currentRate: parseFloat(rate),
+        currency,
+        billingFrequency,
+        billable
+      })
+    });
+
+    if (res.ok) {
+      const project = await res.json();
+      projects.unshift(project); // show at top (most recent)
+      selectProject(project.id);
+      // Back to list view
+      document.getElementById('projectCreateView').style.display = 'none';
+      document.getElementById('projectListView').style.display = 'block';
+      document.getElementById('projectDropdown').classList.remove('create-mode');
+      resetCreateProjectForm();
+      // Refresh the picker list + project list in timer panel
+      renderProjectDropdown('');
+      renderProjectList();
+      // Also refresh the expense project dropdown
+      const expSelect = document.getElementById('expProject');
+      const opt = document.createElement('option');
+      opt.value = project.id;
+      opt.textContent = project.clientName ? `${project.name} (${project.clientName})` : project.name;
+      expSelect.appendChild(opt);
+      // Close dropdown
+      document.getElementById('projectDropdown').classList.remove('open');
+      document.getElementById('timerDesc').focus();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showCreateProjectError(err.error || `Failed (${res.status})`);
+    }
+  } catch (err) {
+    showCreateProjectError(err.message || String(err));
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Create';
+}
+
+function showCreateProjectError(msg) {
+  const fb = document.getElementById('createProjectFeedback');
+  fb.textContent = msg;
+  fb.className = 'feedback-inline error';
+}
+
+function resetCreateProjectForm() {
+  document.getElementById('newProjectName').value = '';
+  document.getElementById('newProjectClient').value = '';
+  document.getElementById('newProjectRate').value = '';
+  document.getElementById('newProjectRateType').value = 'hourly';
+  document.getElementById('newProjectCurrency').value = 'USD';
+  document.getElementById('newProjectBillable').checked = true;
+  updateFrequencyOptions('hourly');
+  document.getElementById('createProjectFeedback').className = 'feedback-inline';
+  document.getElementById('createProjectFeedback').textContent = '';
 }
 
 // --- Helpers ---

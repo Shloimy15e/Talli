@@ -11,6 +11,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+
 @RestController
 @RequestMapping("/api/v1/time")
 public class ApiTimeController {
@@ -43,13 +47,28 @@ public class ApiTimeController {
         return ResponseEntity.ok(toResponse(entry));
     }
 
+    /**
+     * Convert a server-local LocalDateTime (wall-clock, no zone) to Unix epoch millis
+     * using the JVM's default timezone. Returning long epoch millis is unambiguous —
+     * JS does `new Date(millis)` regardless of either side's timezone.
+     */
+    private static long toEpochMillis(LocalDateTime ldt) {
+        return ldt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
+    private static Long toEpochMillisNullable(LocalDateTime ldt) {
+        return ldt == null ? null : toEpochMillis(ldt);
+    }
+
     private TimerStatusResponse toTimerStatus(TimeEntry e) {
+        long elapsedSeconds = Duration.between(e.getStartedAt(), LocalDateTime.now()).getSeconds();
         return new TimerStatusResponse(
                 e.getId(),
                 e.getProject().getId(),
                 e.getProject().getName(),
                 e.getDescription(),
-                e.getStartedAt(),
+                toEpochMillis(e.getStartedAt()),
+                Math.max(elapsedSeconds, 0),
                 e.isRunning()
         );
     }
@@ -59,8 +78,8 @@ public class ApiTimeController {
                 e.getId(),
                 e.getProject().getId(),
                 e.getProject().getName(),
-                e.getStartedAt(),
-                e.getEndedAt(),
+                toEpochMillis(e.getStartedAt()),
+                toEpochMillisNullable(e.getEndedAt()),
                 e.getDurationMinutes(),
                 e.getDescription(),
                 e.getBillable()

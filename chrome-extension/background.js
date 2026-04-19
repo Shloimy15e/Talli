@@ -38,15 +38,14 @@ async function checkTimer() {
 
     if (res.ok) {
       const timer = await res.json();
-      const start = new Date(timer.startedAt);
-      const now = new Date();
-      const diffMinutes = Math.floor((now - start) / 60000);
+      // Use server-computed elapsedSeconds — avoids client/server clock mismatch.
+      const diffMinutes = Math.floor((timer.elapsedSeconds || 0) / 60);
       const h = Math.floor(diffMinutes / 60);
       const m = diffMinutes % 60;
 
       const badgeText = h > 0 ? `${h}:${String(m).padStart(2, '0')}` : `${m}m`;
       chrome.action.setBadgeText({ text: badgeText });
-      chrome.action.setBadgeBackgroundColor({ color: '#16a34a' });
+      chrome.action.setBadgeBackgroundColor({ color: '#ea7c28' });
     } else {
       chrome.action.setBadgeText({ text: '' });
     }

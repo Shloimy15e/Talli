@@ -347,10 +347,34 @@ body {
   color: var(--accent);
 }
 
-.recent-entry-play:hover {
+/* Higher specificity than .recent-entry:hover ... so icon flips to white when cursor is on the button. */
+.recent-entry .recent-entry-play:hover,
+.recent-entry:hover .recent-entry-play:hover {
   background: var(--accent);
   border-color: var(--accent);
   color: white;
+}
+
+/* Currently-running project — solid-orange stop button (pulsing ring). */
+.recent-entry-play.running {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  box-shadow: 0 0 0 0 rgba(234, 124, 40, 0.5);
+  animation: running-pulse 2s ease-out infinite;
+}
+
+.recent-entry .recent-entry-play.running:hover,
+.recent-entry:hover .recent-entry-play.running:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  animation: none;
+}
+
+@keyframes running-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(234, 124, 40, 0.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(234, 124, 40, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 124, 40, 0); }
 }
 
 /* --- Empty state --- */
@@ -513,4 +537,172 @@ body {
   margin-top: 12px;
   padding: 6px;
   border-radius: 6px;
+}
+
+/* --- Error state --- */
+.error-state {
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.error-state svg {
+  color: var(--danger);
+  margin-bottom: 4px;
+}
+
+.error-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.error-message {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.error-state .btn {
+  max-width: 180px;
+}
+
+/* --- Project create inline --- */
+.project-create-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+  background: none;
+  border: none;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.project-create-btn:hover { background: rgba(234, 124, 40, 0.06); }
+
+.project-create-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.project-back-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.project-back-btn:hover { background: white; color: var(--text); }
+
+.project-create-fields {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-create-fields .field-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: 4px;
+  margin-bottom: 2px;
+}
+
+.project-create-fields input[type="text"],
+.project-create-fields input[type="number"],
+.project-create-fields select {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+}
+
+.project-create-fields input:focus,
+.project-create-fields select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(234, 124, 40, 0.12);
+}
+
+.project-create-fields .field-row {
+  display: flex;
+  gap: 6px;
+}
+
+.project-create-fields .field-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.project-create-fields .field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text);
+  margin-top: 6px;
+  cursor: pointer;
+}
+
+.project-create-fields .field-checkbox input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.project-create-fields .btn {
+  margin-top: 10px;
+  padding: 8px;
+  font-size: 12px;
+}
+
+/* Widen the dropdown when the create form is showing */
+.project-dropdown.create-mode {
+  width: 300px;
+}
+
+.feedback-inline {
+  margin: 8px 10px 0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  display: none;
+}
+
+.feedback-inline.error {
+  display: block;
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid #fecaca;
 }

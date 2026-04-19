@@ -5,29 +5,43 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+  <!-- Header (always visible so Settings is always reachable) -->
+  <div class="header">
+    <svg class="header-logo" viewBox="0 0 64 64" width="22" height="22">
+      <g fill="#ea7c28">
+        <rect x="16" y="36" width="8" height="16" rx="2"/>
+        <rect x="28" y="24" width="8" height="28" rx="2"/>
+        <rect x="40" y="12" width="8" height="40" rx="2"/>
+      </g>
+    </svg>
+    <span class="header-title">Talli</span>
+    <button class="header-btn" id="settingsBtn" title="Settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+  </div>
+
   <!-- Loading state -->
   <div id="loading" class="loading">Loading...</div>
 
+  <!-- Error state: server unreachable or misconfigured -->
+  <div id="errorState" class="error-state" style="display:none">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <p class="error-title">Can't reach Talli</p>
+    <p class="error-message" id="errorMessage">Check your server URL and API token.</p>
+    <button class="btn btn-primary" id="errorSettingsBtn">Open Settings</button>
+    <button class="btn btn-secondary" id="retryBtn">Retry</button>
+  </div>
+
   <!-- Main app -->
   <div id="app" style="display:none">
-
-    <!-- Header (matches site sidebar) -->
-    <div class="header">
-      <svg class="header-logo" viewBox="0 0 64 64" width="22" height="22">
-        <g fill="#ea7c28">
-          <rect x="16" y="36" width="8" height="16" rx="2"/>
-          <rect x="28" y="24" width="8" height="28" rx="2"/>
-          <rect x="40" y="12" width="8" height="40" rx="2"/>
-        </g>
-      </svg>
-      <span class="header-title">Talli</span>
-      <button class="header-btn" id="settingsBtn" title="Settings">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-          <circle cx="12" cy="12" r="3"/>
-        </svg>
-      </button>
-    </div>
 
     <!-- Timer bar -->
     <div id="timerBar" class="timer-bar">
@@ -40,8 +54,68 @@
             <span id="projectPickerLabel">Project</span>
           </button>
           <div class="project-dropdown" id="projectDropdown">
-            <input type="text" class="project-search" id="projectSearch" placeholder="Search projects..." autocomplete="off">
-            <div class="project-list" id="projectList"></div>
+            <!-- List view -->
+            <div id="projectListView">
+              <input type="text" class="project-search" id="projectSearch" placeholder="Search projects..." autocomplete="off">
+              <div class="project-list" id="projectList"></div>
+              <button type="button" class="project-create-btn" id="openCreateProject">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                New project
+              </button>
+            </div>
+            <!-- Create form view -->
+            <div id="projectCreateView" style="display:none">
+              <div class="project-create-header">
+                <button type="button" class="project-back-btn" id="backToList" title="Back">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                <span>New project</span>
+              </div>
+              <div id="createProjectFeedback" class="feedback-inline"></div>
+              <div class="project-create-fields">
+                <label class="field-label">Project name</label>
+                <input type="text" id="newProjectName" placeholder="e.g. Website redesign" autocomplete="off">
+
+                <label class="field-label">Client</label>
+                <select id="newProjectClient"></select>
+
+                <div class="field-row">
+                  <div class="field-col">
+                    <label class="field-label">Rate type</label>
+                    <select id="newProjectRateType">
+                      <option value="hourly">Hourly</option>
+                      <option value="fixed">Fixed</option>
+                      <option value="retainer">Retainer</option>
+                    </select>
+                  </div>
+                  <div class="field-col">
+                    <label class="field-label">Currency</label>
+                    <select id="newProjectCurrency">
+                      <option value="USD">USD $</option>
+                      <option value="ILS">ILS ₪</option>
+                      <option value="EUR">EUR €</option>
+                      <option value="GBP">GBP £</option>
+                    </select>
+                  </div>
+                  <div class="field-col">
+                    <label class="field-label">Rate</label>
+                    <input type="number" id="newProjectRate" placeholder="0.00" step="0.01" min="0">
+                  </div>
+                </div>
+
+                <label class="field-label" id="newProjectFreqLabel">Invoice every</label>
+                <select id="newProjectFrequency">
+                  <!-- Populated dynamically based on rate type -->
+                </select>
+
+                <label class="field-checkbox">
+                  <input type="checkbox" id="newProjectBillable" checked>
+                  <span>Billable project</span>
+                </label>
+
+                <button type="button" class="btn btn-primary" id="submitNewProject">Create Project</button>
+              </div>
+            </div>
           </div>
         </div>
         <button id="startBtn" class="timer-btn start" title="Start timer">
