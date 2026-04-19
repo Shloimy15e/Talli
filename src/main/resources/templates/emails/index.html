@@ -3,7 +3,7 @@
   <head th:replace="~{layout :: head('Emails')}"></head>
   <body th:replace="~{layout :: page('emails', ~{::section})}">
     <section>
-      <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center justify-between mb-6">
         <div>
           <h1 class="text-2xl font-semibold tracking-tight">Emails</h1>
           <p
@@ -24,8 +24,43 @@
         </button>
       </div>
 
+      <!-- Flow tabs -->
+      <div class="flex items-center gap-1 mb-5 border-b border-slate-200">
+        <a
+          th:href="@{/emails(status=${filterStatuses}, search=${filterSearch}, sort=${sort}, direction=${direction})}"
+          th:class="'inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition '
+            + (${filterFlow == null or filterFlow.isEmpty()}
+              ? 'border-[#ea7c28] text-slate-900'
+              : 'border-transparent text-slate-500 hover:text-slate-800')"
+        >
+          <i data-lucide="mail" class="w-4 h-4"></i>
+          All
+        </a>
+        <a
+          th:href="@{/emails(flow='in', status=${filterStatuses}, search=${filterSearch}, sort=${sort}, direction=${direction})}"
+          th:class="'inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition '
+            + (${filterFlow == 'in'}
+              ? 'border-[#ea7c28] text-slate-900'
+              : 'border-transparent text-slate-500 hover:text-slate-800')"
+        >
+          <i data-lucide="inbox" class="w-4 h-4"></i>
+          Received
+        </a>
+        <a
+          th:href="@{/emails(flow='out', status=${filterStatuses}, search=${filterSearch}, sort=${sort}, direction=${direction})}"
+          th:class="'inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition '
+            + (${filterFlow == 'out'}
+              ? 'border-[#ea7c28] text-slate-900'
+              : 'border-transparent text-slate-500 hover:text-slate-800')"
+        >
+          <i data-lucide="send" class="w-4 h-4"></i>
+          Sent
+        </a>
+      </div>
+
       <!-- Filters -->
       <form method="get" th:action="@{/emails}" class="mb-5">
+        <input type="hidden" name="flow" th:value="${filterFlow}" />
         <input type="hidden" name="sort" th:value="${sort}" />
         <input type="hidden" name="direction" th:value="${direction}" />
         <div class="flex items-center gap-4 flex-wrap">
@@ -39,7 +74,7 @@
               type="text"
               name="search"
               th:value="${filterSearch}"
-              placeholder="Search subject, recipient, body…"
+              placeholder="Search subject, contact, body…"
               class="w-72 pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/20 focus:border-[#ea7c28] placeholder-slate-400"
             />
           </div>
@@ -47,12 +82,13 @@
           <!-- Status pills -->
           <div class="flex items-center gap-1 border-l border-slate-200 pl-4">
             <label
-              th:each="s : ${ {'sent','failed','pending'} }"
+              th:each="s : ${ {'sent','received','failed','pending'} }"
               th:class="'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer select-none transition-all '
                 + (${#lists.contains(filterStatuses, s)}
                   ? (${s == 'sent'} ? 'bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-sm'
-                    : (${s == 'failed'} ? 'bg-red-50 border border-red-200 text-red-700 shadow-sm'
-                      : 'bg-slate-100 border border-slate-300 text-slate-600 shadow-sm'))
+                    : (${s == 'received'} ? 'bg-blue-50 border border-blue-200 text-blue-700 shadow-sm'
+                      : (${s == 'failed'} ? 'bg-red-50 border border-red-200 text-red-700 shadow-sm'
+                        : 'bg-slate-100 border border-slate-300 text-slate-600 shadow-sm')))
                   : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700')"
             >
               <input
@@ -76,7 +112,7 @@
                 >0 results</span
               >
               <a
-                th:href="@{/emails(sort=${sort}, direction=${direction})}"
+                th:href="@{/emails(flow=${filterFlow}, sort=${sort}, direction=${direction})}"
                 class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition"
               >
                 <i data-lucide="x" class="w-3 h-3"></i>
@@ -101,12 +137,13 @@
         <table class="w-full">
           <thead>
             <tr class="border-b border-slate-200">
-              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">
-                To
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3 w-8"></th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">
+                Contact
               </th>
               <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">
                 <a
-                  th:href="@{/emails(sort='subject', direction=${sort == 'subject' and direction == 'asc' ? 'desc' : 'asc'}, search=${filterSearch}, status=${filterStatuses})}"
+                  th:href="@{/emails(sort='subject', direction=${sort == 'subject' and direction == 'asc' ? 'desc' : 'asc'}, flow=${filterFlow}, search=${filterSearch}, status=${filterStatuses})}"
                   class="inline-flex items-center gap-1 hover:text-slate-700"
                 >
                   Subject
@@ -116,17 +153,17 @@
               </th>
               <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">
                 <a
-                  th:href="@{/emails(sort='sent', direction=${sort == 'sent' and direction == 'desc' ? 'asc' : 'desc'}, search=${filterSearch}, status=${filterStatuses})}"
+                  th:href="@{/emails(sort='created', direction=${sort == 'created' and direction == 'desc' ? 'asc' : 'desc'}, flow=${filterFlow}, search=${filterSearch}, status=${filterStatuses})}"
                   class="inline-flex items-center gap-1 hover:text-slate-700"
                 >
-                  Sent
-                  <i th:if="${sort == 'sent' and direction == 'asc'}"  data-lucide="arrow-up"   class="w-3 h-3"></i>
-                  <i th:if="${sort == 'sent' and direction == 'desc'}" data-lucide="arrow-down" class="w-3 h-3"></i>
+                  Date
+                  <i th:if="${sort == 'created' and direction == 'asc'}"  data-lucide="arrow-up"   class="w-3 h-3"></i>
+                  <i th:if="${sort == 'created' and direction == 'desc'}" data-lucide="arrow-down" class="w-3 h-3"></i>
                 </a>
               </th>
               <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">
                 <a
-                  th:href="@{/emails(sort='status', direction=${sort == 'status' and direction == 'asc' ? 'desc' : 'asc'}, search=${filterSearch}, status=${filterStatuses})}"
+                  th:href="@{/emails(sort='status', direction=${sort == 'status' and direction == 'asc' ? 'desc' : 'asc'}, flow=${filterFlow}, search=${filterSearch}, status=${filterStatuses})}"
                   class="inline-flex items-center gap-1 hover:text-slate-700"
                 >
                   Status
@@ -142,8 +179,12 @@
               class="border-b border-slate-100 hover:bg-slate-50 transition cursor-pointer"
               th:onclick="|window.location='/emails/${e.id}'|"
             >
-              <td class="px-6 py-4 text-sm">
-                <span th:text="${e.toAddress}">email</span>
+              <td class="pl-6 pr-2 py-4 text-slate-400">
+                <i th:if="${e.direction == 'in'}"  data-lucide="arrow-down-left" class="w-4 h-4 text-blue-500" th:attr="data-tippy-content='Received'"></i>
+                <i th:if="${e.direction != 'in'}" data-lucide="arrow-up-right"  class="w-4 h-4 text-slate-400" th:attr="data-tippy-content='Sent'"></i>
+              </td>
+              <td class="px-4 py-4 text-sm">
+                <span th:text="${e.direction == 'in' ? (e.fromAddress ?: '—') : e.toAddress}">contact</span>
                 <span
                   th:if="${e.client}"
                   class="block text-xs text-slate-500"
@@ -161,7 +202,8 @@
               </td>
               <td
                 class="px-6 py-4 text-sm text-slate-500 tabular-nums"
-                th:text="${e.sentAt != null ? #temporals.format(e.sentAt, 'MMM d, HH:mm') : '—'}"
+                th:with="when=${e.direction == 'in' ? e.receivedAt : e.sentAt}"
+                th:text="${when != null ? #temporals.format(when, 'MMM d, HH:mm') : #temporals.format(e.createdAt, 'MMM d, HH:mm')}"
               >
                 Mar 12
               </td>
@@ -170,6 +212,11 @@
                   th:if="${e.status == 'sent'}"
                   class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700"
                   >Sent</span
+                >
+                <span
+                  th:if="${e.status == 'received'}"
+                  class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700"
+                  >Received</span
                 >
                 <span
                   th:if="${e.status == 'failed'}"
@@ -203,7 +250,7 @@
         <div class="flex items-center gap-1">
           <a
             th:if="${page.number > 0}"
-            th:href="@{/emails(page=${page.number - 1}, status=${filterStatuses}, search=${filterSearch}, sort=${sort}, direction=${direction})}"
+            th:href="@{/emails(page=${page.number - 1}, flow=${filterFlow}, status=${filterStatuses}, search=${filterSearch}, sort=${sort}, direction=${direction})}"
             class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
             >Prev</a
           >
@@ -216,7 +263,7 @@
           <th:block th:each="p : ${#numbers.sequence(0, page.totalPages - 1)}">
             <a
               th:if="${p != page.number}"
-              th:href="@{/emails(page=${p}, status=${filterStatuses}, search=${filterSearch}, sort=${sort}, direction=${direction})}"
+              th:href="@{/emails(page=${p}, flow=${filterFlow}, status=${filterStatuses}, search=${filterSearch}, sort=${sort}, direction=${direction})}"
               th:text="${p + 1}"
               class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
               >1</a
@@ -231,7 +278,7 @@
 
           <a
             th:if="${page.number < page.totalPages - 1}"
-            th:href="@{/emails(page=${page.number + 1}, status=${filterStatuses}, search=${filterSearch}, sort=${sort}, direction=${direction})}"
+            th:href="@{/emails(page=${page.number + 1}, flow=${filterFlow}, status=${filterStatuses}, search=${filterSearch}, sort=${sort}, direction=${direction})}"
             class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700"
             >Next</a
           >

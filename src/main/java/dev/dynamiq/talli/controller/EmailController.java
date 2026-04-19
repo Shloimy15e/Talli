@@ -43,6 +43,7 @@ public class EmailController {
 
     @GetMapping
     public String index(@RequestParam(defaultValue = "0") int page,
+                        @RequestParam(required = false) String flow,
                         @RequestParam(required = false) List<String> status,
                         @RequestParam(required = false) String search,
                         @RequestParam(defaultValue = "created") String sort,
@@ -50,6 +51,10 @@ public class EmailController {
                         Model model) {
         List<String> statuses = status == null ? List.of() : status;
         String q = (search == null) ? "" : search;
+        String normalizedFlow = switch (flow == null ? "" : flow) {
+            case "in", "out" -> flow;
+            default -> "";
+        };
         String normalizedSort = switch (sort) {
             case "sent", "subject", "status" -> sort;
             default -> "created";
@@ -57,13 +62,14 @@ public class EmailController {
         String normalizedDir = "asc".equalsIgnoreCase(direction) ? "asc" : "desc";
 
         var emailPage = emailRepository.findFiltered(
-                statuses, q, normalizedSort, normalizedDir,
+                normalizedFlow, statuses, q, normalizedSort, normalizedDir,
                 org.springframework.data.domain.PageRequest.of(page, 25));
 
         model.addAttribute("emails", emailPage.getContent());
         model.addAttribute("page", emailPage);
         model.addAttribute("filterStatuses", statuses);
         model.addAttribute("filterSearch", search);
+        model.addAttribute("filterFlow", normalizedFlow);
         model.addAttribute("sort", normalizedSort);
         model.addAttribute("direction", normalizedDir);
         return "emails/index";

@@ -16,4 +16,5 @@ import java.util.Optional;
 // ...and about 15 more methods. You never implement them.
 public interface ClientRepository extends JpaRepository<Client, Long> {
     Optional<Client> findByNameIgnoreCase(String name);
+    Optional<Client> findByEmailIgnoreCase(String email);
 }

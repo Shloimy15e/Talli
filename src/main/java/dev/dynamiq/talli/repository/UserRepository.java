@@ -12,4 +12,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByInviteToken(String inviteToken);
     List<User> findAllByOrderByCreatedAtDesc();
     List<User> findByClientIdAndEnabledTrue(Long clientId);
+
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT DISTINCT u FROM User u JOIN u.roles r WHERE r.name = :roleName AND u.enabled = true")
+    List<User> findEnabledByRoleName(@org.springframework.data.repository.query.Param("roleName") String roleName);
 }

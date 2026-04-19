@@ -26,7 +26,9 @@ public class EmailStatusHandler implements ResendEventHandler {
 
     @Override
     public boolean supports(String type) {
-        return type != null && type.startsWith("email.");
+        // Only outbound delivery-state events. `email.received` is handled by
+        // InboundEmailHandler and has no bearing on outbound tracking fields.
+        return type != null && type.startsWith("email.") && !"email.received".equals(type);
     }
 
     @Override

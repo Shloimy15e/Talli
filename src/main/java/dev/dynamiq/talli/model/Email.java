@@ -22,6 +22,18 @@ public class Email {
     @Column(name = "to_address", nullable = false)
     private String toAddress;
 
+    /** 'out' for emails we sent, 'in' for emails received via the inbound webhook. */
+    @Column(nullable = false)
+    private String direction = "out";
+
+    /** For inbound emails, the sender's address. Null for outbound (we're the sender). */
+    @Column(name = "from_address")
+    private String fromAddress;
+
+    /** When an inbound email was received (set from the webhook event). */
+    @Column(name = "received_at")
+    private LocalDateTime receivedAt;
+
     /** Comma-separated BCC addresses. */
     @Column(columnDefinition = "TEXT")
     private String bcc;
@@ -224,5 +236,29 @@ public class Email {
 
     public void setBounceReason(String bounceReason) {
         this.bounceReason = bounceReason;
+    }
+
+    public String getDirection() {
+        return direction;
+    }
+
+    public void setDirection(String direction) {
+        this.direction = direction;
+    }
+
+    public String getFromAddress() {
+        return fromAddress;
+    }
+
+    public void setFromAddress(String fromAddress) {
+        this.fromAddress = fromAddress;
+    }
+
+    public LocalDateTime getReceivedAt() {
+        return receivedAt;
+    }
+
+    public void setReceivedAt(LocalDateTime receivedAt) {
+        this.receivedAt = receivedAt;
     }
 }

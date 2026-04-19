@@ -17,12 +17,14 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
     java.util.Optional<Email> findByResendId(String resendId);
 
     @Query("SELECT e FROM Email e LEFT JOIN e.client c WHERE "
+         + "(:flow = '' OR e.direction = :flow) AND "
          + "(:#{#statuses.isEmpty()} = true OR e.status IN :statuses) AND "
          + "(:search = '' "
-         + "  OR LOWER(e.subject)   LIKE LOWER(CONCAT('%', :search, '%')) "
-         + "  OR LOWER(e.toAddress) LIKE LOWER(CONCAT('%', :search, '%')) "
-         + "  OR LOWER(e.body)      LIKE LOWER(CONCAT('%', :search, '%')) "
-         + "  OR LOWER(COALESCE(c.name, '')) LIKE LOWER(CONCAT('%', :search, '%'))) "
+         + "  OR LOWER(e.subject)              LIKE LOWER(CONCAT('%', :search, '%')) "
+         + "  OR LOWER(e.toAddress)            LIKE LOWER(CONCAT('%', :search, '%')) "
+         + "  OR LOWER(COALESCE(e.fromAddress, '')) LIKE LOWER(CONCAT('%', :search, '%')) "
+         + "  OR LOWER(e.body)                 LIKE LOWER(CONCAT('%', :search, '%')) "
+         + "  OR LOWER(COALESCE(c.name, ''))   LIKE LOWER(CONCAT('%', :search, '%'))) "
          + "ORDER BY "
          + "CASE WHEN :sort = 'created' AND :direction = 'desc' THEN e.createdAt END DESC, "
          + "CASE WHEN :sort = 'created' AND :direction = 'asc'  THEN e.createdAt END ASC, "
@@ -33,7 +35,8 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
          + "CASE WHEN :sort = 'status'  AND :direction = 'asc'  THEN e.status    END ASC, "
          + "CASE WHEN :sort = 'status'  AND :direction = 'desc' THEN e.status    END DESC, "
          + "e.id DESC")
-    Page<Email> findFiltered(@Param("statuses") List<String> statuses,
+    Page<Email> findFiltered(@Param("flow") String flow,
+                             @Param("statuses") List<String> statuses,
                              @Param("search") String search,
                              @Param("sort") String sort,
                              @Param("direction") String direction,
