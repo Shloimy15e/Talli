@@ -37,14 +37,13 @@ public class ProfileController {
     public String updateProfile(Authentication auth,
                                 @RequestParam("name") String name,
                                 @RequestParam("email") String email,
-                                Model model) {
+                                RedirectAttributes redirectAttributes) {
         User user = currentUser(auth);
         user.setName(name);
         user.setEmail(email);
         userRepository.save(user);
-        model.addAttribute("user", user);
-        model.addAttribute("message", "Profile updated.");
-        return "profile/index";
+        redirectAttributes.addFlashAttribute("message", "Profile updated.");
+        return "redirect:/profile";
     }
 
     @PostMapping("/password")
@@ -52,30 +51,26 @@ public class ProfileController {
                                  @RequestParam("currentPassword") String currentPassword,
                                  @RequestParam("newPassword") String newPassword,
                                  @RequestParam("confirmPassword") String confirmPassword,
-                                 Model model) {
+                                 RedirectAttributes redirectAttributes) {
         User user = currentUser(auth);
 
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
-            model.addAttribute("user", user);
-            model.addAttribute("error", "Current password is incorrect.");
-            return "profile/index";
+            redirectAttributes.addFlashAttribute("error", "Current password is incorrect.");
+            return "redirect:/profile";
         }
         if (!newPassword.equals(confirmPassword)) {
-            model.addAttribute("user", user);
-            model.addAttribute("error", "New passwords don't match.");
-            return "profile/index";
+            redirectAttributes.addFlashAttribute("error", "New passwords don't match.");
+            return "redirect:/profile";
         }
         if (newPassword.length() < 8) {
-            model.addAttribute("user", user);
-            model.addAttribute("error", "Password must be at least 8 characters.");
-            return "profile/index";
+            redirectAttributes.addFlashAttribute("error", "Password must be at least 8 characters.");
+            return "redirect:/profile";
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-        model.addAttribute("user", user);
-        model.addAttribute("message", "Password changed.");
-        return "profile/index";
+        redirectAttributes.addFlashAttribute("message", "Password changed.");
+        return "redirect:/profile";
     }
 
     @PostMapping("/tokens")
