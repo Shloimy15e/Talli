@@ -40,8 +40,8 @@
               <option th:each="p : ${projects}"
                       th:value="${p.id}"
                       th:selected="${entry.project != null and entry.project.id == p.id}"
-                      th:attr="data-billable=${p.billable}"
-                      th:text="${p.name} + ' · ' + ${p.client.name} + (${p.billable} ? '' : '  (non-billable)')">Project · Client</option>
+                      th:attr="data-billable=${p.billable != null and p.billable} ? 'true' : 'false'"
+                      th:text="${p.name} + ' · ' + ${p.client.name} + ((${p.billable != null and p.billable}) ? '' : '  (non-billable)')">Project · Client</option>
             </select>
           </div>
 
