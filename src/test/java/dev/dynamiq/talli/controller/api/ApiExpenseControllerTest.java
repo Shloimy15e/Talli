@@ -6,8 +6,8 @@ import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.repository.ClientRepository;
-import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.service.ExpenseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.*;
 
 class ApiExpenseControllerTest {
 
-    private ExpenseRepository expenseRepository;
+    private ExpenseService expenseService;
     private ClientRepository clientRepository;
     private ProjectRepository projectRepository;
     private ApiExpenseController controller;
@@ -34,12 +34,12 @@ class ApiExpenseControllerTest {
 
     @BeforeEach
     void setUp() {
-        expenseRepository = mock(ExpenseRepository.class);
+        expenseService = mock(ExpenseService.class);
         clientRepository = mock(ClientRepository.class);
         projectRepository = mock(ProjectRepository.class);
-        controller = new ApiExpenseController(expenseRepository, clientRepository, projectRepository);
+        controller = new ApiExpenseController(expenseService, clientRepository, projectRepository);
 
-        when(expenseRepository.save(any(Expense.class))).thenAnswer(inv -> {
+        when(expenseService.create(any(Expense.class))).thenAnswer(inv -> {
             Expense e = inv.getArgument(0);
             if (e.getId() == null) e.setId(1L);
             return e;
@@ -74,7 +74,7 @@ class ApiExpenseControllerTest {
         assertThat(body.clientName()).isEqualTo("Acme Corp");
         assertThat(body.projectName()).isEqualTo("Website");
         assertThat(body.billable()).isTrue();
-        verify(expenseRepository).save(any(Expense.class));
+        verify(expenseService).create(any(Expense.class));
     }
 
     @Test

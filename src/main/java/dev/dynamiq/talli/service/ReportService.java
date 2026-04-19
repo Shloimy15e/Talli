@@ -76,7 +76,8 @@ public class ReportService {
             if (ex.getIncurredOn() == null || ex.getIncurredOn().isBefore(from) || ex.getIncurredOn().isAfter(to)) continue;
             Long cid = ex.getClient().getId();
             clientNames.putIfAbsent(cid, ex.getClient().getName());
-            expensesByClient.merge(cid, ex.getAmount(), BigDecimal::add);
+            BigDecimal usd = exchangeRateService.toUsd(ex.getAmount(), ex.getCurrency(), ex.getExchangeRate());
+            expensesByClient.merge(cid, usd, BigDecimal::add);
         }
 
         Set<Long> allClientIds = new HashSet<>();
@@ -131,7 +132,8 @@ public class ReportService {
         for (var ex : expenseRepository.findByIncurredOnBetweenOrderByIncurredOnDesc(rangeStart, today)) {
             if (ex.getAmount() == null || ex.getIncurredOn() == null) continue;
             YearMonth ym = YearMonth.from(ex.getIncurredOn());
-            expenses.computeIfPresent(ym, (k, v) -> v.add(ex.getAmount()));
+            BigDecimal usd = exchangeRateService.toUsd(ex.getAmount(), ex.getCurrency(), ex.getExchangeRate());
+            expenses.computeIfPresent(ym, (k, v) -> v.add(usd));
         }
 
         List<MonthSummary> out = new ArrayList<>();
@@ -312,7 +314,8 @@ public class ReportService {
         for (Expense ex : expenseRepository.findByIncurredOnBetweenOrderByIncurredOnDesc(from, to)) {
             if (ex.getAmount() == null) continue;
             String cat = ex.getCategory() != null ? ex.getCategory() : "uncategorized";
-            byCategory.merge(cat, ex.getAmount(), BigDecimal::add);
+            BigDecimal usd = exchangeRateService.toUsd(ex.getAmount(), ex.getCurrency(), ex.getExchangeRate());
+            byCategory.merge(cat, usd, BigDecimal::add);
             countByCategory.merge(cat, 1, Integer::sum);
         }
 

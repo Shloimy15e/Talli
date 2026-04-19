@@ -4,8 +4,8 @@ import dev.dynamiq.talli.controller.api.dto.CreateExpenseRequest;
 import dev.dynamiq.talli.controller.api.dto.ExpenseResponse;
 import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.repository.ClientRepository;
-import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.service.ExpenseService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,14 +17,14 @@ import java.time.LocalDate;
 @RequestMapping("/api/v1/expenses")
 public class ApiExpenseController {
 
-    private final ExpenseRepository expenseRepository;
+    private final ExpenseService expenseService;
     private final ClientRepository clientRepository;
     private final ProjectRepository projectRepository;
 
-    public ApiExpenseController(ExpenseRepository expenseRepository,
+    public ApiExpenseController(ExpenseService expenseService,
                                 ClientRepository clientRepository,
                                 ProjectRepository projectRepository) {
-        this.expenseRepository = expenseRepository;
+        this.expenseService = expenseService;
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
     }
@@ -46,7 +46,7 @@ public class ApiExpenseController {
         e.setDescription(req.description());
         e.setPaymentMethod(req.paymentMethod());
         e.setBillable(req.billable() != null ? req.billable() : false);
-        expenseRepository.save(e);
+        expenseService.create(e);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(e));
     }

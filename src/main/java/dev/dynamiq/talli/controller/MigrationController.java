@@ -106,6 +106,7 @@ public class MigrationController {
         int[] counts = migrationService.backfillExchangeRates();
         ra.addFlashAttribute("backfillInvoices", counts[0]);
         ra.addFlashAttribute("backfillPayments", counts[1]);
+        ra.addFlashAttribute("backfillExpenses", counts[2]);
         return "redirect:/admin/migration";
     }
 

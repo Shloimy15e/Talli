@@ -68,6 +68,16 @@ public class ExchangeRateService {
         return toUsd(amount, currency, getRate(currency));
     }
 
+    /**
+     * The rate to lock onto a row incurred on {@code date} in {@code currency}.
+     * USD (or null inputs) → 1.0; otherwise the historic rate for that date.
+     * Safe to call from create/update paths regardless of currency.
+     */
+    public BigDecimal lockedRate(String currency, LocalDate date) {
+        if (date == null || currency == null || "USD".equalsIgnoreCase(currency)) return BigDecimal.ONE;
+        return getHistoricRate(currency, date);
+    }
+
     /** Get the historic rate for a specific date. Uses fawazahmed0/currency-api via jsDelivr CDN. */
     public BigDecimal getHistoricRate(String currency, LocalDate date) {
         if (currency == null || "USD".equalsIgnoreCase(currency)) return BigDecimal.ONE;

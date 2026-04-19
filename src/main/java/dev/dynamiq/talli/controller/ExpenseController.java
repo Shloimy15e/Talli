@@ -4,6 +4,7 @@ import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.service.ExpenseService;
 import dev.dynamiq.talli.service.MediaService;
 
 import org.springframework.data.domain.Page;
@@ -24,14 +25,18 @@ public class ExpenseController {
     private final ClientRepository clientRepository;
     private final ProjectRepository projectRepository;
     private final MediaService mediaService;
+    private final ExpenseService expenseService;
 
     public ExpenseController(ExpenseRepository expenseRepository,
                              ClientRepository clientRepository,
-                             ProjectRepository projectRepository, MediaService mediaService) {
+                             ProjectRepository projectRepository,
+                             MediaService mediaService,
+                             ExpenseService expenseService) {
         this.expenseRepository = expenseRepository;
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.mediaService = mediaService;
+        this.expenseService = expenseService;
     }
 
     @GetMapping
@@ -42,7 +47,7 @@ public class ExpenseController {
         Page<Expense> expensePage = expenseRepository.findAllByOrderByIncurredOnDesc(PageRequest.of(page, 25));
         model.addAttribute("expenses", expensePage.getContent());
         model.addAttribute("page", expensePage);
-        model.addAttribute("monthTotal", expenseRepository.sumAmountBetween(monthStart, today));
+        model.addAttribute("monthTotal", expenseService.sumInUsdBetween(monthStart, today));
         model.addAttribute("monthLabel", monthStart);
         return "expenses/index";
     }
@@ -75,7 +80,7 @@ public class ExpenseController {
     public String create(@ModelAttribute ExpenseForm form) {
         Expense e = new Expense();
         form.applyTo(e, clientRepository, projectRepository);
-        expenseRepository.save(e);
+        expenseService.create(e);
         attachReceiptIfPresent(e, form.getReceipt());
         return "redirect:/expenses";
     }
@@ -83,8 +88,10 @@ public class ExpenseController {
     @PostMapping("/{id}")
     public String update(@PathVariable("id") Long id, @ModelAttribute ExpenseForm form) {
         Expense e = expenseRepository.findById(id).orElseThrow();
+        String priorCurrency = e.getCurrency();
+        LocalDate priorDate = e.getIncurredOn();
         form.applyTo(e, clientRepository, projectRepository);
-        expenseRepository.save(e);
+        expenseService.update(e, priorCurrency, priorDate);
         attachReceiptIfPresent(e, form.getReceipt());
         return "redirect:/expenses";
     }

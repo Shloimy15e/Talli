@@ -44,6 +44,7 @@ public class DashboardService {
     private final InvoiceRepository invoiceRepository;
     private final PaymentRepository paymentRepository;
     private final ExchangeRateService exchangeRateService;
+    private final SubscriptionService subscriptionService;
 
     public DashboardService(ClientRepository clientRepository,
                             ProjectRepository projectRepository,
@@ -52,7 +53,8 @@ public class DashboardService {
                             SubscriptionRepository subscriptionRepository,
                             InvoiceRepository invoiceRepository,
                             PaymentRepository paymentRepository,
-                            ExchangeRateService exchangeRateService) {
+                            ExchangeRateService exchangeRateService,
+                            SubscriptionService subscriptionService) {
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.timeEntryRepository = timeEntryRepository;
@@ -61,6 +63,7 @@ public class DashboardService {
         this.invoiceRepository = invoiceRepository;
         this.paymentRepository = paymentRepository;
         this.exchangeRateService = exchangeRateService;
+        this.subscriptionService = subscriptionService;
     }
 
     public long countClients() {
@@ -111,11 +114,15 @@ public class DashboardService {
 
     public BigDecimal expensesThisMonth() {
         LocalDate today = LocalDate.now();
-        return expenseRepository.sumAmountBetween(today.withDayOfMonth(1), today);
+        LocalDate monthStart = today.withDayOfMonth(1);
+        return expenseRepository.findByIncurredOnBetweenOrderByIncurredOnDesc(monthStart, today).stream()
+                .filter(e -> e.getAmount() != null)
+                .map(e -> exchangeRateService.toUsd(e.getAmount(), e.getCurrency(), e.getExchangeRate()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public BigDecimal monthlyBurn() {
-        return subscriptionRepository.sumActiveMonthlyEquivalent();
+        return subscriptionService.monthlyBurnUsd();
     }
 
     public List<Subscription> subscriptionsDueWithin(int days) {
@@ -201,12 +208,13 @@ public class DashboardService {
             receivedByMonth.computeIfPresent(ym, (k, v) -> v.add(usd));
         }
 
-        // Expenses.
+        // Expenses — converted to USD using the rate locked at incurred date.
         LocalDate rangeStart = startMonth.atDay(1);
         for (var ex : expenseRepository.findByIncurredOnBetweenOrderByIncurredOnDesc(rangeStart, today)) {
             if (ex.getAmount() == null || ex.getIncurredOn() == null) continue;
             YearMonth ym = YearMonth.from(ex.getIncurredOn());
-            expensesByMonth.computeIfPresent(ym, (k, v) -> v.add(ex.getAmount()));
+            BigDecimal usd = exchangeRateService.toUsd(ex.getAmount(), ex.getCurrency(), ex.getExchangeRate());
+            expensesByMonth.computeIfPresent(ym, (k, v) -> v.add(usd));
         }
 
         DateTimeFormatter monthFmt = DateTimeFormatter.ofPattern("MMM yyyy");

@@ -2,7 +2,6 @@ package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.model.Subscription;
-import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.SubscriptionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,16 +17,19 @@ import static org.mockito.Mockito.*;
 class SubscriptionServiceTest {
 
     private SubscriptionRepository subscriptionRepository;
-    private ExpenseRepository expenseRepository;
+    private ExpenseService expenseService;
+    private ExchangeRateService exchangeRateService;
     private SubscriptionService service;
 
     @BeforeEach
     void setUp() {
         subscriptionRepository = mock(SubscriptionRepository.class);
-        expenseRepository = mock(ExpenseRepository.class);
-        when(expenseRepository.save(any(Expense.class))).thenAnswer(inv -> inv.getArgument(0));
+        expenseService = mock(ExpenseService.class);
+        exchangeRateService = mock(ExchangeRateService.class);
+        when(expenseService.create(any(Expense.class))).thenAnswer(inv -> inv.getArgument(0));
         when(subscriptionRepository.save(any(Subscription.class))).thenAnswer(inv -> inv.getArgument(0));
-        service = new SubscriptionService(subscriptionRepository, expenseRepository);
+        when(exchangeRateService.toUsdCurrent(any(), any())).thenAnswer(inv -> inv.getArgument(0));
+        service = new SubscriptionService(subscriptionRepository, expenseService, exchangeRateService);
     }
 
     @Test
@@ -74,8 +76,31 @@ class SubscriptionServiceTest {
 
         service.recordCharge(sub, LocalDate.of(2026, 4, 1));
 
-        verify(expenseRepository).save(any(Expense.class));
+        verify(expenseService).create(any(Expense.class));
         verify(subscriptionRepository).save(sub);
+    }
+
+    @Test
+    void monthlyBurnUsd_convertsYearlyTo12thAndAppliesCurrentRate() {
+        Subscription monthly = monthlySub("Slack", new BigDecimal("10.00"), "software", LocalDate.of(2026, 1, 1));
+        monthly.setCurrency("USD");
+        Subscription yearly = yearlySub("Domain", new BigDecimal("120.00"), "software", LocalDate.of(2026, 1, 1));
+        yearly.setCurrency("USD");
+        Subscription eurMonthly = monthlySub("Hetzner", new BigDecimal("50.00"), "hosting", LocalDate.of(2026, 1, 1));
+        eurMonthly.setCurrency("EUR");
+
+        when(subscriptionRepository.findByCancelledOnIsNullOrderByVendorAsc())
+                .thenReturn(java.util.List.of(monthly, yearly, eurMonthly));
+        // USD → identity; EUR → current rate 2.0 (so 50 EUR becomes 25 USD).
+        when(exchangeRateService.toUsdCurrent(any(), org.mockito.ArgumentMatchers.eq("USD")))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(exchangeRateService.toUsdCurrent(any(), org.mockito.ArgumentMatchers.eq("EUR")))
+                .thenReturn(new BigDecimal("25.00"));
+
+        BigDecimal total = service.monthlyBurnUsd();
+
+        // 10 (monthly USD) + 120/12 = 10 (yearly USD) + 25 (EUR→USD) = 45
+        assertThat(total).isEqualByComparingTo("45.00");
     }
 
     @Test

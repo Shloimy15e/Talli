@@ -681,6 +681,16 @@ public class MigrationService {
             paymentCount++;
         }
 
-        return new int[]{invoiceCount, paymentCount};
+        int expenseCount = 0;
+        for (dev.dynamiq.talli.model.Expense ex : expenseRepository.findAll()) {
+            if ("USD".equals(ex.getCurrency())) continue;
+            if (ex.getExchangeRate() != null && ex.getExchangeRate().compareTo(BigDecimal.ONE) != 0) continue;
+            if (ex.getIncurredOn() == null) continue;
+
+            ex.setExchangeRate(exchangeRateService.getHistoricRate(ex.getCurrency(), ex.getIncurredOn()));
+            expenseCount++;
+        }
+
+        return new int[]{invoiceCount, paymentCount, expenseCount};
     }
 }

@@ -39,7 +39,7 @@ public class SubscriptionController {
         model.addAttribute("cancelledSubs", cancelled);
         model.addAttribute("active", active);
         model.addAttribute("cancelled", cancelled);
-        model.addAttribute("monthlyTotal", subscriptionRepository.sumActiveMonthlyEquivalent());
+        model.addAttribute("monthlyTotal", subscriptionService.monthlyBurnUsd());
         model.addAttribute("today", LocalDate.now());
         return "subscriptions/index";
     }

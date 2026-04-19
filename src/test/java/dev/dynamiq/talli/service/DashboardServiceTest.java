@@ -68,10 +68,12 @@ class DashboardServiceTest {
         ExchangeRateService exchangeRateService = mock(ExchangeRateService.class);
         when(exchangeRateService.toUsd(any(), any(), any())).thenAnswer(inv -> inv.getArgument(0));
         when(exchangeRateService.toUsdCurrent(any(), any())).thenAnswer(inv -> inv.getArgument(0));
+        SubscriptionService subscriptionService = mock(SubscriptionService.class);
+        when(subscriptionService.monthlyBurnUsd()).thenReturn(BigDecimal.ZERO);
         service = new DashboardService(
                 clientRepository, projectRepository, timeEntryRepository,
                 expenseRepository, subscriptionRepository,
-                invoiceRepository, paymentRepository, exchangeRateService);
+                invoiceRepository, paymentRepository, exchangeRateService, subscriptionService);
     }
 
     @Test

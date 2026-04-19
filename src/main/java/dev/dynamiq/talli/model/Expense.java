@@ -45,6 +45,13 @@ public class Expense implements HasMedia {
     @Column(nullable = false)
     private String currency = "USD";
 
+    /**
+     * Exchange rate locked in at {@link #incurredOn}, expressed as
+     * "1 USD = X {currency}". Divide amount by this to convert to USD.
+     */
+    @Column(name = "exchange_rate", nullable = false)
+    private BigDecimal exchangeRate = BigDecimal.ONE;
+
     @Column(nullable = false)
     private String category;
 
@@ -140,6 +147,14 @@ public class Expense implements HasMedia {
 
     public void setCurrency(String currency) {
         this.currency = currency;
+    }
+
+    public BigDecimal getExchangeRate() {
+        return exchangeRate;
+    }
+
+    public void setExchangeRate(BigDecimal exchangeRate) {
+        this.exchangeRate = exchangeRate;
     }
 
     public String getCategory() {
