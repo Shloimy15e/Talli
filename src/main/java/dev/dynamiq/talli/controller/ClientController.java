@@ -8,10 +8,12 @@ import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
+import dev.dynamiq.talli.repository.PaymentRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import dev.dynamiq.talli.service.ClientCreditService;
 import dev.dynamiq.talli.service.ClientService;
+import dev.dynamiq.talli.service.ExchangeRateService;
 import dev.dynamiq.talli.service.PdfService;
 import dev.dynamiq.talli.service.ReminderService;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -39,6 +41,8 @@ public class ClientController {
     private final PdfService pdfService;
     private final ReminderService reminderService;
     private final ClientCreditService clientCreditService;
+    private final ExchangeRateService exchangeRateService;
+    private final PaymentRepository paymentRepository;
 
     public ClientController(ClientRepository clientRepository,
                             ProjectRepository projectRepository,
@@ -48,7 +52,9 @@ public class ClientController {
                             ClientService clientService,
                             PdfService pdfService,
                             ReminderService reminderService,
-                            ClientCreditService clientCreditService) {
+                            ClientCreditService clientCreditService,
+                            ExchangeRateService exchangeRateService,
+                            PaymentRepository paymentRepository) {
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.clientCreditService = clientCreditService;
@@ -58,6 +64,8 @@ public class ClientController {
         this.clientService = clientService;
         this.reminderService = reminderService;
         this.pdfService = pdfService;
+        this.exchangeRateService = exchangeRateService;
+        this.paymentRepository = paymentRepository;
     }
 
     // List page
@@ -66,16 +74,24 @@ public class ClientController {
         List<Client> clients = clientRepository.findAll();
         model.addAttribute("clients", clients);
 
-        // Aggregate KPIs across all clients.
+        // Aggregate KPIs across all clients — converted to USD to stay
+        // consistent with the dashboard:
+        //   billed      — invoice's stored (historic) exchange rate
+        //   collected   — each payment's stored rate (payment-date rate)
+        //   outstanding — current exchange rate, since it's what we'd collect today
         List<Invoice> allInvoices = invoiceRepository.findAllByOrderByIssuedAtDescIdDesc();
         BigDecimal totalBilled = allInvoices.stream()
                 .filter(i -> !"void".equals(i.getStatus()))
-                .map(Invoice::getAmount)
+                .map(i -> exchangeRateService.toUsd(i.getAmount(), i.getCurrency(), i.getExchangeRate()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalCollected = allInvoices.stream()
-                .map(Invoice::getAmountPaid)
+        BigDecimal totalCollected = paymentRepository.findAll().stream()
+                .filter(p -> p.getAmount() != null && p.getInvoice() != null)
+                .map(p -> exchangeRateService.toUsd(p.getAmount(), p.getInvoice().getCurrency(), p.getExchangeRate()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalOutstanding = totalBilled.subtract(totalCollected);
+        BigDecimal totalOutstanding = allInvoices.stream()
+                .filter(i -> "unpaid".equals(i.getStatus()) || "overdue".equals(i.getStatus()))
+                .map(i -> exchangeRateService.toUsdCurrent(i.balance(), i.getCurrency()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         long activeProjects = projectRepository.findAll().stream()
                 .filter(p -> "active".equals(p.getStatus()))
                 .count();
