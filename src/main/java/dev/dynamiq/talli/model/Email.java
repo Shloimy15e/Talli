@@ -32,6 +32,10 @@ public class Email {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
+    /** Rendered HTML body (with signature baked in). Null if email was sent as plain text only. */
+    @Column(name = "body_html", columnDefinition = "TEXT")
+    private String bodyHtml;
+
     @Column(name = "sent_at")
     private LocalDateTime sentAt;
 
@@ -124,6 +128,14 @@ public class Email {
 
     public void setBody(String body) {
         this.body = body;
+    }
+
+    public String getBodyHtml() {
+        return bodyHtml;
+    }
+
+    public void setBodyHtml(String bodyHtml) {
+        this.bodyHtml = bodyHtml;
     }
 
     public LocalDateTime getSentAt() {

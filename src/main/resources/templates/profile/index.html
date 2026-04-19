@@ -44,6 +44,193 @@
         </form>
       </div>
 
+      <!-- Prism for HTML syntax highlighting + js-beautify for formatting -->
+      <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markup.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/js-beautify@1.15.1/js/lib/beautify-html.js"></script>
+      <style>
+        .sig-editor-wrap { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; line-height: 1.6; }
+        .sig-editor-wrap textarea,
+        .sig-editor-wrap pre,
+        .sig-editor-wrap code {
+          font: inherit;
+          tab-size: 2;
+          letter-spacing: 0;
+          /* Prevent width drift between textarea and pre overlay */
+          font-variant-ligatures: none;
+          font-kerning: none;
+          font-feature-settings: normal;
+          /* Reserve scrollbar gutter on both so text wraps at the same width
+             whether or not a scrollbar is present. */
+          scrollbar-gutter: stable;
+          overflow-wrap: break-word;
+          word-break: normal;
+        }
+        .sig-editor-wrap textarea::placeholder { color: #94a3b8; }
+        /* overlay <pre> scrolls programmatically with the textarea; hide its scrollbar */
+        .sig-editor-wrap pre { scrollbar-width: none; }
+        .sig-editor-wrap pre::-webkit-scrollbar { display: none; }
+        /* Hide textarea's native scrollbar so only the gutter space is reserved */
+        .sig-editor-wrap textarea { scrollbar-width: none; }
+        .sig-editor-wrap textarea::-webkit-scrollbar { display: none; }
+        .sig-editor-wrap .token.tag,
+        .sig-editor-wrap .token.doctype { color: #db2777; }
+        .sig-editor-wrap .token.attr-name { color: #0891b2; }
+        .sig-editor-wrap .token.attr-value,
+        .sig-editor-wrap .token.string { color: #059669; }
+        .sig-editor-wrap .token.punctuation { color: #64748b; }
+        .sig-editor-wrap .token.comment { color: #94a3b8; font-style: italic; }
+
+        /* Rich editor */
+        .sig-rich { min-height: 10rem; resize: vertical; overflow: auto; }
+        .sig-rich:focus { outline: none; }
+        .sig-rich:empty::before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; }
+        .sig-rich a { color: #ea7c28; text-decoration: underline; }
+      </style>
+
+      <!-- Email signature -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm mb-6"
+           th:attr="data-signature=${user.signature} ?: ''"
+           x-data="{
+             signature: '',
+             format() {
+               if (!window.html_beautify) return;
+               this.signature = window.html_beautify(this.signature, {
+                 indent_size: 2,
+                 wrap_line_length: 0,
+                 end_with_newline: false,
+                 preserve_newlines: true,
+                 max_preserve_newlines: 1,
+                 unformatted: []
+               });
+             },
+             exec(cmd, value) {
+               this.$refs.rich.focus();
+               document.execCommand(cmd, false, value || null);
+               this.syncFromRich();
+             },
+             makeLink() {
+               const url = prompt('URL:', 'https://');
+               if (url) this.exec('createLink', url);
+             },
+             syncFromRich() {
+               this.signature = this.$refs.rich.innerHTML;
+             },
+             syncToRich() {
+               if (this.$refs.rich && this.$refs.rich.innerHTML !== this.signature) {
+                 this.$refs.rich.innerHTML = this.signature;
+               }
+             }
+           }"
+           x-init="signature = $el.dataset.signature || ''; $nextTick(() => syncToRich())"
+           x-effect="
+             $refs.highlighted.textContent = signature + '\n';
+             if (window.Prism) Prism.highlightElement($refs.highlighted);
+             syncToRich();
+           ">
+
+        <div class="px-6 py-4 border-b border-slate-200">
+          <h2 class="text-sm font-semibold">Email Signature</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Appended to emails you send. Supports HTML — preview updates as you type.</p>
+        </div>
+
+        <form th:action="@{/profile/signature}" method="post" class="p-6 space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label for="signature" class="block text-xs font-semibold uppercase tracking-wider text-slate-500">HTML</label>
+              <button type="button" @click="format()"
+                      class="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 transition">
+                <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                Format
+                <kbd class="px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-[10px] font-mono text-slate-500">Shift+Alt+F</kbd>
+              </button>
+            </div>
+            <div class="sig-editor-wrap relative rounded-lg border border-slate-200 bg-slate-50 overflow-hidden focus-within:ring-2 focus-within:ring-[#ea7c28]/30 focus-within:border-[#ea7c28]">
+              <pre aria-hidden="true"
+                   x-ref="highlighter"
+                   class="absolute inset-0 m-0 px-3 py-2 whitespace-pre-wrap break-words pointer-events-none overflow-auto text-slate-800"><code x-ref="highlighted" class="language-markup"></code></pre>
+              <textarea id="signature" name="signature" rows="8"
+                        x-model="signature"
+                        spellcheck="false"
+                        autocapitalize="off"
+                        autocomplete="off"
+                        @scroll="$refs.highlighter.scrollTop = $event.target.scrollTop"
+                        @keydown.f.shift.alt.prevent.stop="format()"
+                        @keydown.f.ctrl.shift.prevent.stop="format()"
+                        placeholder="&lt;p&gt;Best,&lt;br&gt;&lt;strong&gt;Your Name&lt;/strong&gt;&lt;/p&gt;"
+                        style="min-height: 10rem;"
+                        class="relative w-full px-3 py-2 bg-transparent text-transparent caret-slate-900 resize-y block focus:outline-none"></textarea>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Leave blank to remove.</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Rich Editor</label>
+            <div class="rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-[#ea7c28]/30 focus-within:border-[#ea7c28]">
+              <div class="flex items-center gap-0.5 px-2 py-1.5 border-b border-slate-200 bg-slate-50 rounded-t-lg">
+                <button type="button" @mousedown.prevent @click="exec('bold')" title="Bold (Ctrl+B)"
+                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
+                  <i data-lucide="bold" class="w-4 h-4"></i>
+                </button>
+                <button type="button" @mousedown.prevent @click="exec('italic')" title="Italic (Ctrl+I)"
+                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
+                  <i data-lucide="italic" class="w-4 h-4"></i>
+                </button>
+                <button type="button" @mousedown.prevent @click="exec('underline')" title="Underline (Ctrl+U)"
+                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
+                  <i data-lucide="underline" class="w-4 h-4"></i>
+                </button>
+                <span class="w-px h-5 bg-slate-200 mx-1"></span>
+                <button type="button" @mousedown.prevent @click="makeLink()" title="Insert link"
+                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
+                  <i data-lucide="link" class="w-4 h-4"></i>
+                </button>
+                <button type="button" @mousedown.prevent @click="exec('unlink')" title="Remove link"
+                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
+                  <i data-lucide="link-2-off" class="w-4 h-4"></i>
+                </button>
+                <span class="w-px h-5 bg-slate-200 mx-1"></span>
+                <button type="button" @mousedown.prevent @click="exec('justifyLeft')" title="Align left"
+                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
+                  <i data-lucide="align-left" class="w-4 h-4"></i>
+                </button>
+                <button type="button" @mousedown.prevent @click="exec('justifyCenter')" title="Align center"
+                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
+                  <i data-lucide="align-center" class="w-4 h-4"></i>
+                </button>
+                <button type="button" @mousedown.prevent @click="exec('justifyRight')" title="Align right"
+                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
+                  <i data-lucide="align-right" class="w-4 h-4"></i>
+                </button>
+                <span class="w-px h-5 bg-slate-200 mx-1"></span>
+                <button type="button" @mousedown.prevent @click="exec('insertUnorderedList')" title="Bulleted list"
+                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
+                  <i data-lucide="list" class="w-4 h-4"></i>
+                </button>
+                <button type="button" @mousedown.prevent @click="exec('removeFormat')" title="Clear formatting"
+                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition ml-auto">
+                  <i data-lucide="eraser" class="w-4 h-4"></i>
+                </button>
+              </div>
+              <div x-ref="rich"
+                   contenteditable="true"
+                   @input="syncFromRich()"
+                   @blur="syncFromRich()"
+                   data-placeholder="Start typing or edit here — changes sync to the HTML field above."
+                   class="sig-rich p-4 text-sm text-slate-700"></div>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">Edits here update the HTML above, and vice-versa.</p>
+          </div>
+
+          <div class="flex justify-end">
+            <button type="submit"
+                    class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+              Save Signature
+            </button>
+          </div>
+        </form>
+      </div>
+
       <!-- Change password -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm mb-6">
         <div class="px-6 py-4 border-b border-slate-200">

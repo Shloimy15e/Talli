@@ -2,10 +2,12 @@ package dev.dynamiq.talli.controller;
 
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Email;
+import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.UserRepository;
 import dev.dynamiq.talli.service.EmailService;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -76,7 +78,8 @@ public class EmailController {
     }
 
     @PostMapping
-    public String send(@RequestParam(value = "clientId", required = false) Long clientId,
+    public String send(Authentication auth,
+                       @RequestParam(value = "clientId", required = false) Long clientId,
                        @RequestParam("toAddress") String toAddress,
                        @RequestParam("subject") String subject,
                        @RequestParam("body") String body,
@@ -107,8 +110,21 @@ public class EmailController {
                 .toList();
         if (!bcc.isEmpty()) email.setBcc(String.join(", ", bcc));
 
+        // If the current user has a signature, render the body as HTML with
+        // the signature appended and send as HTML + plain text. Otherwise
+        // keep the historical plain-text behavior.
+        String signature = currentUserSignature(auth);
+        String htmlBody = null;
+        if (signature != null && !signature.isBlank()) {
+            htmlBody = "<div>" + EmailService.plainToHtml(body) + "</div>"
+                     + "<br><div>" + signature + "</div>";
+            email.setBodyHtml(htmlBody);
+        }
+
         try {
-            EmailService.Result result = emailService.sendPlain(toAddress, bcc, subject, body);
+            EmailService.Result result = htmlBody != null
+                    ? emailService.sendHtml(toAddress, bcc, subject, body, htmlBody)
+                    : emailService.sendPlain(toAddress, bcc, subject, body);
             email.setResendId(result.resendId());
             email.setStatus("sent");
             email.setSentAt(LocalDateTime.now());
@@ -119,5 +135,12 @@ public class EmailController {
 
         emailRepository.save(email);
         return "redirect:/emails";
+    }
+
+    private String currentUserSignature(Authentication auth) {
+        if (auth == null || auth.getName() == null) return null;
+        return userRepository.findByEmail(auth.getName())
+                .map(User::getSignature)
+                .orElse(null);
     }
 }

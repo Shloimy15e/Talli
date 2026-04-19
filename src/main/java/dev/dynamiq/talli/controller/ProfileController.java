@@ -46,6 +46,17 @@ public class ProfileController {
         return "redirect:/profile";
     }
 
+    @PostMapping("/signature")
+    public String updateSignature(Authentication auth,
+                                  @RequestParam(value = "signature", required = false) String signature,
+                                  RedirectAttributes redirectAttributes) {
+        User user = currentUser(auth);
+        user.setSignature((signature == null || signature.isBlank()) ? null : signature);
+        userRepository.save(user);
+        redirectAttributes.addFlashAttribute("message", "Signature saved.");
+        return "redirect:/profile";
+    }
+
     @PostMapping("/password")
     public String changePassword(Authentication auth,
                                  @RequestParam("currentPassword") String currentPassword,

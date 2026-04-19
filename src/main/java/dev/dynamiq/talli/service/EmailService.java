@@ -52,6 +52,31 @@ public class EmailService {
         return new Result("", id);
     }
 
+    /**
+     * Send both an HTML and a plain-text version. Use when the composed body
+     * should be rendered with formatting (e.g. with a user signature appended).
+     */
+    public Result sendHtml(String to, List<String> bcc, String subject, String text, String html) {
+        String id = send(to, bcc, subject, html, text, null);
+        return new Result(html, id);
+    }
+
+    /**
+     * Render a plain-text message body as HTML: escape entities and convert
+     * newlines to <br>. Used to wrap user-composed plain text so a signature
+     * can be appended as HTML.
+     */
+    public static String plainToHtml(String text) {
+        if (text == null) return "";
+        String escaped = text
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+        return escaped.replace("\r\n", "\n").replace("\n", "<br>\n");
+    }
+
     public Result sendTemplate(String to, String subject, String templateName, Map<String, Object> variables) {
         return sendTemplate(to, List.of(), subject, templateName, variables);
     }
