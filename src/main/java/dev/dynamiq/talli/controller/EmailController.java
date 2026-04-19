@@ -79,7 +79,8 @@ public class EmailController {
         if (!bcc.isEmpty()) email.setBcc(String.join(", ", bcc));
 
         try {
-            emailService.sendPlain(toAddress, bcc, subject, body);
+            EmailService.Result result = emailService.sendPlain(toAddress, bcc, subject, body);
+            email.setResendId(result.resendId());
             email.setStatus("sent");
             email.setSentAt(LocalDateTime.now());
         } catch (Exception e) {

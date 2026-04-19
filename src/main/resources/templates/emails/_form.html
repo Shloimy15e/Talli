@@ -36,6 +36,7 @@
           <div>
             <label for="toAddress" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">To</label>
             <input type="email" id="toAddress" name="toAddress" required autofocus
+                   autocomplete="section-to email"
                    placeholder="recipient@example.com"
                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
           </div>
@@ -55,6 +56,7 @@
               </label>
             </div>
             <input type="text" name="bccManual"
+                   autocomplete="off"
                    placeholder="Additional email addresses (comma-separated)"
                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
           </div>

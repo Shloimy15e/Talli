@@ -35,13 +35,7 @@ class ApiProjectControllerTest {
         active.setClient(client);
         active.setStatus("active");
 
-        Project completed = new Project();
-        completed.setId(11L);
-        completed.setName("Old Project");
-        completed.setClient(client);
-        completed.setStatus("completed");
-
-        when(projectRepository.findAll()).thenReturn(List.of(active, completed));
+        when(projectRepository.findActiveOrderedByRecentActivity()).thenReturn(List.of(active));
 
         List<ProjectResponse> result = controller.list();
 
@@ -54,7 +48,7 @@ class ApiProjectControllerTest {
 
     @Test
     void list_returnsEmptyWhenNoActiveProjects() {
-        when(projectRepository.findAll()).thenReturn(List.of());
+        when(projectRepository.findActiveOrderedByRecentActivity()).thenReturn(List.of());
 
         List<ProjectResponse> result = controller.list();
 
@@ -69,7 +63,7 @@ class ApiProjectControllerTest {
         noClient.setStatus("active");
         // client is null
 
-        when(projectRepository.findAll()).thenReturn(List.of(noClient));
+        when(projectRepository.findActiveOrderedByRecentActivity()).thenReturn(List.of(noClient));
 
         List<ProjectResponse> result = controller.list();
 

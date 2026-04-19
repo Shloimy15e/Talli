@@ -52,6 +52,7 @@ public class SecurityConfig {
             .addFilterBefore(apiTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET,  "/api/v1/projects").hasAuthority("view-projects")
+                .requestMatchers(HttpMethod.POST, "/api/v1/projects").hasAuthority("manage-projects")
                 .requestMatchers(HttpMethod.GET,  "/api/v1/time/**").hasAuthority("view-time")
                 .requestMatchers(HttpMethod.POST, "/api/v1/time/**").hasAuthority("manage-time")
                 .requestMatchers(HttpMethod.POST, "/api/v1/expenses").hasAuthority("manage-expenses")
@@ -70,8 +71,23 @@ public class SecurityConfig {
     }
 
     /** Web filter chain — session-based, CSRF enabled, form login. */
+    /**
+     * Webhook filter chain — no session, no CSRF, no auth (handlers verify signatures themselves).
+     * Sits between the API and web chains so /webhooks/** doesn't hit form login.
+     */
     @Bean
     @Order(2)
+    SecurityFilterChain webhookFilterChain(HttpSecurity http) throws Exception {
+        http
+            .securityMatcher("/webhooks/**")
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        return http.build();
+    }
+
+    @Bean
+    @Order(3)
     SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth

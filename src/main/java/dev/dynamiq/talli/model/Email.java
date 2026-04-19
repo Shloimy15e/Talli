@@ -44,6 +44,27 @@ public class Email {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "resend_id")
+    private String resendId;
+
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
+    @Column(name = "bounced_at")
+    private LocalDateTime bouncedAt;
+
+    @Column(name = "complained_at")
+    private LocalDateTime complainedAt;
+
+    @Column(name = "opened_at")
+    private LocalDateTime openedAt;
+
+    @Column(name = "clicked_at")
+    private LocalDateTime clickedAt;
+
+    @Column(name = "bounce_reason", columnDefinition = "TEXT")
+    private String bounceReason;
+
     @PrePersist
     void onCreate() {
         createdAt = LocalDateTime.now();
@@ -136,5 +157,60 @@ public class Email {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-   
+
+    public String getResendId() {
+        return resendId;
+    }
+
+    public void setResendId(String resendId) {
+        this.resendId = resendId;
+    }
+
+    public LocalDateTime getDeliveredAt() {
+        return deliveredAt;
+    }
+
+    public void setDeliveredAt(LocalDateTime deliveredAt) {
+        this.deliveredAt = deliveredAt;
+    }
+
+    public LocalDateTime getBouncedAt() {
+        return bouncedAt;
+    }
+
+    public void setBouncedAt(LocalDateTime bouncedAt) {
+        this.bouncedAt = bouncedAt;
+    }
+
+    public LocalDateTime getComplainedAt() {
+        return complainedAt;
+    }
+
+    public void setComplainedAt(LocalDateTime complainedAt) {
+        this.complainedAt = complainedAt;
+    }
+
+    public LocalDateTime getOpenedAt() {
+        return openedAt;
+    }
+
+    public void setOpenedAt(LocalDateTime openedAt) {
+        this.openedAt = openedAt;
+    }
+
+    public LocalDateTime getClickedAt() {
+        return clickedAt;
+    }
+
+    public void setClickedAt(LocalDateTime clickedAt) {
+        this.clickedAt = clickedAt;
+    }
+
+    public String getBounceReason() {
+        return bounceReason;
+    }
+
+    public void setBounceReason(String bounceReason) {
+        this.bounceReason = bounceReason;
+    }
 }

@@ -72,12 +72,13 @@ public class InvoiceEmailService {
         log.setBody("");
 
         try {
-            String renderedBody = emailService.sendTemplateWithAttachment(
+            EmailService.Result result = emailService.sendTemplateWithAttachment(
                     client.getEmail(), bcc, subject, "invoice", vars,
                     bytes, pdf.getFilename(), "application/pdf");
 
             LocalDateTime now = LocalDateTime.now();
-            log.setBody(renderedBody);
+            log.setBody(result.html());
+            log.setResendId(result.resendId());
             log.setStatus("sent");
             log.setSentAt(now);
             invoice.setSentAt(now);

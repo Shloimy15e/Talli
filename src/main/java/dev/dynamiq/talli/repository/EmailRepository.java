@@ -8,4 +8,6 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
     List<Email> findAllByOrderByCreatedAtDesc();
 
     List<Email> findByInvoiceIdOrderByCreatedAtDesc(Long invoiceId);
+
+    java.util.Optional<Email> findByResendId(String resendId);
 }
