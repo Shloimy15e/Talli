@@ -33,8 +33,30 @@ public class EmailController {
     }
 
     @GetMapping
-    public String index(Model model) {
-        model.addAttribute("emails", emailRepository.findAllByOrderByCreatedAtDesc());
+    public String index(@RequestParam(defaultValue = "0") int page,
+                        @RequestParam(required = false) List<String> status,
+                        @RequestParam(required = false) String search,
+                        @RequestParam(defaultValue = "created") String sort,
+                        @RequestParam(defaultValue = "desc") String direction,
+                        Model model) {
+        List<String> statuses = status == null ? List.of() : status;
+        String q = (search == null) ? "" : search;
+        String normalizedSort = switch (sort) {
+            case "sent", "subject", "status" -> sort;
+            default -> "created";
+        };
+        String normalizedDir = "asc".equalsIgnoreCase(direction) ? "asc" : "desc";
+
+        var emailPage = emailRepository.findFiltered(
+                statuses, q, normalizedSort, normalizedDir,
+                org.springframework.data.domain.PageRequest.of(page, 25));
+
+        model.addAttribute("emails", emailPage.getContent());
+        model.addAttribute("page", emailPage);
+        model.addAttribute("filterStatuses", statuses);
+        model.addAttribute("filterSearch", search);
+        model.addAttribute("sort", normalizedSort);
+        model.addAttribute("direction", normalizedDir);
         return "emails/index";
     }
 
