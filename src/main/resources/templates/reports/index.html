@@ -30,7 +30,7 @@
              th:text="${utilization.billableMinutes / 60} + 'h ' + ${utilization.billableMinutes % 60} + 'm'">0h</p>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 p-5">
-          <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Non-billable</p>
+          <p class="text-xs text-nowrap uppercase tracking-wider text-slate-500 font-semibold">Non-billable</p>
           <p class="text-3xl font-semibold mt-2 font-mono tabular-nums text-slate-500"
              th:text="${utilization.nonBillableMinutes / 60} + 'h ' + ${utilization.nonBillableMinutes % 60} + 'm'">0h</p>
         </div>

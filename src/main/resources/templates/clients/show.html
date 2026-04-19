@@ -401,7 +401,7 @@
                         <span th:if="${t.endedAt == null}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700">running</span>
                         <span th:if="${t.endedAt != null and t.billed}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">billed</span>
                         <span th:if="${t.endedAt != null and !t.billed and t.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[#ea7c28]/10 text-[#ea7c28]">unbilled</span>
-                        <span th:if="${t.endedAt != null and !t.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-50 text-slate-400">non-billable</span>
+                        <span th:if="${t.endedAt != null and !t.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-50 text-slate-400 text-nowrap">non-billable</span>
                     </td>
                 </tr>
             </tbody>
