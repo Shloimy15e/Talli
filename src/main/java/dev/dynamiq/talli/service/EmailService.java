@@ -20,6 +20,7 @@ import java.util.Map;
 public class EmailService {
 
     private static final String RESEND_URL = "https://api.resend.com/emails";
+    private static final String RESEND_RECEIVING_URL = "https://api.resend.com/emails/receiving/";
 
     private final SpringTemplateEngine templateEngine;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -42,6 +43,42 @@ public class EmailService {
 
     /** Result of a send — html is the rendered body (empty for plain), resendId is the Resend message id. */
     public record Result(String html, String resendId) {}
+
+    /** Body of a received email fetched from the Resend receiving API. */
+    public record ReceivedEmail(String text, String html) {}
+
+    /**
+     * Fetches the body of an inbound email by id. Resend's email.received
+     * webhook only carries metadata — the body must be pulled separately.
+     * Returns null if the API isn't configured or the fetch fails.
+     */
+    public ReceivedEmail fetchReceivedEmail(String emailId) {
+        if (apiKey == null || apiKey.isBlank() || emailId == null || emailId.isBlank()) {
+            return null;
+        }
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(RESEND_RECEIVING_URL + emailId))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Accept", "application/json")
+                    .timeout(Duration.ofSeconds(15))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 300) {
+                throw new RuntimeException("Resend receiving API " + response.statusCode() + ": " + response.body());
+            }
+            var node = mapper.readTree(response.body());
+            String text = node.path("text").asText(null);
+            String html = node.path("html").asText(null);
+            return new ReceivedEmail(text, html);
+        } catch (java.io.IOException e) {
+            throw new RuntimeException("Failed to fetch received email: " + e.getMessage(), e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Fetch received email interrupted", e);
+        }
+    }
 
     public Result sendPlain(String to, String subject, String body) {
         return sendPlain(to, List.of(), subject, body);

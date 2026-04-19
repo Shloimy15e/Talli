@@ -1,7 +1,6 @@
 package dev.dynamiq.talli.webhook.resend.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.ClientRepository;
@@ -12,7 +11,6 @@ import dev.dynamiq.talli.webhook.resend.ResendEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -48,7 +46,6 @@ public class InboundEmailHandler implements ResendEventHandler {
     }
 
     @Override
-    @Transactional
     public void handle(String type, JsonNode data) {
         String resendId = data.path("email_id").asText(null);
 
@@ -58,17 +55,28 @@ public class InboundEmailHandler implements ResendEventHandler {
             return;
         }
 
+        // Metadata from the webhook payload.
         String from = extractAddress(data.path("from"));
         String to = extractAddress(data.path("to"));
         String subject = data.path("subject").asText("");
         if (subject.isBlank()) subject = "(no subject)";
-        String text = data.path("text").asText("");
-        String html = data.path("html").asText(null);
-        if (html != null && html.isBlank()) html = null;
 
         if (to == null || to.isBlank()) {
             log.warn("Inbound webhook missing 'to' field; skipping (resend_id={})", resendId);
             return;
+        }
+
+        // Webhook doesn't carry the body — fetch from Resend's receiving API.
+        String text = "";
+        String html = null;
+        try {
+            EmailService.ReceivedEmail body = emailService.fetchReceivedEmail(resendId);
+            if (body != null) {
+                if (body.text() != null) text = body.text();
+                if (body.html() != null && !body.html().isBlank()) html = body.html();
+            }
+        } catch (Exception e) {
+            log.warn("Could not fetch body for inbound email {}: {}", resendId, e.getMessage());
         }
 
         Email email = new Email();
@@ -84,14 +92,28 @@ public class InboundEmailHandler implements ResendEventHandler {
 
         // Auto-link to a Client when the sender address matches.
         if (from != null && !from.isBlank()) {
-            clientRepository.findByEmailIgnoreCase(from)
-                    .ifPresent(email::setClient);
+            try {
+                clientRepository.findByEmailIgnoreCase(from).ifPresent(email::setClient);
+            } catch (Exception e) {
+                log.warn("Client lookup failed for inbound sender {}: {}", from, e.getMessage());
+            }
         }
 
-        emailRepository.save(email);
-        log.info("Saved inbound email from={} to={} subject='{}'", from, to, subject);
+        // Save in its own transaction so forward-to-admins failures can't roll it back.
+        Email saved;
+        try {
+            saved = emailRepository.save(email);
+        } catch (Exception e) {
+            log.error("Failed to save inbound email from={}: {}", from, e.getMessage(), e);
+            return;
+        }
+        log.info("Saved inbound email id={} from={} to={} subject='{}'", saved.getId(), from, to, subject);
 
-        forwardToAdmins(email);
+        try {
+            forwardToAdmins(saved);
+        } catch (Exception e) {
+            log.error("Failed to forward inbound email {}: {}", saved.getId(), e.getMessage(), e);
+        }
     }
 
     /**
