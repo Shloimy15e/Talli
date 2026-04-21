@@ -315,9 +315,14 @@
             <tbody>
               <tr th:each="t : ${tokens}" class="border-t border-slate-100">
                 <td class="py-2.5 font-medium" th:text="${t.name}">Chrome Extension</td>
-                <td class="py-2.5 text-slate-500" th:text="${#temporals.format(t.createdAt, 'MMM d, yyyy')}">Jan 1, 2026</td>
-                <td class="py-2.5 text-slate-500"
-                    th:text="${t.lastUsedAt != null ? #temporals.format(t.lastUsedAt, 'MMM d, yyyy') : 'Never'}">Never</td>
+                <td class="py-2.5 text-slate-500">
+                  <span th:replace="~{fragments/_time :: timeago(${t.createdAt})}"></span>
+                </td>
+                <td class="py-2.5 text-slate-500">
+                  <span th:if="${t.lastUsedAt != null}"
+                        th:replace="~{fragments/_time :: timeago(${t.lastUsedAt})}"></span>
+                  <span th:if="${t.lastUsedAt == null}" class="text-slate-400">Never</span>
+                </td>
                 <td class="py-2.5 text-right">
                   <form th:action="@{/profile/tokens/{id}/revoke(id=${t.id})}" method="post"
                         onsubmit="return confirm('Revoke this token? Any app using it will stop working.')">

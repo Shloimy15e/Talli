@@ -12,7 +12,7 @@
 
       <!-- Running timer highlight -->
       <div th:if="${running != null}"
-           th:attr="data-started=${#temporals.format(running.startedAt, 'yyyy-MM-dd''T''HH:mm:ss')}"
+           th:attr="data-started=${#temporals.format(running.startedAt, 'yyyy-MM-dd''T''HH:mm:ss')} + 'Z'"
            x-data="{
              elapsed: '00:00:00',
              tick() {
@@ -317,8 +317,9 @@
         <table th:unless="${#lists.isEmpty(recentEntries)}" class="w-full">
           <tbody>
             <tr th:each="e : ${recentEntries}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition">
-              <td class="px-6 py-3 text-sm text-slate-500 w-32"
-                  th:text="${#temporals.format(e.startedAt, 'MMM d, HH:mm')}">Mar 12, 14:30</td>
+              <td class="px-6 py-3 text-sm text-slate-500 w-32">
+                <span th:replace="~{fragments/_time :: timeago(${e.startedAt})}"></span>
+              </td>
               <td class="px-6 py-3 text-sm">
                 <a th:href="@{/projects/{id}(id=${e.project.id})}"
                    class="font-medium hover:text-[#ea7c28] hover:underline"

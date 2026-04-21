@@ -92,27 +92,16 @@
           </div>
           <div class="text-right text-sm shrink-0">
             <p class="text-xs text-slate-400">Created</p>
-            <p
-              class="tabular-nums"
-              th:text="${#temporals.format(email.createdAt, 'MMM d, yyyy HH:mm')}"
-            >
-              —
+            <p class="tabular-nums">
+              <span th:replace="~{fragments/_time :: timeago(${email.createdAt})}"></span>
             </p>
             <p th:if="${email.receivedAt != null}" class="text-xs text-slate-400 mt-2">Received</p>
-            <p
-              th:if="${email.receivedAt != null}"
-              class="tabular-nums"
-              th:text="${#temporals.format(email.receivedAt, 'MMM d, yyyy HH:mm')}"
-            >
-              —
+            <p th:if="${email.receivedAt != null}" class="tabular-nums">
+              <span th:replace="~{fragments/_time :: timeago(${email.receivedAt})}"></span>
             </p>
             <p th:if="${email.sentAt != null}" class="text-xs text-slate-400 mt-2">Sent</p>
-            <p
-              th:if="${email.sentAt != null}"
-              class="tabular-nums"
-              th:text="${#temporals.format(email.sentAt, 'MMM d, yyyy HH:mm')}"
-            >
-              —
+            <p th:if="${email.sentAt != null}" class="tabular-nums">
+              <span th:replace="~{fragments/_time :: timeago(${email.sentAt})}"></span>
             </p>
           </div>
         </div>
@@ -236,11 +225,9 @@
               <i data-lucide="send" class="w-4 h-4 text-slate-500"></i>
               Sent
             </span>
-            <span
-              class="text-slate-500 tabular-nums"
-              th:text="${#temporals.format(email.sentAt, 'MMM d, HH:mm:ss')}"
-              >—</span
-            >
+            <span class="text-slate-500 tabular-nums">
+              <span th:replace="~{fragments/_time :: timeago(${email.sentAt})}"></span>
+            </span>
           </li>
           <li
             th:if="${email.deliveredAt != null}"
@@ -250,11 +237,9 @@
               <i data-lucide="mail-check" class="w-4 h-4 text-emerald-600"></i>
               Delivered
             </span>
-            <span
-              class="text-slate-500 tabular-nums"
-              th:text="${#temporals.format(email.deliveredAt, 'MMM d, HH:mm:ss')}"
-              >—</span
-            >
+            <span class="text-slate-500 tabular-nums">
+              <span th:replace="~{fragments/_time :: timeago(${email.deliveredAt})}"></span>
+            </span>
           </li>
           <li
             th:if="${email.openedAt != null}"
@@ -264,11 +249,9 @@
               <i data-lucide="eye" class="w-4 h-4 text-blue-600"></i>
               Opened
             </span>
-            <span
-              class="text-slate-500 tabular-nums"
-              th:text="${#temporals.format(email.openedAt, 'MMM d, HH:mm:ss')}"
-              >—</span
-            >
+            <span class="text-slate-500 tabular-nums">
+              <span th:replace="~{fragments/_time :: timeago(${email.openedAt})}"></span>
+            </span>
           </li>
           <li
             th:if="${email.clickedAt != null}"
@@ -278,11 +261,9 @@
               <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-indigo-600"></i>
               Clicked link
             </span>
-            <span
-              class="text-slate-500 tabular-nums"
-              th:text="${#temporals.format(email.clickedAt, 'MMM d, HH:mm:ss')}"
-              >—</span
-            >
+            <span class="text-slate-500 tabular-nums">
+              <span th:replace="~{fragments/_time :: timeago(${email.clickedAt})}"></span>
+            </span>
           </li>
           <li
             th:if="${email.bouncedAt != null}"
@@ -292,11 +273,9 @@
               <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600"></i>
               Bounced
             </span>
-            <span
-              class="text-slate-500 tabular-nums"
-              th:text="${#temporals.format(email.bouncedAt, 'MMM d, HH:mm:ss')}"
-              >—</span
-            >
+            <span class="text-slate-500 tabular-nums">
+              <span th:replace="~{fragments/_time :: timeago(${email.bouncedAt})}"></span>
+            </span>
           </li>
           <li
             th:if="${email.complainedAt != null}"
@@ -306,11 +285,9 @@
               <i data-lucide="flag" class="w-4 h-4 text-amber-600"></i>
               Marked as spam
             </span>
-            <span
-              class="text-slate-500 tabular-nums"
-              th:text="${#temporals.format(email.complainedAt, 'MMM d, HH:mm:ss')}"
-              >—</span
-            >
+            <span class="text-slate-500 tabular-nums">
+              <span th:replace="~{fragments/_time :: timeago(${email.complainedAt})}"></span>
+            </span>
           </li>
         </ul>
       </div>

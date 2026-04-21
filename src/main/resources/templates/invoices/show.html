@@ -124,8 +124,9 @@
             Apply credit
           </button>
 
-          <span th:if="${invoice.sentAt != null}" class="text-xs text-slate-500 ml-auto"
-                th:text="'Last sent ' + ${#temporals.format(invoice.sentAt, 'MMM d, yyyy h:mm a')}">Last sent</span>
+          <span th:if="${invoice.sentAt != null}" class="text-xs text-slate-500 ml-auto">
+            Last sent <span th:replace="~{fragments/_time :: timeago(${invoice.sentAt})}"></span>
+          </span>
         </div>
 
         <!-- Status timeline -->
@@ -327,10 +328,12 @@
                 <span class="text-slate-600 truncate" th:text="${e.subject}">Subject</span>
               </p>
               <p class="text-xs text-slate-500 mt-0.5 tabular-nums">
-                <span th:if="${e.sentAt != null}"
-                      th:text="'Sent ' + ${#temporals.format(e.sentAt, 'MMM d, yyyy h:mm a')}">Sent Apr 15, 2026</span>
-                <span th:unless="${e.sentAt != null}"
-                      th:text="'Attempted ' + ${#temporals.format(e.createdAt, 'MMM d, yyyy h:mm a')}">Attempted</span>
+                <span th:if="${e.sentAt != null}">
+                  Sent <span th:replace="~{fragments/_time :: timeago(${e.sentAt})}"></span>
+                </span>
+                <span th:unless="${e.sentAt != null}">
+                  Attempted <span th:replace="~{fragments/_time :: timeago(${e.createdAt})}"></span>
+                </span>
               </p>
               <p th:if="${e.errorMessage}"
                  class="text-xs text-red-600 mt-1 font-mono" th:text="${e.errorMessage}">error</p>
@@ -558,7 +561,7 @@
             <div th:if="${invoice.sentAt != null}"
                  class="px-3 py-2 rounded bg-amber-50 border border-amber-200 text-xs text-amber-900">
               This invoice was already sent
-              <span th:text="${#temporals.format(invoice.sentAt, 'MMM d, yyyy h:mm a')}">date</span>.
+              <span th:replace="~{fragments/_time :: timeago(${invoice.sentAt})}"></span>.
               Sending again will deliver a new copy.
             </div>
           </div>
