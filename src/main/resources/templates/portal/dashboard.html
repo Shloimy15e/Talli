@@ -85,8 +85,11 @@
                    class="text-[#ea7c28] hover:underline" th:text="${inv.reference}">INV-1001</a>
               </td>
               <td class="px-6 py-3 text-slate-600 tabular-nums" th:text="${#temporals.format(inv.issuedAt, 'MMM d, yyyy')}">—</td>
-              <td class="px-6 py-3 text-slate-600 tabular-nums"
-                  th:text="${inv.dueAt != null ? #temporals.format(inv.dueAt, 'MMM d, yyyy') : '—'}">—</td>
+              <td class="px-6 py-3 text-slate-600 tabular-nums">
+                <span th:if="${inv.dueAt != null}"
+                      th:replace="~{fragments/_time :: dateago(${inv.dueAt})}"></span>
+                <span th:if="${inv.dueAt == null}">—</span>
+              </td>
               <td class="px-6 py-3 text-right font-mono tabular-nums"
                   th:text="${csym.apply(inv.currency)} + ${#numbers.formatDecimal(inv.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
               <td class="px-6 py-3 text-right font-mono tabular-nums"

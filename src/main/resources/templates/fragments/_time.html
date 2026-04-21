@@ -32,5 +32,19 @@
           th:text="${#temporals.format(instant, 'MMM d, yyyy HH:mm')}">--</time>
   </th:block>
 
+  <!--
+    Calendar-date relative display ("in 3 days", "2 weeks ago", "today") for LocalDate fields.
+    No timezone conversion — dates are absolute — but days-from-today is computed against
+    the browser's local midnight so "tomorrow" means tomorrow in the user's clock.
+
+    Usage: <span th:replace="~{fragments/_time :: dateago(${invoice.dueAt})}"></span>
+  -->
+  <th:block th:fragment="dateago(localDate)">
+    <time th:if="${localDate != null}"
+          th:attr="data-iso-dateago=${#temporals.format(localDate, 'yyyy-MM-dd')}"
+          data-tippy-content=""
+          th:text="${#temporals.format(localDate, 'MMM d, yyyy')}">--</time>
+  </th:block>
+
 </body>
 </html>

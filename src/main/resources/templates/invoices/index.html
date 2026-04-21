@@ -107,8 +107,11 @@
                 </td>
                 <td class="px-6 py-4 text-sm text-slate-600 tabular-nums"
                     th:text="${#temporals.format(i.issuedAt, 'MMM d, yyyy')}">Apr 14, 2026</td>
-                <td class="px-6 py-4 text-sm text-slate-600 tabular-nums"
-                    th:text="${i.dueAt != null ? #temporals.format(i.dueAt, 'MMM d, yyyy') : '—'}">May 14, 2026</td>
+                <td class="px-6 py-4 text-sm text-slate-600 tabular-nums">
+                  <span th:if="${i.dueAt != null}"
+                        th:replace="~{fragments/_time :: dateago(${i.dueAt})}"></span>
+                  <span th:if="${i.dueAt == null}">—</span>
+                </td>
                 <td class="px-6 py-4">
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
                         th:classappend="${i.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${i.status == 'overdue'} ? 'bg-red-50 text-red-700' : (${i.status == 'void'} ? 'bg-slate-100 text-slate-500' : 'bg-[#ea7c28]/10 text-[#ea7c28]'))"

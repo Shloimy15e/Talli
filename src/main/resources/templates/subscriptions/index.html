@@ -52,11 +52,12 @@
               <td class="px-6 py-4 text-sm text-slate-600 capitalize" th:text="${s.cycle}">monthly</td>
               <td class="px-6 py-4 text-sm">
                 <span th:if="${s.nextDueOn != null and !s.nextDueOn.isAfter(today)}"
-                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700"
-                      th:text="${#temporals.format(s.nextDueOn, 'MMM d')}">Apr 14</span>
-                <span th:if="${s.nextDueOn != null and s.nextDueOn.isAfter(today)}"
-                      class="text-slate-600"
-                      th:text="${#temporals.format(s.nextDueOn, 'MMM d, yyyy')}">Apr 14, 2026</span>
+                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                  <span th:replace="~{fragments/_time :: dateago(${s.nextDueOn})}"></span>
+                </span>
+                <span th:if="${s.nextDueOn != null and s.nextDueOn.isAfter(today)}" class="text-slate-600">
+                  <span th:replace="~{fragments/_time :: dateago(${s.nextDueOn})}"></span>
+                </span>
                 <span th:if="${s.nextDueOn == null}" class="text-slate-400">—</span>
               </td>
               <td class="px-6 py-4 text-sm">
@@ -110,7 +111,9 @@
               <tr th:each="s : ${cancelledSubs}" class="border-b border-slate-100 last:border-0">
                 <td class="px-6 py-3">
                   <div class="font-medium text-sm text-slate-600" th:text="${s.vendor}">Vendor</div>
-                  <div class="text-xs text-slate-400" th:text="'Cancelled ' + ${#temporals.format(s.cancelledOn, 'MMM d, yyyy')}">Cancelled</div>
+                  <div class="text-xs text-slate-400">
+                    Cancelled <span th:replace="~{fragments/_time :: dateago(${s.cancelledOn})}"></span>
+                  </div>
                 </td>
                 <td class="px-6 py-3 font-mono text-sm text-slate-500 tabular-nums"
                     th:text="${csym.apply(s.currency)} + ${#numbers.formatDecimal(s.amount, 1, 'COMMA', 2, 'POINT')} + ' / ' + ${s.cycle}">$0.00 / monthly</td>

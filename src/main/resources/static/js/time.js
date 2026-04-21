@@ -51,6 +51,26 @@
     });
   }
 
+  const DATE_TOOLTIP_OPTS = {
+    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+  };
+
+  function renderDateAgos(root) {
+    const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    root.querySelectorAll('[data-iso-dateago]').forEach(el => {
+      const s = el.dataset.isoDateago;
+      if (!s) return;
+      const [y, m, d] = s.split('-').map(Number);
+      if (!y || !m || !d) return;
+      const target = new Date(y, m - 1, d);
+      const days = Math.round((target.getTime() - startOfToday) / 86400000);
+      el.textContent = rtf.format(days, 'day');
+      el.setAttribute('data-tippy-content', new Intl.DateTimeFormat(undefined, DATE_TOOLTIP_OPTS).format(target));
+    });
+  }
+
   // <input type="datetime-local" data-utc-input> contains a naive UTC wall-clock
   // (yyyy-MM-ddTHH:mm) rendered by the server. On load we convert to device-local
   // so the user edits in their own tz; on submit we convert back to UTC before POST.
@@ -91,6 +111,7 @@
     root = root || document.body;
     renderDatetimes(root);
     renderTimeagos(root);
+    renderDateAgos(root);
     hydrateUtcInputs(root);
   }
 

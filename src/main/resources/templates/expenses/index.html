@@ -43,8 +43,9 @@
           </thead>
           <tbody>
             <tr th:each="e : ${expenses}" class="border-b border-slate-100 hover:bg-slate-50 transition group">
-              <td class="px-6 py-4 text-sm text-slate-600 tabular-nums"
-                  th:text="${#temporals.format(e.incurredOn, 'MMM d, yyyy')}">Apr 14, 2026</td>
+              <td class="px-6 py-4 text-sm text-slate-600 tabular-nums">
+                <span th:replace="~{fragments/_time :: dateago(${e.incurredOn})}"></span>
+              </td>
               <td class="px-6 py-4 text-sm">
                 <div class="font-medium" th:text="${e.vendor} ?: '—'">Vendor</div>
                 <div th:if="${e.description}" class="text-xs text-slate-500" th:text="${e.description}">description</div>

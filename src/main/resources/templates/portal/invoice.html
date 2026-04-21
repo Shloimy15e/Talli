@@ -32,7 +32,11 @@
           </div>
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Due</p>
-            <p class="tabular-nums" th:text="${invoice.dueAt != null ? #temporals.format(invoice.dueAt, 'MMM d, yyyy') : '—'}">—</p>
+            <p class="tabular-nums">
+              <span th:if="${invoice.dueAt != null}"
+                    th:replace="~{fragments/_time :: dateago(${invoice.dueAt})}"></span>
+              <span th:if="${invoice.dueAt == null}">—</span>
+            </p>
           </div>
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Balance</p>

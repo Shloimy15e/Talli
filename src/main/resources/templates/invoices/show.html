@@ -179,8 +179,10 @@
                    th:classappend="${invoice.status == 'paid' ? 'text-slate-700' : (invoice.status == 'overdue' ? 'text-red-700' : 'text-slate-400')}">
                   <span th:if="${invoice.status == 'paid' and invoice.paidInFullBy != null}"
                         th:replace="~{fragments/_time :: datetime(${invoice.paidInFullBy}, 'date')}"></span>
-                  <span th:if="${!(invoice.status == 'paid' and invoice.paidInFullBy != null)}"
-                        th:text="${invoice.dueAt != null ? 'Due ' + #temporals.format(invoice.dueAt, 'MMM d, yyyy') : 'Not paid'}">Not paid</span>
+                  <span th:if="${!(invoice.status == 'paid' and invoice.paidInFullBy != null) and invoice.dueAt != null}">
+                    Due <span th:replace="~{fragments/_time :: dateago(${invoice.dueAt})}"></span>
+                  </span>
+                  <span th:if="${!(invoice.status == 'paid' and invoice.paidInFullBy != null) and invoice.dueAt == null}">Not paid</span>
                 </p>
               </div>
             </div>
@@ -298,8 +300,9 @@
                 <span th:if="${p.reference}" class="text-slate-400 mx-1">·</span>
                 <span th:if="${p.reference}" class="text-slate-500 font-mono text-xs" th:text="${p.reference}">ref</span>
               </p>
-              <p class="text-xs text-slate-500 mt-0.5 tabular-nums"
-                 th:text="${#temporals.format(p.paidAt, 'MMM d, yyyy')}">Apr 15, 2026</p>
+              <p class="text-xs text-slate-500 mt-0.5 tabular-nums">
+                <span th:replace="~{fragments/_time :: dateago(${p.paidAt})}"></span>
+              </p>
               <p th:if="${p.notes}" class="text-xs text-slate-600 mt-1" th:text="${p.notes}">notes</p>
             </div>
             <form th:action="@{/invoices/{id}/payments/{pid}/delete(id=${invoice.id}, pid=${p.id})}" method="post"
