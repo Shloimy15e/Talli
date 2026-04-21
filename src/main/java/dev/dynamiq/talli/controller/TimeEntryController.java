@@ -68,7 +68,7 @@ public class TimeEntryController {
         model.addAttribute("projects", projectRepository.findByStatusOrderByNameAsc("active"));
         model.addAttribute("action", "/time/" + id);
         model.addAttribute("title", "Edit Time Entry");
-        return "time/_form :: form";
+        return "time/_form :: form"; 
     }
 
     @PostMapping
