@@ -154,8 +154,11 @@
               <div>
                 <p class="text-xs text-slate-500 leading-tight">Sent</p>
                 <p class="text-xs tabular-nums"
-                   th:classappend="${invoice.sentAt != null ? 'text-slate-700' : 'text-slate-400'}"
-                   th:text="${invoice.sentAt != null ? #temporals.format(invoice.sentAt, 'MMM d, yyyy') : 'Not sent'}">Not sent</p>
+                   th:classappend="${invoice.sentAt != null ? 'text-slate-700' : 'text-slate-400'}">
+                  <span th:if="${invoice.sentAt != null}"
+                        th:replace="~{fragments/_time :: datetime(${invoice.sentAt}, 'date')}"></span>
+                  <span th:if="${invoice.sentAt == null}">Not sent</span>
+                </p>
               </div>
             </div>
 
@@ -173,10 +176,12 @@
                 <p class="text-xs text-slate-500 leading-tight"
                    th:text="${invoice.status == 'overdue' ? 'Overdue' : 'Paid'}">Paid</p>
                 <p class="text-xs tabular-nums"
-                   th:classappend="${invoice.status == 'paid' ? 'text-slate-700' : (invoice.status == 'overdue' ? 'text-red-700' : 'text-slate-400')}"
-                   th:text="${invoice.status == 'paid' and invoice.paidInFullBy != null
-                              ? #temporals.format(invoice.paidInFullBy, 'MMM d, yyyy')
-                              : (invoice.dueAt != null ? 'Due ' + #temporals.format(invoice.dueAt, 'MMM d, yyyy') : 'Not paid')}">Not paid</p>
+                   th:classappend="${invoice.status == 'paid' ? 'text-slate-700' : (invoice.status == 'overdue' ? 'text-red-700' : 'text-slate-400')}">
+                  <span th:if="${invoice.status == 'paid' and invoice.paidInFullBy != null}"
+                        th:replace="~{fragments/_time :: datetime(${invoice.paidInFullBy}, 'date')}"></span>
+                  <span th:if="${!(invoice.status == 'paid' and invoice.paidInFullBy != null)}"
+                        th:text="${invoice.dueAt != null ? 'Due ' + #temporals.format(invoice.dueAt, 'MMM d, yyyy') : 'Not paid'}">Not paid</span>
+                </p>
               </div>
             </div>
 

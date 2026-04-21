@@ -272,8 +272,9 @@
               </thead>
               <tbody>
                 <tr th:each="e : ${timeEntries}" class="border-b border-slate-100 hover:bg-slate-50">
-                  <td class="px-6 py-3 tabular-nums text-slate-600"
-                      th:text="${#temporals.format(e.startedAt, 'MMM d, yyyy')}">Apr 14, 2026</td>
+                  <td class="px-6 py-3 tabular-nums text-slate-600">
+                    <span th:replace="~{fragments/_time :: datetime(${e.startedAt}, 'date')}"></span>
+                  </td>
                   <td class="px-6 py-3" th:text="${e.description ?: '—'}">Description</td>
                   <td class="px-6 py-3 text-right font-mono tabular-nums"
                       th:text="${e.durationMinutes != null ? #numbers.formatDecimal(e.durationMinutes / 60.0, 1, 'COMMA', 2, 'POINT') : '—'}">0.00</td>

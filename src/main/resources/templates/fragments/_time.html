@@ -10,7 +10,7 @@
     Usage:
       <span th:replace="~{fragments/_time :: datetime(${entry.startedAt}, 'short')}"></span>
 
-    Formats: short | long | date | time | full | weekday | hm
+    Formats: short | long | date | md | time | hm | full | weekday
   -->
   <th:block th:fragment="datetime(instant, format)">
     <time th:if="${instant != null}"

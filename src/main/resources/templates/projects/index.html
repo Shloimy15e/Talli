@@ -192,11 +192,12 @@
               </td>
               <td class="px-6 py-4 text-sm text-slate-600 tabular-nums whitespace-nowrap">
                 <span th:if="${lastActivity != null}"
-                      th:text="${#temporals.format(lastActivity, 'MMM d, yyyy')}">Apr 14, 2026</span>
+                      th:replace="~{fragments/_time :: timeago(${lastActivity})}"></span>
                 <span th:if="${lastActivity == null}" class="text-slate-300 italic">—</span>
               </td>
-              <td class="px-6 py-4 text-sm text-slate-600 tabular-nums whitespace-nowrap"
-                  th:text="${#temporals.format(project.createdAt, 'MMM d, yyyy')}">Apr 14, 2026</td>
+              <td class="px-6 py-4 text-sm text-slate-600 tabular-nums whitespace-nowrap">
+                <span th:replace="~{fragments/_time :: datetime(${project.createdAt}, 'date')}"></span>
+              </td>
               <td class="px-6 py-4 text-right">
                 <div
                   class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2 justify-end"

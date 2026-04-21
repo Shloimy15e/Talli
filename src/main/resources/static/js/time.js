@@ -5,6 +5,7 @@
     short:   { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' },
     long:    { year: 'numeric', month: 'long',  day: 'numeric', hour: '2-digit', minute: '2-digit' },
     date:    { year: 'numeric', month: 'short', day: 'numeric' },
+    md:      { month: 'short', day: 'numeric' },
     time:    { hour: '2-digit', minute: '2-digit' },
     full:    { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' },
     weekday: { weekday: 'short', month: 'short', day: 'numeric' },

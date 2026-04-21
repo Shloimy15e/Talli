@@ -46,7 +46,9 @@
                 <p class="text-xs text-slate-400">Payment terms</p>
                 <p class="font-medium" th:text="'Net ' + ${client.paymentTermsDays}">Net 30</p>
                 <p class="text-xs text-slate-400 mt-2">Client since</p>
-                <p class="tabular-nums" th:text="${#temporals.format(client.createdAt, 'MMM d, yyyy')}">—</p>
+                <p class="tabular-nums">
+                  <span th:replace="~{fragments/_time :: datetime(${client.createdAt}, 'date')}"></span>
+                </p>
             </div>
         </div>
         <div th:if="${client.billingAddress != null or client.taxId != null}"
@@ -389,7 +391,9 @@
             <tbody>
                 <tr th:each="t : ${timeEntries}" th:if="${tStat.index < 25}"
                     class="border-b border-slate-100 last:border-b-0">
-                    <td class="px-6 py-3 text-slate-600 tabular-nums" th:text="${#temporals.format(t.startedAt, 'MMM d')}">—</td>
+                    <td class="px-6 py-3 text-slate-600 tabular-nums">
+                      <span th:replace="~{fragments/_time :: datetime(${t.startedAt}, 'md')}"></span>
+                    </td>
                     <td class="px-6 py-3 text-slate-600">
                         <a th:href="@{/projects/{id}(id=${t.project.id})}"
                            class="hover:text-[#ea7c28] hover:underline" th:text="${t.project.name}">Project</a>
