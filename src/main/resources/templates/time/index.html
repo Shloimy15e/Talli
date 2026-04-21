@@ -52,8 +52,9 @@
       </div>
 
       <!-- Running timer banner with live counter -->
+      <!-- data-started is ISO-UTC with 'Z' so new Date(...) parses correctly in any device tz -->
       <div th:if="${running != null}"
-           th:attr="data-started=${#temporals.format(running.startedAt, 'yyyy-MM-dd''T''HH:mm:ss')}"
+           th:attr="data-started=${#temporals.format(running.startedAt, 'yyyy-MM-dd''T''HH:mm:ss')} + 'Z'"
            x-data="{
              elapsed: '00:00:00',
              tick() {
@@ -180,8 +181,9 @@
           <table class="w-full">
             <tbody>
               <tr th:each="e : ${g.entries}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition group">
-                <td class="px-6 py-3 text-xs text-slate-500 tabular-nums w-20"
-                    th:text="${#temporals.format(e.startedAt, 'HH:mm')}">14:30</td>
+                <td class="px-6 py-3 text-xs text-slate-500 tabular-nums w-20">
+                  <span th:replace="~{fragments/_time :: datetime(${e.startedAt}, 'hm')}"></span>
+                </td>
                 <td class="px-6 py-3 text-sm">
                   <div class="flex items-center gap-1.5">
                     <a th:href="@{/projects/{id}(id=${e.project.id})}"

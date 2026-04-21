@@ -1,0 +1,36 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+  <!--
+    Absolute datetime, rendered in the browser's local timezone by /js/time.js.
+    Server emits ISO-UTC into data-iso; JS replaces textContent on load + after htmx swap.
+    Server-side text is a fallback for no-JS (still UTC, but readable).
+
+    Usage:
+      <span th:replace="~{fragments/_time :: datetime(${entry.startedAt}, 'short')}"></span>
+
+    Formats: short | long | date | time | full | weekday | hm
+  -->
+  <th:block th:fragment="datetime(instant, format)">
+    <time th:if="${instant != null}"
+          th:attr="data-iso=${#temporals.format(instant, 'yyyy-MM-dd''T''HH:mm:ss')} + 'Z',
+                   data-format=${format}"
+          th:text="${#temporals.format(instant, 'MMM d, yyyy HH:mm')}">--</time>
+  </th:block>
+
+  <!--
+    Relative "2 hours ago" with a Tippy tooltip showing the exact datetime (device tz).
+    /js/time.js updates both textContent and data-tippy-content in the browser's tz.
+
+    Usage: <span th:replace="~{fragments/_time :: timeago(${entry.createdAt})}"></span>
+  -->
+  <th:block th:fragment="timeago(instant)">
+    <time th:if="${instant != null}"
+          th:attr="data-iso-timeago=${#temporals.format(instant, 'yyyy-MM-dd''T''HH:mm:ss')} + 'Z'"
+          data-tippy-content=""
+          th:text="${#temporals.format(instant, 'MMM d, yyyy HH:mm')}">--</time>
+  </th:block>
+
+</body>
+</html>

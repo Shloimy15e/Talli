@@ -21,6 +21,10 @@
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://unpkg.com/tippy.js@6"></script>
     <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/light-border.css" />
+
+    <!-- Device-local datetime + timeago rendering (must load before Tippy init
+         so data-tippy-content is populated in device tz before tooltips attach). -->
+    <script src="/js/time.js"></script>
     <script>
       function initTooltips() {
         if (window.tippy) {
@@ -33,8 +37,16 @@
         }
       }
       function initLucide() { if (window.lucide) lucide.createIcons(); }
-      document.addEventListener('DOMContentLoaded', () => { initTooltips(); initLucide(); });
-      document.addEventListener('htmx:afterSwap', () => { initTooltips(); initLucide(); });
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.renderTimes) window.renderTimes();
+        initTooltips();
+        initLucide();
+      });
+      document.addEventListener('htmx:afterSwap', (e) => {
+        if (window.renderTimes) window.renderTimes(e.target);
+        initTooltips();
+        initLucide();
+      });
     </script>
 
     <link rel="preconnect" href="https://rsms.me/" />
