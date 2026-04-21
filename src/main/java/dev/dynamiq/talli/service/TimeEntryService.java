@@ -130,7 +130,11 @@ public class TimeEntryService {
             if (!day.isBefore(today)) todayMinutes += m;
             if (!day.isBefore(weekStart)) weekMinutes += m;
             if (!day.isBefore(monthStart)) monthMinutes += m;
-            if (Boolean.TRUE.equals(e.getBillable()) && e.getProject() != null) {
+            // Only hourly projects have a per-hour rate. For fixed-price and retainer
+            // projects, currentRate is the contract total / monthly fee — multiplying it
+            // by hours produces a meaningless "value". Skip them from the $ tallies.
+            if (Boolean.TRUE.equals(e.getBillable()) && e.getProject() != null
+                    && e.getProject().isHourly()) {
                 BigDecimal value = valueOf(m, e.getProject().getCurrentRate());
                 String currency = e.getProject().getCurrency();
                 entryValues.put(e.getId(), value);
@@ -155,7 +159,9 @@ public class TimeEntryService {
                 .map(en -> {
                     int dayMinutes = en.getValue().stream().mapToInt(e -> minutesFor(e, now)).sum();
                     BigDecimal dayValueUsd = en.getValue().stream()
-                            .filter(e -> Boolean.TRUE.equals(e.getBillable()) && e.getProject() != null)
+                            .filter(e -> Boolean.TRUE.equals(e.getBillable())
+                                    && e.getProject() != null
+                                    && e.getProject().isHourly())
                             .map(e -> exchangeRateService.toUsdCurrent(
                                     valueOf(minutesFor(e, now), e.getProject().getCurrentRate()),
                                     e.getProject().getCurrency()))
@@ -168,7 +174,9 @@ public class TimeEntryService {
                 todayMinutes, weekMinutes, monthMinutes, unbilledMinutes, unbilledValueUsd, page);
     }
 
-    /** Unbilled dollar value + entry count for a single project's time entries. */
+    /** Unbilled dollar value + entry count for a single project's time entries.
+     *  Only hourly projects have meaningful time-based $ value; for fixed/retainer
+     *  the caller should use contractAmount/retainerMonthlyFee instead. */
     public ProjectTimeTotals totalsForProject(Long projectId, BigDecimal rate) {
         List<TimeEntry> entries = timeEntryRepository.findByProjectIdOrderByStartedAtDesc(projectId);
         LocalDateTime now = LocalDateTime.now();
@@ -176,6 +184,7 @@ public class TimeEntryService {
                 .filter(e -> Boolean.TRUE.equals(e.getBillable()))
                 .filter(e -> !Boolean.TRUE.equals(e.getBilled()))
                 .filter(e -> e.getEndedAt() != null)
+                .filter(e -> e.getProject() != null && e.getProject().isHourly())
                 .mapToInt(e -> minutesFor(e, now))
                 .sum();
         return new ProjectTimeTotals(valueOf(unbilledMinutes, rate), entries.size());
