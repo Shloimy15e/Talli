@@ -50,10 +50,47 @@
     });
   }
 
+  // <input type="datetime-local" data-utc-input> contains a naive UTC wall-clock
+  // (yyyy-MM-ddTHH:mm) rendered by the server. On load we convert to device-local
+  // so the user edits in their own tz; on submit we convert back to UTC before POST.
+  const pad = n => String(n).padStart(2, '0');
+  const toLocalInput = d =>
+    `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const toUtcInput = d =>
+    `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+
+  function hydrateUtcInputs(root) {
+    root.querySelectorAll('input[type="datetime-local"][data-utc-input]').forEach(inp => {
+      if (inp.dataset.utcHydrated || !inp.value) return;
+      // inp.value is the naive UTC wall-clock from the server (e.g. "2026-04-21T07:30").
+      // Appending 'Z' makes new Date() parse it as UTC; getters then yield device-local.
+      const d = new Date(inp.value + 'Z');
+      if (isNaN(d)) return;
+      inp.value = toLocalInput(d);
+      inp.dataset.utcHydrated = '1';
+      // Let Alpine x-model (if any) re-read the new value.
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
+
+  // Global submit interceptor: for any data-utc-input in the submitting form,
+  // rewrite the device-local value back to a naive UTC wall-clock before the POST.
+  document.addEventListener('submit', e => {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    form.querySelectorAll('input[type="datetime-local"][data-utc-input]').forEach(inp => {
+      if (!inp.value) return;
+      const d = new Date(inp.value); // parsed as device-local by the browser
+      if (isNaN(d)) return;
+      inp.value = toUtcInput(d);
+    });
+  }, true);
+
   function renderAll(root) {
     root = root || document.body;
     renderDatetimes(root);
     renderTimeagos(root);
+    hydrateUtcInputs(root);
   }
 
   // Expose so layout can call before initTooltips() so Tippy picks up device-tz content.
