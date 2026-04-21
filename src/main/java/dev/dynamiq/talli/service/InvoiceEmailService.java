@@ -77,7 +77,7 @@ public class InvoiceEmailService {
                     bytes, pdf.getFilename(), "application/pdf");
 
             LocalDateTime now = LocalDateTime.now();
-            log.setBody(result.html());
+            log.setBodyHtml(result.html());
             log.setResendId(result.resendId());
             log.setStatus("sent");
             log.setSentAt(now);
