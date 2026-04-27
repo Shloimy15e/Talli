@@ -1,5 +1,8 @@
 package dev.dynamiq.talli.service;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +25,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class ScheduledJobs {
 
+    /**
+     * Sabbath quiet window: Friday 11:00 → Sunday 06:00, evaluated in NY local time.
+     * No scheduled job runs while this window is open.
+     */
+    private static final ZoneId SABBATH_ZONE = ZoneId.of("America/New_York");
+
     private final InvoiceService invoiceService;
     private final ReminderService reminderService;
 
@@ -37,6 +46,7 @@ public class ScheduledJobs {
      */
     @Scheduled(cron = "0 0 6 * * *")
     public void markOverdueInvoices() {
+        if (isInSabbathQuietHours()) return;
         invoiceService.markOverdue();
     }
 
@@ -47,16 +57,30 @@ public class ScheduledJobs {
      */
     @Scheduled(cron = "0 30 6 * * *")
     public void sendPaymentReminders() {
+        if (isInSabbathQuietHours()) return;
         reminderService.sendDueReminders();
     }
 
     /**
-     * Monthly on the 1st at 03:00 — for every active retainer project, generate this
-     * month's invoice if one doesn't already exist. The service method is idempotent,
-     * so a manual re-run won't double-bill.
+     * Days 1–7 of the month at 03:00 — for every active retainer project, generate this
+     * month's invoice if one doesn't already exist. The service method is idempotent
+     * (skips clients whose period invoice already exists), so the day-1 run does the
+     * real work and days 2–7 are cheap no-ops. The 7-day window guarantees a successful
+     * run even if the 1st falls inside the Sabbath quiet window.
      */
-    @Scheduled(cron = "0 0 3 1 * *")
+    @Scheduled(cron = "0 0 3 1-7 * *")
     public void generateMonthlyRetainers() {
+        if (isInSabbathQuietHours()) return;
         invoiceService.generateRetainersForMonth();
+    }
+
+    private boolean isInSabbathQuietHours() {
+        var now = ZonedDateTime.now(SABBATH_ZONE);
+        return switch (now.getDayOfWeek()) {
+            case FRIDAY -> now.getHour() >= 11;
+            case SATURDAY -> true;
+            case SUNDAY -> now.getHour() < 6;
+            default -> false;
+        };
     }
 }
