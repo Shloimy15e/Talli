@@ -26,8 +26,8 @@ class SpreadsheetUtilTest {
 
     @Test
     void parseDate_excelSerial() {
-        // 45697 = March 2, 2025
-        assertThat(SpreadsheetUtil.parseDate("45697")).isEqualTo(LocalDate.of(2025, 3, 2));
+        // 45718 = March 2, 2025
+        assertThat(SpreadsheetUtil.parseDate("45718")).isEqualTo(LocalDate.of(2025, 3, 2));
     }
 
     @Test

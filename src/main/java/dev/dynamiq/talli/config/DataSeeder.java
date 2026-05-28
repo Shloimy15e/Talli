@@ -28,6 +28,9 @@ public class DataSeeder implements CommandLineRunner {
     @Value("${app.seed.admin-name}")
     private String adminName;
 
+    @Value("${app.seed.enabled:true}")
+    private boolean seedEnabled;
+
     public DataSeeder(UserRepository userRepository, RoleRepository roleRepository,
                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
@@ -37,6 +40,10 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        if (!seedEnabled) {
+            return;
+        }
+
         if (!userRepository.existsByEmail(adminEmail)) {
             Role adminRole = roleRepository.findByName("admin")
                     .orElseThrow(() -> new IllegalStateException("Role 'admin' not found — run V16 migration first."));

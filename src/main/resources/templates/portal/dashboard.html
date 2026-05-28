@@ -116,6 +116,7 @@
             <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
               <th class="text-left px-6 py-3">Name</th>
               <th class="text-left px-6 py-3">Status</th>
+              <th class="text-right px-6 py-3">Website</th>
             </tr>
           </thead>
           <tbody>
@@ -125,6 +126,13 @@
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
                       th:classappend="${p.status == 'active'} ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'"
                       th:text="${p.status}">active</span>
+              </td>
+              <td class="px-6 py-3 text-right">
+                <a th:if="${p.websiteEnabled}" th:href="@{/portal/projects/{id}/website(id=${p.id})}"
+                   class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-[#ea7c28] text-white hover:bg-[#d66f20]">
+                  Edit
+                </a>
+                <span th:unless="${p.websiteEnabled}" class="text-xs text-slate-400">-</span>
               </td>
             </tr>
           </tbody>

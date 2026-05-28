@@ -64,6 +64,33 @@ public class Project implements HasMedia {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "website_enabled", nullable = false)
+    private Boolean websiteEnabled = false;
+
+    @Column(name = "website_public_url")
+    private String websitePublicUrl;
+
+    @Column(name = "website_type", nullable = false)
+    private String websiteType = "northlight_json_v1";
+
+    @Column(name = "github_owner")
+    private String githubOwner;
+
+    @Column(name = "github_repo")
+    private String githubRepo;
+
+    @Column(name = "github_branch")
+    private String githubBranch;
+
+    @Column(name = "github_installation_id")
+    private Long githubInstallationId;
+
+    @Column(name = "last_publish_sha")
+    private String lastPublishSha;
+
+    @Column(name = "last_publish_at")
+    private LocalDateTime lastPublishAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -154,6 +181,78 @@ public class Project implements HasMedia {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Boolean getWebsiteEnabled() {
+        return websiteEnabled;
+    }
+
+    public void setWebsiteEnabled(Boolean websiteEnabled) {
+        this.websiteEnabled = websiteEnabled;
+    }
+
+    public String getWebsitePublicUrl() {
+        return websitePublicUrl;
+    }
+
+    public void setWebsitePublicUrl(String websitePublicUrl) {
+        this.websitePublicUrl = websitePublicUrl;
+    }
+
+    public String getWebsiteType() {
+        return websiteType;
+    }
+
+    public void setWebsiteType(String websiteType) {
+        this.websiteType = websiteType;
+    }
+
+    public String getGithubOwner() {
+        return githubOwner;
+    }
+
+    public void setGithubOwner(String githubOwner) {
+        this.githubOwner = githubOwner;
+    }
+
+    public String getGithubRepo() {
+        return githubRepo;
+    }
+
+    public void setGithubRepo(String githubRepo) {
+        this.githubRepo = githubRepo;
+    }
+
+    public String getGithubBranch() {
+        return githubBranch;
+    }
+
+    public void setGithubBranch(String githubBranch) {
+        this.githubBranch = githubBranch;
+    }
+
+    public Long getGithubInstallationId() {
+        return githubInstallationId;
+    }
+
+    public void setGithubInstallationId(Long githubInstallationId) {
+        this.githubInstallationId = githubInstallationId;
+    }
+
+    public String getLastPublishSha() {
+        return lastPublishSha;
+    }
+
+    public void setLastPublishSha(String lastPublishSha) {
+        this.lastPublishSha = lastPublishSha;
+    }
+
+    public LocalDateTime getLastPublishAt() {
+        return lastPublishAt;
+    }
+
+    public void setLastPublishAt(LocalDateTime lastPublishAt) {
+        this.lastPublishAt = lastPublishAt;
     }
 
     public LocalDateTime getCreatedAt() {

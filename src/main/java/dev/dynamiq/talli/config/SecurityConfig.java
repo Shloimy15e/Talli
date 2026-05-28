@@ -110,6 +110,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/clients/**").hasAuthority("view-clients")
 
                 // Projects
+                .requestMatchers(HttpMethod.POST, "/projects/*/website/connect").hasAuthority("manage-projects")
                 .requestMatchers(HttpMethod.POST, "/projects", "/projects/*/delete", "/projects/*", "/projects/*/change-contract").hasAuthority("manage-projects")
                 .requestMatchers(HttpMethod.GET, "/projects/**").hasAuthority("view-projects")
 

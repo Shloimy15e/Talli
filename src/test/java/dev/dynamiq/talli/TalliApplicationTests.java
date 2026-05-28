@@ -1,9 +1,9 @@
 package dev.dynamiq.talli;
 
+import dev.dynamiq.talli.support.RefreshDatabaseTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@RefreshDatabaseTest
 class TalliApplicationTests {
 
 	@Test

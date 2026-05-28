@@ -19,6 +19,12 @@
       <div th:if="${creditError}"
            class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"
            th:text="${creditError}">Error.</div>
+      <div th:if="${success}"
+           class="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-700"
+           th:text="${success}">Saved.</div>
+      <div th:if="${error}"
+           class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"
+           th:text="${error}">Error.</div>
 
       <!-- Header -->
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
@@ -303,6 +309,41 @@
 
         <!-- Right: SOW attachments + notes -->
         <div class="space-y-6">
+
+          <div th:if="${project.websiteEnabled}" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+              <h2 class="font-semibold">Website</h2>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                    th:classappend="${project.githubInstallationId != null} ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'"
+                    th:text="${project.githubInstallationId != null} ? 'Connected' : 'Needs connection'">Connected</span>
+            </div>
+            <div class="px-6 py-4 space-y-3 text-sm">
+              <div th:if="${project.websitePublicUrl}">
+                <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Live site</p>
+                <a th:href="${project.websitePublicUrl}" target="_blank" class="text-[#ea7c28] hover:underline break-all"
+                   th:text="${project.websitePublicUrl}">https://example.com</a>
+              </div>
+              <div>
+                <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Repository</p>
+                <p class="font-mono text-xs text-slate-700 break-all" th:text="${githubRepoUrl ?: 'Not set'}">repo</p>
+              </div>
+              <div>
+                <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Branch</p>
+                <p class="font-mono text-xs text-slate-700" th:text="${project.githubBranch ?: 'main'}">main</p>
+              </div>
+              <div th:if="${project.lastPublishAt != null}">
+                <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Last publish</p>
+                <p class="text-xs text-slate-600" th:text="${#temporals.format(project.lastPublishAt, 'MMM d, yyyy h:mm a')}">May 1</p>
+              </div>
+              <form th:action="@{/projects/{id}/website/connect(id=${project.id})}" method="post"
+                    sec:authorize="hasAuthority('manage-projects')">
+                <button type="submit"
+                        class="inline-flex items-center gap-1.5 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-xs font-medium px-3 py-1.5 rounded-lg">
+                  <i data-lucide="plug" class="w-3.5 h-3.5"></i> Connect GitHub
+                </button>
+              </form>
+            </div>
+          </div>
 
           <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-200">

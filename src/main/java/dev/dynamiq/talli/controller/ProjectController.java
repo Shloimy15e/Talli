@@ -8,10 +8,12 @@ import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import dev.dynamiq.talli.service.MediaService;
 import dev.dynamiq.talli.service.ProjectService;
+import dev.dynamiq.talli.service.website.WebsiteProjectService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,19 +28,22 @@ public class ProjectController {
     private final TimeEntryRepository timeEntryRepository;
     private final InvoiceItemRepository invoiceItemRepository;
     private final ProjectService projectService;
+    private final WebsiteProjectService websiteProjectService;
 
     public ProjectController(ProjectRepository projectRepository,
                              ClientRepository clientRepository,
                              MediaService mediaService,
                              TimeEntryRepository timeEntryRepository,
                              InvoiceItemRepository invoiceItemRepository,
-                             ProjectService projectService) {
+                             ProjectService projectService,
+                             WebsiteProjectService websiteProjectService) {
         this.projectRepository = projectRepository;
         this.clientRepository = clientRepository;
         this.mediaService = mediaService;
         this.timeEntryRepository = timeEntryRepository;
         this.invoiceItemRepository = invoiceItemRepository;
         this.projectService = projectService;
+        this.websiteProjectService = websiteProjectService;
     }
 
     public record ProjectRow(Project project, java.time.LocalDateTime lastActivity) {}
@@ -81,6 +86,7 @@ public class ProjectController {
         model.addAttribute("invoices", invoiceItemRepository.findInvoicesByProjectId(id));
         model.addAttribute("sows", mediaService.forOwner(project, "sow"));
         model.addAttribute("summary", projectService.summary(id));
+        model.addAttribute("githubRepoUrl", websiteProjectService.displayRepoUrl(project));
         return "projects/show";
     }
 
@@ -90,6 +96,7 @@ public class ProjectController {
         model.addAttribute("clients", clientRepository.findAll());
         model.addAttribute("action", "/projects");
         model.addAttribute("title", "New Project");
+        model.addAttribute("githubRepoUrl", "");
         return "projects/_form :: form";
     }
 
@@ -101,15 +108,19 @@ public class ProjectController {
         model.addAttribute("sows", mediaService.forOwner(project, "sow"));
         model.addAttribute("action", "/projects/" + id);
         model.addAttribute("title", "Edit Project");
+        model.addAttribute("githubRepoUrl", websiteProjectService.displayRepoUrl(project));
         return "projects/_form :: form";
     }
 
     @PostMapping
     public String create(@ModelAttribute Project project,
                          @RequestParam Long clientId,
+                         @RequestParam(required = false) String githubRepoUrl,
                          @RequestParam(value = "sow", required = false) MultipartFile sow) {
         Client client = clientRepository.findById(clientId).orElseThrow();
         project.setClient(client);
+        project.setWebsiteEnabled(Boolean.TRUE.equals(project.getWebsiteEnabled()));
+        websiteProjectService.applySettings(project, project, githubRepoUrl);
         project = projectRepository.save(project);
         attachSowIfPresent(project, sow);
         return "redirect:/projects";
@@ -119,6 +130,7 @@ public class ProjectController {
     public String update(@PathVariable Long id,
                          @ModelAttribute Project project,
                          @RequestParam Long clientId,
+                         @RequestParam(required = false) String githubRepoUrl,
                          @RequestParam(value = "sow", required = false) MultipartFile sow) {
         Project existing = projectRepository.findById(id).orElseThrow();
         existing.setName(project.getName());
@@ -130,6 +142,7 @@ public class ProjectController {
         existing.setBillable(project.getBillable() != null ? project.getBillable() : true);
         existing.setNotes(project.getNotes());
         existing.setCurrency(project.getCurrency());
+        websiteProjectService.applySettings(existing, project, githubRepoUrl);
         projectRepository.save(existing);
         attachSowIfPresent(existing, sow);
         return "redirect:/projects";
@@ -152,6 +165,17 @@ public class ProjectController {
                                  @RequestParam BigDecimal newAmount,
                                  @RequestParam(required = false) String reason) {
         projectService.changeContractAmount(id, newAmount, reason);
+        return "redirect:/projects/" + id;
+    }
+
+    @PostMapping("/{id}/website/connect")
+    public String connectWebsite(@PathVariable Long id, RedirectAttributes flash) {
+        try {
+            websiteProjectService.connect(id);
+            flash.addFlashAttribute("success", "Website connected.");
+        } catch (Exception e) {
+            flash.addFlashAttribute("error", "Website connection failed: " + e.getMessage());
+        }
         return "redirect:/projects/" + id;
     }
 }
