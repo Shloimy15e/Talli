@@ -53,17 +53,17 @@
               <input name="homeApproachIntro" th:value="${form.homeApproachIntro}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
             </label>
             <div class="col-span-2 space-y-3" data-repeat-list>
-              <div class="flex items-center justify-between">
+              <div>
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Approach pillars</p>
-                <button type="button" data-add-row
-                        class="text-xs font-medium text-[#ea7c28] hover:underline">Add pillar</button>
               </div>
               <template data-repeat-template>
                 <div data-repeat-row class="grid grid-cols-12 gap-3">
                   <input data-repeat-field="homePillarNumber" placeholder="Number" class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
                   <input data-repeat-field="homePillarTitle" placeholder="Title" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
                   <input data-repeat-field="homePillarDescription" placeholder="Description" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                  <button type="button" data-remove-row class="portal-icon-button justify-self-end" title="Remove pillar" aria-label="Remove pillar">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
                 </div>
               </template>
               <div class="space-y-3" data-repeat-rows>
@@ -71,8 +71,16 @@
                   <input data-repeat-field="homePillarNumber" th:name="'homePillarNumber_' + ${stat.index}" th:value="${pillar.number}" class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
                   <input data-repeat-field="homePillarTitle" th:name="'homePillarTitle_' + ${stat.index}" th:value="${pillar.title}" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
                   <input data-repeat-field="homePillarDescription" th:name="'homePillarDescription_' + ${stat.index}" th:value="${pillar.description}" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                  <button type="button" data-remove-row class="portal-icon-button justify-self-end" title="Remove pillar" aria-label="Remove pillar">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
                 </div>
+              </div>
+              <div class="flex justify-end">
+                <button type="button" data-add-row class="portal-add-button">
+                  <i data-lucide="plus" aria-hidden="true"></i>
+                  <span>Add pillar</span>
+                </button>
               </div>
             </div>
             <label class="block">
@@ -92,22 +100,30 @@
               <input name="homeExpertiseSubtitle" th:value="${form.homeExpertiseSubtitle}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
             </label>
             <div class="space-y-2" data-repeat-list>
-              <div class="flex items-center justify-between">
+              <div>
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Expertise</p>
-                <button type="button" data-add-row
-                        class="text-xs font-medium text-[#ea7c28] hover:underline">Add expertise</button>
               </div>
               <template data-repeat-template>
                 <div data-repeat-row class="grid grid-cols-12 gap-2">
-                  <input data-repeat-field="homeExpertiseTitle" placeholder="Expertise" class="col-span-10 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                  <button type="button" data-remove-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove</button>
+                  <input data-repeat-field="homeExpertiseTitle" placeholder="Expertise" class="col-span-11 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <button type="button" data-remove-row class="portal-icon-button justify-self-end" title="Remove expertise" aria-label="Remove expertise">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
                 </div>
               </template>
               <div class="space-y-2" data-repeat-rows>
                 <div data-repeat-row th:each="category, stat : ${form.homeExpertiseCategories}" class="grid grid-cols-12 gap-2">
-                  <input data-repeat-field="homeExpertiseTitle" th:name="'homeExpertiseTitle_' + ${stat.index}" th:value="${category.title}" class="col-span-10 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                  <button type="button" data-remove-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove</button>
+                  <input data-repeat-field="homeExpertiseTitle" th:name="'homeExpertiseTitle_' + ${stat.index}" th:value="${category.title}" class="col-span-11 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <button type="button" data-remove-row class="portal-icon-button justify-self-end" title="Remove expertise" aria-label="Remove expertise">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
                 </div>
+              </div>
+              <div class="flex justify-end">
+                <button type="button" data-add-row class="portal-add-button">
+                  <i data-lucide="plus" aria-hidden="true"></i>
+                  <span>Add expertise</span>
+                </button>
               </div>
             </div>
             <div class="col-span-2 grid grid-cols-2 gap-4">
@@ -142,24 +158,32 @@
             <textarea name="aboutIntroParagraphs" rows="4" th:text="${form.aboutIntroParagraphs}" class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></textarea>
             <textarea name="aboutFounderBio" rows="4" th:text="${form.aboutFounderBio}" class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></textarea>
             <div class="col-span-2 space-y-3" data-repeat-list>
-              <div class="flex items-center justify-between">
+              <div>
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Values</p>
-                <button type="button" data-add-row
-                        class="text-xs font-medium text-[#ea7c28] hover:underline">Add value</button>
               </div>
               <template data-repeat-template>
                 <div data-repeat-row class="grid grid-cols-12 gap-3">
                   <input data-repeat-field="aboutValueName" placeholder="Name" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
                   <input data-repeat-field="aboutValueDescription" placeholder="Description" class="col-span-7 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                  <button type="button" data-remove-row class="portal-icon-button justify-self-end" title="Remove value" aria-label="Remove value">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
                 </div>
               </template>
               <div class="space-y-3" data-repeat-rows>
                 <div data-repeat-row class="grid grid-cols-12 gap-3" th:each="value, stat : ${form.aboutValues}">
                   <input data-repeat-field="aboutValueName" th:name="'aboutValueName_' + ${stat.index}" th:value="${value.name}" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
                   <input data-repeat-field="aboutValueDescription" th:name="'aboutValueDescription_' + ${stat.index}" th:value="${value.description}" class="col-span-7 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                  <button type="button" data-remove-row class="portal-icon-button justify-self-end" title="Remove value" aria-label="Remove value">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
                 </div>
+              </div>
+              <div class="flex justify-end">
+                <button type="button" data-add-row class="portal-add-button">
+                  <i data-lucide="plus" aria-hidden="true"></i>
+                  <span>Add value</span>
+                </button>
               </div>
             </div>
             <input name="aboutWhatSetsUsApartTitle" th:value="${form.aboutWhatSetsUsApartTitle}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
@@ -180,10 +204,8 @@
               <textarea name="servicesIntroParagraph" rows="3" th:text="${form.servicesIntroParagraph}" class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></textarea>
             </div>
             <div class="space-y-4" data-repeat-list>
-              <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+              <div class="border-t border-slate-100 pt-4">
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Service items</p>
-                <button type="button" data-add-row
-                        class="text-xs font-medium text-[#ea7c28] hover:underline">Add service</button>
               </div>
               <template data-repeat-template>
                 <div data-repeat-row class="grid grid-cols-12 gap-3 border-t border-slate-100 pt-4">
@@ -193,7 +215,9 @@
                     <input type="hidden" data-repeat-field="serviceImageExisting" value="">
                     <input type="file" data-repeat-field="serviceImage" accept="image/jpeg,image/png,image/webp" class="w-full text-xs">
                   </div>
-                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                  <button type="button" data-remove-row class="portal-icon-button justify-self-end" title="Remove service" aria-label="Remove service">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
                 </div>
               </template>
               <div class="space-y-4" data-repeat-rows>
@@ -205,8 +229,16 @@
                     <img th:if="${service.image}" th:src="${@websiteAssetUrls.src(project, service.image)}" class="h-16 w-full object-cover rounded border border-slate-200 mb-2" alt="">
                     <input type="file" data-repeat-field="serviceImage" th:name="'serviceImage_' + ${stat.index}" accept="image/jpeg,image/png,image/webp" class="w-full text-xs">
                   </div>
-                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                  <button type="button" data-remove-row class="portal-icon-button justify-self-end" title="Remove service" aria-label="Remove service">
+                    <i data-lucide="trash-2" aria-hidden="true"></i>
+                  </button>
                 </div>
+              </div>
+              <div class="flex justify-end">
+                <button type="button" data-add-row class="portal-add-button">
+                  <i data-lucide="plus" aria-hidden="true"></i>
+                  <span>Add service</span>
+                </button>
               </div>
             </div>
           </div>
@@ -222,10 +254,8 @@
               <input name="transactionsSubheading" th:value="${form.transactionsSubheading}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
             </div>
             <div class="space-y-4" data-repeat-list>
-              <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+              <div class="border-t border-slate-100 pt-4">
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Transaction items</p>
-                <button type="button" data-add-row
-                        class="text-xs font-medium text-[#ea7c28] hover:underline">Add transaction</button>
               </div>
               <template data-repeat-template>
                 <div data-repeat-row class="border-t border-slate-100 pt-4 space-y-3">
@@ -233,18 +263,25 @@
                   <div class="grid grid-cols-12 gap-3">
                     <input data-repeat-field="transactionLocation" placeholder="Location" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
                     <input data-repeat-field="transactionUnits" placeholder="Units" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                    <button type="button" data-remove-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove</button>
+                    <button type="button" data-remove-row class="portal-icon-button col-span-2 justify-self-end" title="Remove transaction" aria-label="Remove transaction">
+                      <i data-lucide="trash-2" aria-hidden="true"></i>
+                    </button>
                   </div>
                   <div class="space-y-3" data-image-list>
                     <template data-image-template>
                       <div data-image-row class="grid grid-cols-12 gap-3">
                         <input type="hidden" data-image-field="transactionImageExisting" value="">
                         <input type="file" data-image-field="transactionImage" accept="image/jpeg,image/png,image/webp" class="col-span-10 text-xs">
-                        <button type="button" data-remove-image-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove image</button>
+                        <button type="button" data-remove-image-row class="portal-icon-button col-span-2 justify-self-end" title="Remove image" aria-label="Remove image">
+                          <i data-lucide="trash-2" aria-hidden="true"></i>
+                        </button>
                       </div>
                     </template>
                     <div class="grid grid-cols-3 gap-3" data-image-rows></div>
-                    <button type="button" data-add-image-row class="text-xs font-medium text-[#ea7c28] hover:underline">Add image</button>
+                    <button type="button" data-add-image-row class="portal-add-button">
+                      <i data-lucide="image-plus" aria-hidden="true"></i>
+                      <span>Add image</span>
+                    </button>
                   </div>
                 </div>
               </template>
@@ -254,14 +291,18 @@
                   <div class="grid grid-cols-12 gap-3">
                     <input data-repeat-field="transactionLocation" th:name="'transactionLocation_' + ${txStat.index}" th:value="${tx.location}" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
                     <input data-repeat-field="transactionUnits" th:name="'transactionUnits_' + ${txStat.index}" th:value="${tx.units}" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                    <button type="button" data-remove-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove</button>
+                    <button type="button" data-remove-row class="portal-icon-button col-span-2 justify-self-end" title="Remove transaction" aria-label="Remove transaction">
+                      <i data-lucide="trash-2" aria-hidden="true"></i>
+                    </button>
                   </div>
                   <div class="space-y-3" data-image-list>
                     <template data-image-template>
                       <div data-image-row class="grid grid-cols-12 gap-3">
                         <input type="hidden" data-image-field="transactionImageExisting" value="">
                         <input type="file" data-image-field="transactionImage" accept="image/jpeg,image/png,image/webp" class="col-span-10 text-xs">
-                        <button type="button" data-remove-image-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove image</button>
+                        <button type="button" data-remove-image-row class="portal-icon-button col-span-2 justify-self-end" title="Remove image" aria-label="Remove image">
+                          <i data-lucide="trash-2" aria-hidden="true"></i>
+                        </button>
                       </div>
                     </template>
                     <div class="grid grid-cols-3 gap-3" data-image-rows>
@@ -269,12 +310,23 @@
                         <input type="hidden" data-image-field="transactionImageExisting" th:name="'transactionImageExisting_' + ${txStat.index} + '_' + ${imageStat.index}" th:value="${image}">
                         <img th:if="${image}" th:src="${@websiteAssetUrls.src(project, image)}" class="h-20 w-full object-cover rounded border border-slate-200 mb-2" alt="">
                         <input type="file" data-image-field="transactionImage" th:name="'transactionImage_' + ${txStat.index} + '_' + ${imageStat.index}" accept="image/jpeg,image/png,image/webp" class="w-full text-xs mb-2">
-                        <button type="button" data-remove-image-row class="text-xs text-slate-400 hover:text-red-600">Remove image</button>
+                        <button type="button" data-remove-image-row class="portal-icon-button" title="Remove image" aria-label="Remove image">
+                          <i data-lucide="trash-2" aria-hidden="true"></i>
+                        </button>
                       </div>
                     </div>
-                    <button type="button" data-add-image-row class="text-xs font-medium text-[#ea7c28] hover:underline">Add image</button>
+                    <button type="button" data-add-image-row class="portal-add-button">
+                      <i data-lucide="image-plus" aria-hidden="true"></i>
+                      <span>Add image</span>
+                    </button>
                   </div>
                 </div>
+              </div>
+              <div class="flex justify-end">
+                <button type="button" data-add-row class="portal-add-button">
+                  <i data-lucide="plus" aria-hidden="true"></i>
+                  <span>Add transaction</span>
+                </button>
               </div>
             </div>
           </div>
@@ -305,6 +357,7 @@
       <script>
         document.addEventListener('DOMContentLoaded', () => {
           document.querySelectorAll('[data-repeat-list]').forEach(setupRepeatList);
+          refreshIcons();
         });
 
         function setupRepeatList(list) {
@@ -317,6 +370,7 @@
             addButton.addEventListener('click', () => {
               rows.appendChild(template.content.firstElementChild.cloneNode(true));
               renumberRepeatList(list);
+              refreshIcons();
             });
           }
 
@@ -335,6 +389,7 @@
               const imageTemplate = imageList.querySelector('template[data-image-template]');
               imageRows.appendChild(imageTemplate.content.firstElementChild.cloneNode(true));
               renumberRepeatList(list);
+              refreshIcons();
               return;
             }
 
@@ -367,6 +422,10 @@
               field.name = `${field.dataset.imageField}_${rowIndex}_${imageIndex}`;
             });
           });
+        }
+
+        function refreshIcons() {
+          if (window.lucide) window.lucide.createIcons();
         }
       </script>
     </main>
