@@ -57,7 +57,17 @@ public class WebsiteProjectService {
         Project project = projectRepository.findById(projectId).orElseThrow();
         ensureWebsiteConfigured(project);
 
-        Long installationId = github.findInstallationId(project.getGithubOwner(), project.getGithubRepo());
+        Long installationId;
+        try {
+            installationId = github.findInstallationId(project.getGithubOwner(), project.getGithubRepo());
+        } catch (GithubApiException e) {
+            if (e.statusCode() == 404) {
+                throw new IllegalStateException("GitHub App is not installed on "
+                        + displayRepoUrl(project)
+                        + ", or Railway is using credentials for a different app. Install the app on this repo and verify GITHUB_APP_ID/GITHUB_APP_PRIVATE_KEY.", e);
+            }
+            throw e;
+        }
         project.setGithubInstallationId(installationId);
 
         github.branchHeadSha(project.getGithubOwner(), project.getGithubRepo(), project.getGithubBranch(), installationId);

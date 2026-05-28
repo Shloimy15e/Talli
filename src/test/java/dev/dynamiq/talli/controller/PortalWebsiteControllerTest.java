@@ -86,6 +86,23 @@ class PortalWebsiteControllerTest {
     }
 
     @Test
+    void editShowsPortalErrorWhenWebsiteProjectIsNotConnected() throws Exception {
+        Client client = client(10L);
+        Project project = ProjectFactory.configuredWebsiteProject();
+        project.setClient(client);
+
+        when(userRepository.findByEmail("client@example.com")).thenReturn(Optional.of(user(client)));
+        when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
+        when(websiteContentService.load(project))
+                .thenThrow(new IllegalStateException("Website project is not connected to GitHub yet."));
+
+        mockMvc.perform(get("/portal/projects/{projectId}/website", 1L).principal(auth()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("portal/error"))
+                .andExpect(model().attribute("error", "Website project is not connected to GitHub yet."));
+    }
+
+    @Test
     void updatePublishesWebsiteContentAndRedirectsBackToEditor() throws Exception {
         Client client = client(10L);
         Project project = websiteProject(client);

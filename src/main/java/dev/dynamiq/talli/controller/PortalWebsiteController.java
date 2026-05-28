@@ -46,7 +46,12 @@ public class PortalWebsiteController {
         }
 
         model.addAttribute("project", project);
-        model.addAttribute("form", websiteContentService.load(project));
+        try {
+            model.addAttribute("form", websiteContentService.load(project));
+        } catch (IllegalStateException e) {
+            model.addAttribute("error", e.getMessage());
+            return "portal/error";
+        }
         return "portal/website";
     }
 

@@ -128,10 +128,11 @@
                       th:text="${p.status}">active</span>
               </td>
               <td class="px-6 py-3 text-right">
-                <a th:if="${p.websiteEnabled}" th:href="@{/portal/projects/{id}/website(id=${p.id})}"
+                <a th:if="${p.websiteEnabled and p.githubInstallationId != null}" th:href="@{/portal/projects/{id}/website(id=${p.id})}"
                    class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-[#ea7c28] text-white hover:bg-[#d66f20]">
                   Edit
                 </a>
+                <span th:if="${p.websiteEnabled and p.githubInstallationId == null}" class="text-xs text-slate-400">Not ready</span>
                 <span th:unless="${p.websiteEnabled}" class="text-xs text-slate-400">-</span>
               </td>
             </tr>

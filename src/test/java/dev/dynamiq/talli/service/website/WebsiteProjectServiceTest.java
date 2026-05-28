@@ -1,12 +1,19 @@
 package dev.dynamiq.talli.service.website;
 
 import dev.dynamiq.talli.model.Project;
+import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.service.github.GithubApiException;
 import dev.dynamiq.talli.service.github.GithubRepo;
+import dev.dynamiq.talli.service.github.GithubRepositoryClient;
 import dev.dynamiq.talli.support.factory.ProjectFactory;
 import org.junit.jupiter.api.Test;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class WebsiteProjectServiceTest {
 
@@ -79,6 +86,24 @@ class WebsiteProjectServiceTest {
         assertThatThrownBy(() -> service.ensureConnected(project))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("not connected");
+    }
+
+    @Test
+    void connectExplainsMissingGithubAppInstallation() {
+        Project project = ProjectFactory.configuredWebsiteProject();
+        ProjectRepository projects = mock(ProjectRepository.class);
+        GithubRepositoryClient github = mock(GithubRepositoryClient.class);
+
+        when(projects.findById(project.getId())).thenReturn(Optional.of(project));
+        when(github.findInstallationId("owner", "repo")).thenThrow(new GithubApiException(404, "Not Found"));
+
+        WebsiteProjectService service = new WebsiteProjectService(projects, github, null);
+
+        assertThatThrownBy(() -> service.connect(project.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("GitHub App is not installed")
+                .hasMessageContaining("https://github.com/owner/repo")
+                .hasMessageContaining("GITHUB_APP_ID");
     }
 
 }
