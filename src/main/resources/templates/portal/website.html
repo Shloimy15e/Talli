@@ -23,7 +23,7 @@
       <div th:if="${error}" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"
            th:text="${error}">Error.</div>
 
-      <form th:action="@{/portal/projects/{id}/website(id=${project.id})}" method="post" enctype="multipart/form-data"
+      <form th:action="${_csrf == null} ? @{/portal/projects/{id}/website(id=${project.id})} : @{/portal/projects/{id}/website(id=${project.id}, _csrf=${_csrf.token})}" method="post" enctype="multipart/form-data"
             class="space-y-6">
         <input th:if="${_csrf != null}" type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
