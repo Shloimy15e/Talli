@@ -77,6 +77,64 @@ class NorthlightWebsiteAdapterTest {
     }
 
     @Test
+    void applyAddsNewRepeatableRows() throws Exception {
+        Map<String, String[]> params = NorthlightWebsiteFactory.formParams();
+        params.put("homePillarNumber_1", NorthlightWebsiteFactory.one("2"));
+        params.put("homePillarTitle_1", NorthlightWebsiteFactory.one("Execute"));
+        params.put("homePillarDescription_1", NorthlightWebsiteFactory.one("Move decisively"));
+        params.put("homeExpertiseTitle_1", NorthlightWebsiteFactory.one("Retail"));
+        params.put("aboutValueName_1", NorthlightWebsiteFactory.one("Clarity"));
+        params.put("aboutValueDescription_1", NorthlightWebsiteFactory.one("Plain-spoken advice"));
+        params.put("serviceTitle_1", NorthlightWebsiteFactory.one("Capital Markets"));
+        params.put("serviceDescription_1", NorthlightWebsiteFactory.one("Debt and equity strategy"));
+        params.put("transactionLocation_1", NorthlightWebsiteFactory.one("Brooklyn, NY"));
+        params.put("transactionUnits_1", NorthlightWebsiteFactory.one("84 Units"));
+        params.put("transactionImagesTouched_1", NorthlightWebsiteFactory.one("true"));
+        params.put("transactionImageExisting_1_0", NorthlightWebsiteFactory.one("/images/transactions/b.jpg"));
+
+        List<GithubFileChange> changes = adapter.apply(NorthlightWebsiteFactory.PROJECT_ID,
+                NorthlightWebsiteFactory.repoFiles(), params,
+                new LinkedMultiValueMap<String, MultipartFile>());
+        Map<String, byte[]> byPath = changes.stream()
+                .collect(Collectors.toMap(GithubFileChange::path, GithubFileChange::content));
+
+        JsonNode home = objectMapper.readTree(byPath.get("content/home.json"));
+        JsonNode about = objectMapper.readTree(byPath.get("content/about.json"));
+        JsonNode services = objectMapper.readTree(byPath.get("content/services.json"));
+        JsonNode transactions = objectMapper.readTree(byPath.get("content/transactions.json"));
+
+        assertThat(home.path("approach").path("pillars").size()).isEqualTo(2);
+        assertThat(home.path("expertise").path("categories").size()).isEqualTo(2);
+        assertThat(about.path("values").path("list").size()).isEqualTo(2);
+        assertThat(services.path("services").size()).isEqualTo(2);
+        assertThat(services.path("services").get(1).path("title").asText()).isEqualTo("Capital Markets");
+        assertThat(transactions.path("transactions").size()).isEqualTo(2);
+        assertThat(transactions.path("transactions").get(1).path("images").get(0).asText())
+                .isEqualTo("/images/transactions/b.jpg");
+    }
+
+    @Test
+    void applyUploadsImageForNewServiceRow() throws Exception {
+        Map<String, String[]> params = NorthlightWebsiteFactory.formParams();
+        params.put("serviceTitle_1", NorthlightWebsiteFactory.one("Capital Markets"));
+        params.put("serviceDescription_1", NorthlightWebsiteFactory.one("Debt and equity strategy"));
+        LinkedMultiValueMap<String, MultipartFile> uploads = new LinkedMultiValueMap<>();
+        uploads.add("serviceImage_1", new MockMultipartFile(
+                "serviceImage_1", "capital.webp", "image/webp", "service-image".getBytes(StandardCharsets.UTF_8)));
+
+        List<GithubFileChange> changes = adapter.apply(NorthlightWebsiteFactory.PROJECT_ID,
+                NorthlightWebsiteFactory.repoFiles(), params, uploads);
+        Map<String, byte[]> byPath = changes.stream()
+                .collect(Collectors.toMap(GithubFileChange::path, GithubFileChange::content));
+
+        JsonNode services = objectMapper.readTree(byPath.get("content/services.json"));
+        String expectedImagePath = "/images/cms/" + NorthlightWebsiteFactory.PROJECT_ID + "/service-2.webp";
+
+        assertThat(services.path("serviceImages").get(1).path("src").asText()).isEqualTo(expectedImagePath);
+        assertThat(byPath).containsKey("public" + expectedImagePath);
+    }
+
+    @Test
     void applyRejectsUnsupportedImageType() {
         Map<String, String[]> params = NorthlightWebsiteFactory.formParams();
         LinkedMultiValueMap<String, MultipartFile> uploads = new LinkedMultiValueMap<>();

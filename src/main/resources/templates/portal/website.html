@@ -52,10 +52,28 @@
               <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Approach intro</span>
               <input name="homeApproachIntro" th:value="${form.homeApproachIntro}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
             </label>
-            <div class="col-span-2 grid grid-cols-3 gap-3" th:each="pillar, stat : ${form.homePillars}">
-              <input th:name="'homePillarNumber_' + ${stat.index}" th:value="${pillar.number}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-              <input th:name="'homePillarTitle_' + ${stat.index}" th:value="${pillar.title}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-              <input th:name="'homePillarDescription_' + ${stat.index}" th:value="${pillar.description}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+            <div class="col-span-2 space-y-3" data-repeat-list>
+              <div class="flex items-center justify-between">
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Approach pillars</p>
+                <button type="button" data-add-row
+                        class="text-xs font-medium text-[#ea7c28] hover:underline">Add pillar</button>
+              </div>
+              <template data-repeat-template>
+                <div data-repeat-row class="grid grid-cols-12 gap-3">
+                  <input data-repeat-field="homePillarNumber" placeholder="Number" class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <input data-repeat-field="homePillarTitle" placeholder="Title" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <input data-repeat-field="homePillarDescription" placeholder="Description" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                </div>
+              </template>
+              <div class="space-y-3" data-repeat-rows>
+                <div data-repeat-row class="grid grid-cols-12 gap-3" th:each="pillar, stat : ${form.homePillars}">
+                  <input data-repeat-field="homePillarNumber" th:name="'homePillarNumber_' + ${stat.index}" th:value="${pillar.number}" class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <input data-repeat-field="homePillarTitle" th:name="'homePillarTitle_' + ${stat.index}" th:value="${pillar.title}" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <input data-repeat-field="homePillarDescription" th:name="'homePillarDescription_' + ${stat.index}" th:value="${pillar.description}" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                </div>
+              </div>
             </div>
             <label class="block">
               <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Philosophy title</span>
@@ -73,11 +91,24 @@
               <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Expertise subtitle</span>
               <input name="homeExpertiseSubtitle" th:value="${form.homeExpertiseSubtitle}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
             </label>
-            <div class="space-y-2">
-              <label th:each="category, stat : ${form.homeExpertiseCategories}" class="block">
-                <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2" th:text="'Expertise ' + (${stat.index} + 1)">Expertise</span>
-                <input th:name="'homeExpertiseTitle_' + ${stat.index}" th:value="${category.title}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-              </label>
+            <div class="space-y-2" data-repeat-list>
+              <div class="flex items-center justify-between">
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Expertise</p>
+                <button type="button" data-add-row
+                        class="text-xs font-medium text-[#ea7c28] hover:underline">Add expertise</button>
+              </div>
+              <template data-repeat-template>
+                <div data-repeat-row class="grid grid-cols-12 gap-2">
+                  <input data-repeat-field="homeExpertiseTitle" placeholder="Expertise" class="col-span-10 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <button type="button" data-remove-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove</button>
+                </div>
+              </template>
+              <div class="space-y-2" data-repeat-rows>
+                <div data-repeat-row th:each="category, stat : ${form.homeExpertiseCategories}" class="grid grid-cols-12 gap-2">
+                  <input data-repeat-field="homeExpertiseTitle" th:name="'homeExpertiseTitle_' + ${stat.index}" th:value="${category.title}" class="col-span-10 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <button type="button" data-remove-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove</button>
+                </div>
+              </div>
             </div>
             <div class="col-span-2 grid grid-cols-2 gap-4">
               <div>
@@ -110,9 +141,26 @@
             </div>
             <textarea name="aboutIntroParagraphs" rows="4" th:text="${form.aboutIntroParagraphs}" class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></textarea>
             <textarea name="aboutFounderBio" rows="4" th:text="${form.aboutFounderBio}" class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></textarea>
-            <div class="col-span-2 grid grid-cols-2 gap-3" th:each="value, stat : ${form.aboutValues}">
-              <input th:name="'aboutValueName_' + ${stat.index}" th:value="${value.name}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-              <input th:name="'aboutValueDescription_' + ${stat.index}" th:value="${value.description}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+            <div class="col-span-2 space-y-3" data-repeat-list>
+              <div class="flex items-center justify-between">
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Values</p>
+                <button type="button" data-add-row
+                        class="text-xs font-medium text-[#ea7c28] hover:underline">Add value</button>
+              </div>
+              <template data-repeat-template>
+                <div data-repeat-row class="grid grid-cols-12 gap-3">
+                  <input data-repeat-field="aboutValueName" placeholder="Name" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <input data-repeat-field="aboutValueDescription" placeholder="Description" class="col-span-7 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                </div>
+              </template>
+              <div class="space-y-3" data-repeat-rows>
+                <div data-repeat-row class="grid grid-cols-12 gap-3" th:each="value, stat : ${form.aboutValues}">
+                  <input data-repeat-field="aboutValueName" th:name="'aboutValueName_' + ${stat.index}" th:value="${value.name}" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <input data-repeat-field="aboutValueDescription" th:name="'aboutValueDescription_' + ${stat.index}" th:value="${value.description}" class="col-span-7 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                </div>
+              </div>
             </div>
             <input name="aboutWhatSetsUsApartTitle" th:value="${form.aboutWhatSetsUsApartTitle}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
             <input name="aboutChoosingNorthlightTitle" th:value="${form.aboutChoosingNorthlightTitle}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
@@ -131,12 +179,34 @@
               <input name="servicesIntroSubtitle" th:value="${form.servicesIntroSubtitle}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
               <textarea name="servicesIntroParagraph" rows="3" th:text="${form.servicesIntroParagraph}" class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg"></textarea>
             </div>
-            <div th:each="service, stat : ${form.services}" class="grid grid-cols-12 gap-3 border-t border-slate-100 pt-4">
-              <input th:name="'serviceTitle_' + ${stat.index}" th:value="${service.title}" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-              <input th:name="'serviceDescription_' + ${stat.index}" th:value="${service.description}" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-              <div class="col-span-3">
-                <img th:if="${service.image}" th:src="${@websiteAssetUrls.src(project, service.image)}" class="h-16 w-full object-cover rounded border border-slate-200 mb-2" alt="">
-                <input type="file" th:name="'serviceImage_' + ${stat.index}" accept="image/jpeg,image/png,image/webp" class="w-full text-xs">
+            <div class="space-y-4" data-repeat-list>
+              <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Service items</p>
+                <button type="button" data-add-row
+                        class="text-xs font-medium text-[#ea7c28] hover:underline">Add service</button>
+              </div>
+              <template data-repeat-template>
+                <div data-repeat-row class="grid grid-cols-12 gap-3 border-t border-slate-100 pt-4">
+                  <input data-repeat-field="serviceTitle" placeholder="Title" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <input data-repeat-field="serviceDescription" placeholder="Description" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div class="col-span-3">
+                    <input type="hidden" data-repeat-field="serviceImageExisting" value="">
+                    <input type="file" data-repeat-field="serviceImage" accept="image/jpeg,image/png,image/webp" class="w-full text-xs">
+                  </div>
+                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                </div>
+              </template>
+              <div class="space-y-4" data-repeat-rows>
+                <div data-repeat-row th:each="service, stat : ${form.services}" class="grid grid-cols-12 gap-3 border-t border-slate-100 pt-4">
+                  <input data-repeat-field="serviceTitle" th:name="'serviceTitle_' + ${stat.index}" th:value="${service.title}" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <input data-repeat-field="serviceDescription" th:name="'serviceDescription_' + ${stat.index}" th:value="${service.description}" class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div class="col-span-3">
+                    <input type="hidden" data-repeat-field="serviceImageExisting" th:name="'serviceImageExisting_' + ${stat.index}" th:value="${service.image}">
+                    <img th:if="${service.image}" th:src="${@websiteAssetUrls.src(project, service.image)}" class="h-16 w-full object-cover rounded border border-slate-200 mb-2" alt="">
+                    <input type="file" data-repeat-field="serviceImage" th:name="'serviceImage_' + ${stat.index}" accept="image/jpeg,image/png,image/webp" class="w-full text-xs">
+                  </div>
+                  <button type="button" data-remove-row class="text-xs text-slate-400 hover:text-red-600">Remove</button>
+                </div>
               </div>
             </div>
           </div>
@@ -151,15 +221,59 @@
               <input name="transactionsHeading" th:value="${form.transactionsHeading}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
               <input name="transactionsSubheading" th:value="${form.transactionsSubheading}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
             </div>
-            <div th:each="tx, txStat : ${form.transactions}" class="border-t border-slate-100 pt-4 space-y-3">
-              <div class="grid grid-cols-2 gap-3">
-                <input th:name="'transactionLocation_' + ${txStat.index}" th:value="${tx.location}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                <input th:name="'transactionUnits_' + ${txStat.index}" th:value="${tx.units}" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+            <div class="space-y-4" data-repeat-list>
+              <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Transaction items</p>
+                <button type="button" data-add-row
+                        class="text-xs font-medium text-[#ea7c28] hover:underline">Add transaction</button>
               </div>
-              <div class="grid grid-cols-3 gap-3">
-                <div th:each="image, imageStat : ${tx.images}">
-                  <img th:if="${image}" th:src="${@websiteAssetUrls.src(project, image)}" class="h-20 w-full object-cover rounded border border-slate-200 mb-2" alt="">
-                  <input type="file" th:name="'transactionImage_' + ${txStat.index} + '_' + ${imageStat.index}" accept="image/jpeg,image/png,image/webp" class="w-full text-xs">
+              <template data-repeat-template>
+                <div data-repeat-row class="border-t border-slate-100 pt-4 space-y-3">
+                  <input type="hidden" data-repeat-field="transactionImagesTouched" value="true">
+                  <div class="grid grid-cols-12 gap-3">
+                    <input data-repeat-field="transactionLocation" placeholder="Location" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    <input data-repeat-field="transactionUnits" placeholder="Units" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    <button type="button" data-remove-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove</button>
+                  </div>
+                  <div class="space-y-3" data-image-list>
+                    <template data-image-template>
+                      <div data-image-row class="grid grid-cols-12 gap-3">
+                        <input type="hidden" data-image-field="transactionImageExisting" value="">
+                        <input type="file" data-image-field="transactionImage" accept="image/jpeg,image/png,image/webp" class="col-span-10 text-xs">
+                        <button type="button" data-remove-image-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove image</button>
+                      </div>
+                    </template>
+                    <div class="grid grid-cols-3 gap-3" data-image-rows></div>
+                    <button type="button" data-add-image-row class="text-xs font-medium text-[#ea7c28] hover:underline">Add image</button>
+                  </div>
+                </div>
+              </template>
+              <div class="space-y-4" data-repeat-rows>
+                <div data-repeat-row th:each="tx, txStat : ${form.transactions}" class="border-t border-slate-100 pt-4 space-y-3">
+                  <input type="hidden" data-repeat-field="transactionImagesTouched" th:name="'transactionImagesTouched_' + ${txStat.index}" value="true">
+                  <div class="grid grid-cols-12 gap-3">
+                    <input data-repeat-field="transactionLocation" th:name="'transactionLocation_' + ${txStat.index}" th:value="${tx.location}" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    <input data-repeat-field="transactionUnits" th:name="'transactionUnits_' + ${txStat.index}" th:value="${tx.units}" class="col-span-5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
+                    <button type="button" data-remove-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove</button>
+                  </div>
+                  <div class="space-y-3" data-image-list>
+                    <template data-image-template>
+                      <div data-image-row class="grid grid-cols-12 gap-3">
+                        <input type="hidden" data-image-field="transactionImageExisting" value="">
+                        <input type="file" data-image-field="transactionImage" accept="image/jpeg,image/png,image/webp" class="col-span-10 text-xs">
+                        <button type="button" data-remove-image-row class="col-span-2 text-xs text-slate-400 hover:text-red-600">Remove image</button>
+                      </div>
+                    </template>
+                    <div class="grid grid-cols-3 gap-3" data-image-rows>
+                      <div data-image-row th:each="image, imageStat : ${tx.images}">
+                        <input type="hidden" data-image-field="transactionImageExisting" th:name="'transactionImageExisting_' + ${txStat.index} + '_' + ${imageStat.index}" th:value="${image}">
+                        <img th:if="${image}" th:src="${@websiteAssetUrls.src(project, image)}" class="h-20 w-full object-cover rounded border border-slate-200 mb-2" alt="">
+                        <input type="file" data-image-field="transactionImage" th:name="'transactionImage_' + ${txStat.index} + '_' + ${imageStat.index}" accept="image/jpeg,image/png,image/webp" class="w-full text-xs mb-2">
+                        <button type="button" data-remove-image-row class="text-xs text-slate-400 hover:text-red-600">Remove image</button>
+                      </div>
+                    </div>
+                    <button type="button" data-add-image-row class="text-xs font-medium text-[#ea7c28] hover:underline">Add image</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -180,12 +294,81 @@
           </div>
         </section>
 
-        <div class="sticky bottom-0 bg-slate-100/95 border-t border-slate-200 py-4 flex justify-end">
+        <div class="sticky bottom-0 bg-slate-100/95 border-t border-slate-200 py-4 flex items-center justify-between gap-4">
+          <p class="text-xs text-slate-500">After publishing, the live site can take a few minutes to show the changes.</p>
           <button type="submit" class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-5 py-2 rounded-lg">
             Publish changes
           </button>
         </div>
       </form>
+
+      <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          document.querySelectorAll('[data-repeat-list]').forEach(setupRepeatList);
+        });
+
+        function setupRepeatList(list) {
+          const rows = list.querySelector('[data-repeat-rows]');
+          const template = list.querySelector('template[data-repeat-template]');
+          if (!rows || !template) return;
+
+          const addButton = list.querySelector('[data-add-row]');
+          if (addButton) {
+            addButton.addEventListener('click', () => {
+              rows.appendChild(template.content.firstElementChild.cloneNode(true));
+              renumberRepeatList(list);
+            });
+          }
+
+          list.addEventListener('click', event => {
+            const removeRow = event.target.closest('[data-remove-row]');
+            if (removeRow && rows.contains(removeRow)) {
+              removeRow.closest('[data-repeat-row]').remove();
+              renumberRepeatList(list);
+              return;
+            }
+
+            const addImageRow = event.target.closest('[data-add-image-row]');
+            if (addImageRow && list.contains(addImageRow)) {
+              const imageList = addImageRow.closest('[data-image-list]');
+              const imageRows = imageList.querySelector('[data-image-rows]');
+              const imageTemplate = imageList.querySelector('template[data-image-template]');
+              imageRows.appendChild(imageTemplate.content.firstElementChild.cloneNode(true));
+              renumberRepeatList(list);
+              return;
+            }
+
+            const removeImageRow = event.target.closest('[data-remove-image-row]');
+            if (removeImageRow && list.contains(removeImageRow)) {
+              removeImageRow.closest('[data-image-row]').remove();
+              renumberRepeatList(list);
+            }
+          });
+
+          renumberRepeatList(list);
+        }
+
+        function renumberRepeatList(list) {
+          const rows = list.querySelector('[data-repeat-rows]');
+          rows.querySelectorAll(':scope > [data-repeat-row]').forEach((row, rowIndex) => {
+            row.querySelectorAll('[data-repeat-field]').forEach(field => {
+              field.name = `${field.dataset.repeatField}_${rowIndex}`;
+            });
+            renumberImageRows(row, rowIndex);
+          });
+        }
+
+        function renumberImageRows(row, rowIndex) {
+          const imageRows = row.querySelector('[data-image-rows]');
+          if (!imageRows) return;
+
+          imageRows.querySelectorAll(':scope > [data-image-row]').forEach((imageRow, imageIndex) => {
+            imageRow.querySelectorAll('[data-image-field]').forEach(field => {
+              field.name = `${field.dataset.imageField}_${rowIndex}_${imageIndex}`;
+            });
+          });
+        }
+      </script>
     </main>
   </body>
 </html>

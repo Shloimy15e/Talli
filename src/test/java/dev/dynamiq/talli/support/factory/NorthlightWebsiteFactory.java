@@ -102,10 +102,13 @@ public final class NorthlightWebsiteFactory {
         params.put("servicesIntroParagraph", one("Paragraph"));
         params.put("serviceTitle_0", one("Advisory"));
         params.put("serviceDescription_0", one("Advice"));
+        params.put("serviceImageExisting_0", one("/images/services/one.png"));
         params.put("transactionsHeading", one("Recent Transactions"));
         params.put("transactionsSubheading", one("Past successes"));
         params.put("transactionLocation_0", one("Lithonia, GA"));
         params.put("transactionUnits_0", one("200 Units"));
+        params.put("transactionImagesTouched_0", one("true"));
+        params.put("transactionImageExisting_0_0", one("/images/transactions/a.jpg"));
         params.put("contactHeading", one("Contact"));
         params.put("contactText", one("Talk to us"));
         params.put("contactSubtext", one(""));

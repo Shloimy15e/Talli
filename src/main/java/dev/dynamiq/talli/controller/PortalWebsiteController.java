@@ -69,7 +69,7 @@ public class PortalWebsiteController {
         try {
             WebsiteSaveResult result = websiteContentService.save(project, request.getParameterMap(), uploads(request));
             flash.addFlashAttribute("success", result.changed()
-                    ? "Website changes published."
+                    ? "Website changes published. The live site can take a few minutes to update."
                     : "No website changes to publish.");
         } catch (Exception e) {
             flash.addFlashAttribute("error", "Website publish failed: " + e.getMessage());

@@ -14,9 +14,13 @@ import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 @Component
 public class NorthlightWebsiteAdapter {
@@ -142,13 +146,22 @@ public class NorthlightWebsiteAdapter {
         ObjectNode approach = object(home, "approach");
         put(approach, "title", param(params, "homeApproachTitle"));
         put(approach, "intro", param(params, "homeApproachIntro"));
-        ArrayNode pillars = array(approach, "pillars");
-        for (int i = 0; i < pillars.size(); i++) {
-            ObjectNode pillar = objectAt(pillars, i);
-            put(pillar, "number", param(params, "homePillarNumber_" + i));
-            put(pillar, "title", param(params, "homePillarTitle_" + i));
-            put(pillar, "description", param(params, "homePillarDescription_" + i));
+        ArrayNode existingPillars = array(approach, "pillars");
+        ArrayNode pillars = objectMapper.createArrayNode();
+        for (int i : indexes(params, "homePillarNumber_", "homePillarTitle_", "homePillarDescription_")) {
+            String number = param(params, "homePillarNumber_" + i);
+            String title = param(params, "homePillarTitle_" + i);
+            String description = param(params, "homePillarDescription_" + i);
+            if (allBlank(number, title, description)) {
+                continue;
+            }
+            ObjectNode pillar = objectAtOrNew(existingPillars, i);
+            put(pillar, "number", number);
+            put(pillar, "title", title);
+            put(pillar, "description", description);
+            pillars.add(pillar);
         }
+        approach.set("pillars", pillars);
 
         ObjectNode philosophy = object(home, "philosophy");
         put(philosophy, "title", param(params, "homePhilosophyTitle"));
@@ -158,10 +171,18 @@ public class NorthlightWebsiteAdapter {
         ObjectNode expertise = object(home, "expertise");
         put(expertise, "title", param(params, "homeExpertiseTitle"));
         put(expertise, "subtitle", param(params, "homeExpertiseSubtitle"));
-        ArrayNode categories = array(expertise, "categories");
-        for (int i = 0; i < categories.size(); i++) {
-            put(objectAt(categories, i), "title", param(params, "homeExpertiseTitle_" + i));
+        ArrayNode existingCategories = array(expertise, "categories");
+        ArrayNode categories = objectMapper.createArrayNode();
+        for (int i : indexes(params, "homeExpertiseTitle_")) {
+            String title = param(params, "homeExpertiseTitle_" + i);
+            if (isBlank(title)) {
+                continue;
+            }
+            ObjectNode category = objectAtOrNew(existingCategories, i);
+            put(category, "title", title);
+            categories.add(category);
         }
+        expertise.set("categories", categories);
         imageParam(home, "impactShowcaseImage", projectId, "homeImpactShowcaseImage", "home-impact", uploads);
     }
 
@@ -183,12 +204,21 @@ public class NorthlightWebsiteAdapter {
             image.put("src", founderImage);
         }
 
-        ArrayNode values = array(object(about, "values"), "list");
-        for (int i = 0; i < values.size(); i++) {
-            ObjectNode value = objectAt(values, i);
-            put(value, "name", param(params, "aboutValueName_" + i));
-            put(value, "description", param(params, "aboutValueDescription_" + i));
+        ObjectNode valuesRoot = object(about, "values");
+        ArrayNode existingValues = array(valuesRoot, "list");
+        ArrayNode values = objectMapper.createArrayNode();
+        for (int i : indexes(params, "aboutValueName_", "aboutValueDescription_")) {
+            String name = param(params, "aboutValueName_" + i);
+            String description = param(params, "aboutValueDescription_" + i);
+            if (allBlank(name, description)) {
+                continue;
+            }
+            ObjectNode value = objectAtOrNew(existingValues, i);
+            put(value, "name", name);
+            put(value, "description", description);
+            values.add(value);
         }
+        valuesRoot.set("list", values);
 
         ObjectNode apart = object(about, "whatSetsUsApart");
         put(apart, "title", param(params, "aboutWhatSetsUsApartTitle"));
@@ -206,21 +236,37 @@ public class NorthlightWebsiteAdapter {
         put(intro, "subtitle", param(params, "servicesIntroSubtitle"));
         put(intro, "paragraph", param(params, "servicesIntroParagraph"));
 
-        ArrayNode items = array(services, "services");
-        for (int i = 0; i < items.size(); i++) {
-            ObjectNode item = objectAt(items, i);
-            put(item, "title", param(params, "serviceTitle_" + i));
-            put(item, "description", param(params, "serviceDescription_" + i));
-        }
-
-        ArrayNode images = array(services, "serviceImages");
-        for (int i = 0; i < images.size(); i++) {
+        ArrayNode existingItems = array(services, "services");
+        ArrayNode existingImages = array(services, "serviceImages");
+        ArrayNode items = objectMapper.createArrayNode();
+        ArrayNode images = objectMapper.createArrayNode();
+        for (int i : indexes(params, "serviceTitle_", "serviceDescription_", "serviceImageExisting_")) {
+            String title = param(params, "serviceTitle_" + i);
+            String description = param(params, "serviceDescription_" + i);
             String uploadName = "serviceImage_" + i;
-            String publicPath = uploadedPublicPath(projectId, uploadName, "service-" + (i + 1), uploads);
-            if (publicPath != null) {
-                objectAt(images, i).put("src", publicPath);
+            String image = firstNonBlank(
+                    uploadedPublicPath(projectId, uploadName, "service-" + (i + 1), uploads),
+                    param(params, "serviceImageExisting_" + i),
+                    text(existingImages.path(i), "src"));
+            if (allBlank(title, description, image)) {
+                continue;
             }
+
+            ObjectNode item = objectAtOrNew(existingItems, i);
+            put(item, "title", title);
+            put(item, "description", description);
+            items.add(item);
+
+            ObjectNode imageNode = objectAtOrNew(existingImages, i);
+            if (isBlank(image)) {
+                imageNode.remove("src");
+            } else {
+                imageNode.put("src", image);
+            }
+            images.add(imageNode);
         }
+        services.set("services", items);
+        services.set("serviceImages", images);
     }
 
     private void applyTransactions(Long projectId, ObjectNode root, Map<String, String[]> params,
@@ -228,21 +274,41 @@ public class NorthlightWebsiteAdapter {
         put(root, "heading", param(params, "transactionsHeading"));
         put(root, "subheading", param(params, "transactionsSubheading"));
 
-        ArrayNode transactions = array(root, "transactions");
-        for (int i = 0; i < transactions.size(); i++) {
-            ObjectNode tx = objectAt(transactions, i);
-            put(tx, "location", param(params, "transactionLocation_" + i));
-            put(tx, "units", param(params, "transactionUnits_" + i));
-            ArrayNode images = array(tx, "images");
-            for (int j = 0; j < images.size(); j++) {
-                String uploadName = "transactionImage_" + i + "_" + j;
-                String publicPath = uploadedPublicPath(projectId, uploadName,
-                        "transaction-" + (i + 1) + "-" + (j + 1), uploads);
-                if (publicPath != null) {
-                    images.set(j, objectMapper.getNodeFactory().textNode(publicPath));
+        ArrayNode existingTransactions = array(root, "transactions");
+        ArrayNode transactions = objectMapper.createArrayNode();
+        for (int i : indexes(params, "transactionLocation_", "transactionUnits_", "transactionImageExisting_")) {
+            String location = param(params, "transactionLocation_" + i);
+            String units = param(params, "transactionUnits_" + i);
+            ArrayNode images = objectMapper.createArrayNode();
+            List<Integer> imageIndexes = transactionImageIndexes(params, uploads, i);
+            boolean imagesTouched = !isBlank(param(params, "transactionImagesTouched_" + i));
+            if (imageIndexes.isEmpty() && !imagesTouched && existingTransactions.path(i).path("images").isArray()) {
+                for (JsonNode existingImage : existingTransactions.path(i).path("images")) {
+                    if (!isBlank(existingImage.asText())) {
+                        images.add(existingImage.asText());
+                    }
                 }
             }
+            for (int j : imageIndexes) {
+                String uploadName = "transactionImage_" + i + "_" + j;
+                String publicPath = firstNonBlank(
+                        uploadedPublicPath(projectId, uploadName, "transaction-" + (i + 1) + "-" + (j + 1), uploads),
+                        param(params, "transactionImageExisting_" + i + "_" + j));
+                if (!isBlank(publicPath)) {
+                    images.add(publicPath);
+                }
+            }
+            if (allBlank(location, units) && images.isEmpty()) {
+                continue;
+            }
+
+            ObjectNode tx = objectAtOrNew(existingTransactions, i);
+            put(tx, "location", location);
+            put(tx, "units", units);
+            tx.set("images", images);
+            transactions.add(tx);
         }
+        root.set("transactions", transactions);
     }
 
     private void applyContact(ObjectNode contact, Map<String, String[]> params) {
@@ -376,6 +442,14 @@ public class NorthlightWebsiteAdapter {
         return created;
     }
 
+    private ObjectNode objectAtOrNew(ArrayNode array, int index) {
+        JsonNode child = array.get(index);
+        if (child instanceof ObjectNode objectNode) {
+            return objectNode.deepCopy();
+        }
+        return objectMapper.createObjectNode();
+    }
+
     private String text(JsonNode root, String... path) {
         JsonNode cursor = root;
         for (String segment : path) {
@@ -415,6 +489,70 @@ public class NorthlightWebsiteAdapter {
         if (value != null) {
             node.put(field, value);
         }
+    }
+
+    private List<Integer> indexes(Map<String, String[]> params, String... prefixes) {
+        SortedSet<Integer> indexes = new TreeSet<>();
+        for (String key : params.keySet()) {
+            for (String prefix : prefixes) {
+                if (key.startsWith(prefix)) {
+                    Integer index = leadingInteger(key.substring(prefix.length()));
+                    if (index != null) {
+                        indexes.add(index);
+                    }
+                }
+            }
+        }
+        return List.copyOf(indexes);
+    }
+
+    private List<Integer> transactionImageIndexes(Map<String, String[]> params,
+                                                  MultiValueMap<String, MultipartFile> uploads,
+                                                  int transactionIndex) {
+        String existingPrefix = "transactionImageExisting_" + transactionIndex + "_";
+        String uploadPrefix = "transactionImage_" + transactionIndex + "_";
+        SortedSet<Integer> indexes = new TreeSet<>();
+        params.keySet().stream()
+                .filter(key -> key.startsWith(existingPrefix))
+                .map(key -> leadingInteger(key.substring(existingPrefix.length())))
+                .filter(Objects::nonNull)
+                .forEach(indexes::add);
+        if (uploads != null) {
+            uploads.keySet().stream()
+                    .filter(key -> key.startsWith(uploadPrefix))
+                    .map(key -> leadingInteger(key.substring(uploadPrefix.length())))
+                    .filter(Objects::nonNull)
+                    .forEach(indexes::add);
+        }
+        return indexes.stream().sorted(Comparator.naturalOrder()).toList();
+    }
+
+    private Integer leadingInteger(String value) {
+        if (value == null || value.isBlank() || !Character.isDigit(value.charAt(0))) {
+            return null;
+        }
+        int end = 0;
+        while (end < value.length() && Character.isDigit(value.charAt(end))) {
+            end++;
+        }
+        return Integer.parseInt(value.substring(0, end));
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (!isBlank(value)) {
+                return value;
+            }
+        }
+        return "";
+    }
+
+    private boolean allBlank(String... values) {
+        return Arrays.stream(values).allMatch(this::isBlank);
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private List<NorthlightWebsiteForm.Pillar> pillars(JsonNode array) {
