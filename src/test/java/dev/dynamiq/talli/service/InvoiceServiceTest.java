@@ -14,7 +14,7 @@ import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
+import org.mockito.ArgumentCaptor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -211,7 +211,7 @@ class InvoiceServiceTest {
         TimeEntry e2 = entry(p, LocalDateTime.of(2026, 4, 10, 14, 0), 30);
         stubEntriesFor(p.getId(), List.of(e1, e2));
 
-        Invoice invoice = service.generateForClient(1L, periodStart, periodEnd);
+        Invoice invoice = service.generateForClient(1L, periodStart, periodEnd, null);
 
         assertThat(invoice.getClient()).isSameAs(client);
         assertThat(invoice.getCurrency()).isEqualTo("USD");
@@ -235,6 +235,23 @@ class InvoiceServiceTest {
     }
 
     @Test
+    void generateForClient_setsInvoiceNotes() {
+        LocalDate periodStart = LocalDate.of(2026, 4, 1);
+        LocalDate periodEnd = LocalDate.of(2026, 4, 30);
+
+        Project p = hourlyProject(10L, "Alpha", "USD", "100");
+        when(clientRepository.findById(1L)).thenReturn(Optional.of(client));
+        when(projectRepository.findByClientId(1L)).thenReturn(List.of(p));
+        when(invoiceRepository.findAll()).thenReturn(List.of());
+        stubEntriesFor(p.getId(),
+                List.of(entry(p, LocalDateTime.of(2026, 4, 5, 9, 0), 60)));
+
+        Invoice invoice = service.generateForClient(1L, periodStart, periodEnd, "  Monthly platform work.  ");
+
+        assertThat(invoice.getNotes()).isEqualTo("Monthly platform work.");
+    }
+
+    @Test
     void generateForClient_multipleProjects_oneLinePerEligibleProject() {
         LocalDate periodStart = LocalDate.of(2026, 4, 1);
         LocalDate periodEnd = LocalDate.of(2026, 4, 30);
@@ -250,7 +267,7 @@ class InvoiceServiceTest {
         stubEntriesFor(beta.getId(),
                 List.of(entry(beta,  LocalDateTime.of(2026, 4, 6, 9, 0), 120)));     // $300
 
-        Invoice invoice = service.generateForClient(1L, periodStart, periodEnd);
+        Invoice invoice = service.generateForClient(1L, periodStart, periodEnd, null);
 
         assertThat(invoice.getAmount()).isEqualByComparingTo("400.00");
         verify(invoiceItemRepository, times(2)).save(any(InvoiceItem.class));
@@ -276,7 +293,7 @@ class InvoiceServiceTest {
         stubEntriesFor(hourly.getId(),
                 List.of(entry(hourly, LocalDateTime.of(2026, 4, 5, 9, 0), 60)));
 
-        Invoice invoice = service.generateForClient(1L, periodStart, periodEnd);
+        Invoice invoice = service.generateForClient(1L, periodStart, periodEnd, null);
 
         assertThat(invoice.getAmount()).isEqualByComparingTo("100.00");
         verify(invoiceItemRepository, times(1)).save(any(InvoiceItem.class));
@@ -290,7 +307,7 @@ class InvoiceServiceTest {
         stubEntriesFor(p.getId(), List.of());
 
         assertThatThrownBy(() -> service.generateForClient(1L,
-                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30)))
+                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No billable work");
         verify(invoiceRepository, never()).save(any(Invoice.class));
@@ -309,7 +326,7 @@ class InvoiceServiceTest {
                 List.of(entry(eur, LocalDateTime.of(2026, 4, 6, 9, 0), 60)));
 
         assertThatThrownBy(() -> service.generateForClient(1L,
-                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30)))
+                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("mixed currencies");
     }
@@ -319,7 +336,7 @@ class InvoiceServiceTest {
         when(clientRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.generateForClient(99L,
-                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30)))
+                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), null))
                 .isInstanceOf(java.util.NoSuchElementException.class);
     }
 
@@ -457,7 +474,7 @@ class InvoiceServiceTest {
                 .thenReturn(List.of(expense));
 
         Invoice result = service.generateForClient(1L,
-                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30));
+                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), null);
 
         // 1h @ $100 = $100 + $75 expense = $175 total
         assertThat(result.getAmount()).isEqualByComparingTo("175.00");
@@ -484,8 +501,120 @@ class InvoiceServiceTest {
                 .thenReturn(List.of(expense));
 
         Invoice result = service.generateForClient(1L,
-                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30));
+                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), null);
 
         assertThat(result.getAmount()).isEqualByComparingTo("50.00");
+    }
+
+    @Test
+    void generateFixed_rejectsAmountAboveRemainingContract() {
+        Project project = fixedProject(20L, "Launch Site", "USD", "5000.00");
+        when(projectRepository.findById(20L)).thenReturn(Optional.of(project));
+        when(invoiceItemRepository.sumTotalByProjectId(20L)).thenReturn(new BigDecimal("4750.00"));
+
+        assertThatThrownBy(() -> service.generateFixed(20L, new BigDecimal("500.00"), null, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("exceeds remaining contract amount");
+        verify(invoiceRepository, never()).save(any(Invoice.class));
+        verify(invoiceItemRepository, never()).save(any(InvoiceItem.class));
+    }
+
+    @Test
+    void generateFixed_setsInvoiceNotes() {
+        Project project = fixedProject(20L, "Launch Site", "USD", "5000.00");
+        when(projectRepository.findById(20L)).thenReturn(Optional.of(project));
+        when(invoiceRepository.findAll()).thenReturn(List.of());
+        when(invoiceItemRepository.sumTotalByProjectId(20L)).thenReturn(new BigDecimal("1000.00"));
+
+        Invoice invoice = service.generateFixed(20L, new BigDecimal("500.00"), "Milestone", "  Final delivery notes.  ");
+
+        assertThat(invoice.getNotes()).isEqualTo("Final delivery notes.");
+    }
+
+    @Test
+    void generateDeposit_createsInvoiceWithNonRefundableTerms() {
+        Project project = fixedProject(20L, "Launch Site", "USD", "5000.00");
+        when(projectRepository.findById(20L)).thenReturn(Optional.of(project));
+        when(invoiceRepository.findAll()).thenReturn(List.of());
+        when(invoiceItemRepository.sumTotalByProjectId(20L)).thenReturn(new BigDecimal("1000.00"));
+
+        Invoice invoice = service.generateDeposit(20L, new BigDecimal("750.00"), true,
+                "Initial deposit", "Project kickoff is scheduled for Monday.");
+
+        assertThat(invoice.getClient()).isSameAs(client);
+        assertThat(invoice.getCurrency()).isEqualTo("USD");
+        assertThat(invoice.getAmount()).isEqualByComparingTo("750.00");
+        assertThat(invoice.getNotes()).isEqualTo("""
+                Non-refundable deposit: once work starts, this deposit is non-refundable and will be applied toward the project balance.
+
+                Project kickoff is scheduled for Monday.""");
+
+        ArgumentCaptor<InvoiceItem> itemCaptor = ArgumentCaptor.forClass(InvoiceItem.class);
+        verify(invoiceItemRepository).save(itemCaptor.capture());
+        InvoiceItem item = itemCaptor.getValue();
+        assertThat(item.getProject()).isSameAs(project);
+        assertThat(item.getDescription()).isEqualTo("Initial deposit");
+        assertThat(item.getUnit()).isEqualTo("deposit");
+        assertThat(item.getUnitPrice()).isEqualByComparingTo("750.00");
+        assertThat(item.getTotal()).isEqualByComparingTo("750.00");
+    }
+
+    @Test
+    void generateDeposit_canCreateRefundableDepositInvoice() {
+        Project project = fixedProject(20L, "Launch Site", "USD", "5000.00");
+        when(projectRepository.findById(20L)).thenReturn(Optional.of(project));
+        when(invoiceRepository.findAll()).thenReturn(List.of());
+        when(invoiceItemRepository.sumTotalByProjectId(20L)).thenReturn(BigDecimal.ZERO);
+
+        Invoice invoice = service.generateDeposit(20L, new BigDecimal("500.00"), false, null, " ");
+
+        assertThat(invoice.getNotes()).isEqualTo("Deposit will be applied toward the project balance.");
+
+        ArgumentCaptor<InvoiceItem> itemCaptor = ArgumentCaptor.forClass(InvoiceItem.class);
+        verify(invoiceItemRepository).save(itemCaptor.capture());
+        InvoiceItem item = itemCaptor.getValue();
+        assertThat(item.getDescription()).isEqualTo("Launch Site - deposit");
+        assertThat(item.getUnit()).isEqualTo("deposit");
+    }
+
+    @Test
+    void generateDeposit_rejectsAmountAboveRemainingContract() {
+        Project project = fixedProject(20L, "Launch Site", "USD", "5000.00");
+        when(projectRepository.findById(20L)).thenReturn(Optional.of(project));
+        when(invoiceItemRepository.sumTotalByProjectId(20L)).thenReturn(new BigDecimal("4750.00"));
+
+        assertThatThrownBy(() -> service.generateDeposit(20L, new BigDecimal("500.00"), true, null, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Deposit amount")
+                .hasMessageContaining("exceeds remaining contract amount");
+        verify(invoiceRepository, never()).save(any(Invoice.class));
+        verify(invoiceItemRepository, never()).save(any(InvoiceItem.class));
+    }
+
+    @Test
+    void updateNotes_setsAndClearsInvoiceNotes() {
+        Invoice invoice = new Invoice();
+        invoice.setId(88L);
+        when(invoiceRepository.findById(88L)).thenReturn(Optional.of(invoice));
+
+        service.updateNotes(88L, "  Add this to the PDF.  ");
+
+        assertThat(invoice.getNotes()).isEqualTo("Add this to the PDF.");
+
+        service.updateNotes(88L, " ");
+
+        assertThat(invoice.getNotes()).isNull();
+    }
+
+    private Project fixedProject(Long id, String name, String currency, String contractAmount) {
+        Project p = new Project();
+        p.setId(id);
+        p.setName(name);
+        p.setClient(client);
+        p.setCurrency(currency);
+        p.setRateType("fixed");
+        p.setCurrentRate(new BigDecimal(contractAmount));
+        p.setBillable(true);
+        return p;
     }
 }

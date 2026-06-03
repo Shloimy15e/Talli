@@ -185,10 +185,11 @@ public class InvoiceController {
     public String generate(@RequestParam("clientId") Long clientId,
             @RequestParam("periodStart") String periodStart,
             @RequestParam("periodEnd") String periodEnd,
+            @RequestParam(value = "notes", required = false) String notes,
             RedirectAttributes flash) {
         try {
             Invoice invoice = invoiceService.generateForClient(
-                    clientId, LocalDate.parse(periodStart), LocalDate.parse(periodEnd));
+                    clientId, LocalDate.parse(periodStart), LocalDate.parse(periodEnd), notes);
             return "redirect:/invoices/" + invoice.getId();
         } catch (IllegalStateException e) {
             flash.addFlashAttribute("generateError", e.getMessage());
@@ -200,14 +201,40 @@ public class InvoiceController {
     public String generateFixed(@RequestParam("projectId") Long projectId,
             @RequestParam("amount") BigDecimal amount,
             @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "notes", required = false) String notes,
             RedirectAttributes flash) {
         try {
-            Invoice invoice = invoiceService.generateFixed(projectId, amount, description);
+            Invoice invoice = invoiceService.generateFixed(projectId, amount, description, notes);
             return "redirect:/invoices/" + invoice.getId();
         } catch (IllegalArgumentException | IllegalStateException e) {
             flash.addFlashAttribute("generateError", e.getMessage());
             return "redirect:/projects/" + projectId;
         }
+    }
+
+    @PostMapping("/generate-deposit")
+    public String generateDeposit(@RequestParam("projectId") Long projectId,
+            @RequestParam("amount") BigDecimal amount,
+            @RequestParam(value = "nonRefundable", defaultValue = "false") boolean nonRefundable,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "notes", required = false) String notes,
+            RedirectAttributes flash) {
+        try {
+            Invoice invoice = invoiceService.generateDeposit(projectId, amount, nonRefundable, description, notes);
+            return "redirect:/invoices/" + invoice.getId();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            flash.addFlashAttribute("generateError", e.getMessage());
+            return "redirect:/projects/" + projectId;
+        }
+    }
+
+    @PostMapping("/{id}/notes")
+    public String updateNotes(@PathVariable Long id,
+            @RequestParam(value = "notes", required = false) String notes,
+            RedirectAttributes flash) {
+        invoiceService.updateNotes(id, notes);
+        flash.addFlashAttribute("invoiceSuccess", "Invoice notes updated.");
+        return "redirect:/invoices/" + id;
     }
 
     @PostMapping("/{id}/pdf")

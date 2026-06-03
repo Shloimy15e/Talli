@@ -23,8 +23,9 @@
         .header .right { display: table-cell; vertical-align: top; width: 50%; text-align: right; }
 
         .brand-row { border-collapse: collapse; }
-        .brand-row td { padding: 0; vertical-align: middle; }
-        .brand-row td.logo { padding-right: 10pt; }
+        .brand-row td { padding: 0; vertical-align: top; }
+        .brand-row td.logo { padding-right: 12pt; padding-top: 1pt; width: 32pt; }
+        .brand-row img { display: block; }
         .brand-name {
             font-size: 16pt;
             font-weight: bold;
@@ -197,7 +198,7 @@
         <table class="brand-row">
             <tr>
                 <td class="logo">
-                    <img src="dynamiq-logo.svg" width="40" height="40" alt="Dynamiq" />
+                    <img src="dynamiq-logo.svg" width="32" height="32" alt="Dynamiq" />
                 </td>
                 <td>
                     <div class="brand-name" th:text="${businessName}">Dynamiq Solutions Inc</div>

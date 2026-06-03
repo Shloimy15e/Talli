@@ -30,6 +30,11 @@ import java.util.stream.Collectors;
 @Service
 public class InvoiceService {
 
+    private static final String NON_REFUNDABLE_DEPOSIT_TERMS =
+            "Non-refundable deposit: once work starts, this deposit is non-refundable and will be applied toward the project balance.";
+    private static final String REFUNDABLE_DEPOSIT_TERMS =
+            "Deposit will be applied toward the project balance.";
+
     private final InvoiceRepository invoiceRepository;
     private final InvoiceItemRepository invoiceItemRepository;
     private final TimeEntryRepository timeEntryRepository;
@@ -149,7 +154,7 @@ public class InvoiceService {
      * Whole operation is atomic.
      */
     @Transactional
-    public Invoice generateForClient(Long clientId, LocalDate periodStart, LocalDate periodEnd) {
+    public Invoice generateForClient(Long clientId, LocalDate periodStart, LocalDate periodEnd, String notes) {
         Client client = clientRepository.findById(clientId).orElseThrow();
         List<Project> projects = projectRepository.findByClientId(clientId);
 
@@ -205,6 +210,7 @@ public class InvoiceService {
         }
 
         Invoice invoice = newInvoiceShell(client, periodStart, periodEnd, currency);
+        invoice.setNotes(cleanNotes(notes));
 
         BigDecimal total = BigDecimal.ZERO;
         for (EligibleLine line : lines) {
@@ -313,36 +319,67 @@ public class InvoiceService {
     }
 
     /**
-     * Build and persist a fresh invoice with the standard header fields.
-     * Callers fill in line items + total afterwards.
-     */
-    /**
-     * Generate an invoice for a fixed-rate project for an arbitrary amount.
-     * Used for deposits, milestone payments, or final delivery billing.
-     * The amount is the user's call — no contract-cap enforcement here,
-     * the UI surfaces "remaining to bill" so the operator knows.
+     * Generate an earned-revenue invoice for a fixed-rate project.
+     * Deposit invoices count against the same project contract total, so
+     * milestone/final billing cannot accidentally exceed the contract value.
      */
     @Transactional
-    public Invoice generateFixed(Long projectId, BigDecimal amount, String description) {
+    public Invoice generateFixed(Long projectId, BigDecimal amount, String description, String notes) {
         if (amount == null || amount.signum() <= 0) {
             throw new IllegalArgumentException("Amount must be greater than zero");
         }
         Project project = projectRepository.findById(projectId).orElseThrow();
-        if (!project.isFixed()) {
-            throw new IllegalStateException("Project is not fixed-rate");
-        }
-        Client client = project.getClient();
-        LocalDate today = LocalDate.now();
+        validateFixedProjectCanBill(project, amount, "Invoice amount");
 
-        Invoice invoice = newInvoiceShell(client, today, today, project.getCurrency());
+        return createSingleProjectInvoice(project, amount,
+                description != null && !description.isBlank()
+                        ? description
+                        : project.getName() + " - contract work",
+                "fixed", cleanNotes(notes));
+    }
+
+    /**
+     * Generate an invoice requesting a fixed-project deposit.
+     * Deposit invoices count against the same project contract total, so later
+     * milestone/final billing cannot accidentally exceed the contract value.
+     */
+    @Transactional
+    public Invoice generateDeposit(Long projectId, BigDecimal amount, boolean nonRefundable,
+            String description, String notes) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero");
+        }
+        Project project = projectRepository.findById(projectId).orElseThrow();
+        validateFixedProjectCanBill(project, amount, "Deposit amount");
+
+        String depositTerms = nonRefundable ? NON_REFUNDABLE_DEPOSIT_TERMS : REFUNDABLE_DEPOSIT_TERMS;
+        String invoiceNotes = withOptionalNotes(depositTerms, notes);
+
+        return createSingleProjectInvoice(project, amount,
+                description != null && !description.isBlank()
+                        ? description
+                        : project.getName() + " - deposit",
+                "deposit", invoiceNotes);
+    }
+
+    @Transactional
+    public Invoice updateNotes(Long invoiceId, String notes) {
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow();
+        invoice.setNotes(cleanNotes(notes));
+        return invoice;
+    }
+
+    private Invoice createSingleProjectInvoice(Project project, BigDecimal amount,
+            String description, String unit, String notes) {
+        LocalDate today = LocalDate.now();
+        Invoice invoice = newInvoiceShell(project.getClient(), today, today, project.getCurrency());
+        invoice.setNotes(notes);
 
         InvoiceItem item = new InvoiceItem();
         item.setInvoice(invoice);
         item.setProject(project);
-        item.setDescription(description != null && !description.isBlank()
-                ? description
-                : project.getName() + " — contract work");
-        item.setUnit("fixed");
+        item.setDescription(description);
+        item.setUnit(unit);
         item.setUnitCount(BigDecimal.ONE);
         item.setUnitPrice(amount);
         item.setTotal(amount);
@@ -350,6 +387,45 @@ public class InvoiceService {
 
         invoice.setAmount(amount);
         return invoiceRepository.save(invoice);
+    }
+
+    private String cleanNotes(String notes) {
+        return notes == null || notes.isBlank() ? null : notes.trim();
+    }
+
+    private String withOptionalNotes(String defaultNotes, String notes) {
+        String cleanedNotes = cleanNotes(notes);
+        return cleanedNotes == null ? defaultNotes : defaultNotes + "\n\n" + cleanedNotes;
+    }
+
+    private void validateFixedProjectCanBill(Project project, BigDecimal amount, String amountLabel) {
+        if (!Boolean.TRUE.equals(project.getBillable())) {
+            throw new IllegalStateException("Project is not billable");
+        }
+        if (!project.isFixed()) {
+            throw new IllegalStateException("Project is not fixed-rate");
+        }
+        BigDecimal contractAmount = project.contractAmount() == null ? BigDecimal.ZERO : project.contractAmount();
+        if (contractAmount.signum() <= 0) {
+            throw new IllegalStateException("Fixed project contract amount must be greater than zero");
+        }
+
+        BigDecimal remaining = remainingFixedContractAmount(project);
+        if (remaining.signum() <= 0) {
+            throw new IllegalStateException("Project contract is already fully billed");
+        }
+        if (amount.compareTo(remaining) > 0) {
+            throw new IllegalStateException(
+                    amountLabel + " (" + amount + ") exceeds remaining contract amount (" + remaining + ").");
+        }
+    }
+
+    private BigDecimal remainingFixedContractAmount(Project project) {
+        BigDecimal billedToDate = invoiceItemRepository.sumTotalByProjectId(project.getId());
+        if (billedToDate == null) {
+            billedToDate = BigDecimal.ZERO;
+        }
+        return project.contractAmount().subtract(billedToDate);
     }
 
     private Invoice newInvoiceShell(Client client, LocalDate periodStart, LocalDate periodEnd, String currency) {
