@@ -6,6 +6,7 @@ import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
 import dev.dynamiq.talli.service.ClientService.AgingBuckets;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
@@ -27,6 +28,15 @@ public class PdfService {
 
     private final SpringTemplateEngine templateEngine;
 
+    @Value("${app.business.name:Dynamiq Solutions Inc}")
+    private String businessName;
+
+    @Value("${app.business.email:info@dynamiq.dev}")
+    private String businessEmail;
+
+    @Value("${app.business.address:100 Cherry Ln, Airmont, NY 10952}")
+    private String businessAddress;
+
     public PdfService(SpringTemplateEngine templateEngine) {
         this.templateEngine = templateEngine;
     }
@@ -39,6 +49,7 @@ public class PdfService {
         ctx.setVariable("invoice", invoice);
         ctx.setVariable("items", items);
         ctx.setVariable("balance", balance);
+        addBusinessIdentity(ctx);
 
         String html = templateEngine.process("invoices/pdf", ctx);
         return htmlToPdf(html);
@@ -51,9 +62,16 @@ public class PdfService {
         ctx.setVariable("aging", aging);
         ctx.setVariable("currency", currency);
         ctx.setVariable("today", java.time.LocalDate.now());
+        addBusinessIdentity(ctx);
 
         String html = templateEngine.process("clients/statement-pdf", ctx);
         return htmlToPdf(html);
+    }
+
+    private void addBusinessIdentity(Context ctx) {
+        ctx.setVariable("businessName", businessName);
+        ctx.setVariable("businessEmail", businessEmail);
+        ctx.setVariable("businessAddress", businessAddress);
     }
 
     private byte[] htmlToPdf(String html) {

@@ -37,6 +37,15 @@ public class EmailService {
     @Value("${app.mail.from-name}")
     private String fromName;
 
+    @Value("${app.business.name:Dynamiq Solutions Inc}")
+    private String businessName;
+
+    @Value("${app.business.email:info@dynamiq.dev}")
+    private String businessEmail;
+
+    @Value("${app.business.address:100 Cherry Ln, Airmont, NY 10952}")
+    private String businessAddress;
+
     public EmailService(SpringTemplateEngine templateEngine) {
         this.templateEngine = templateEngine;
     }
@@ -152,6 +161,9 @@ public class EmailService {
         context.setVariables(variables);
         context.setVariable("fromAddress", fromAddress);
         context.setVariable("fromName", fromName);
+        context.setVariable("businessName", businessName);
+        context.setVariable("businessEmail", businessEmail);
+        context.setVariable("businessAddress", businessAddress);
         return templateEngine.process("emails/" + templateName, context);
     }
 

@@ -26,15 +26,15 @@
         .brand-row td { padding: 0; vertical-align: middle; }
         .brand-row td.logo { padding-right: 10pt; }
         .brand-name {
-            font-size: 14pt;
+            font-size: 16pt;
             font-weight: bold;
             color: #161f30;
             line-height: 1.1;
         }
-        .brand-sub {
-            font-size: 9pt;
-            color: #666;
-            margin-top: 2pt;
+        .brand-meta {
+            font-size: 8.5pt;
+            color: #555;
+            margin-top: 1pt;
         }
 
         .invoice-title {
@@ -200,8 +200,11 @@
                     <img src="dynamiq-logo.svg" width="40" height="40" alt="Dynamiq" />
                 </td>
                 <td>
-                    <div class="brand-name">Dynamiq Solutions</div>
-                    <div class="brand-sub">shloimyelbaum@gmail.com</div>
+                    <div class="brand-name" th:text="${businessName}">Dynamiq Solutions Inc</div>
+                    <div class="brand-meta">
+                        <span th:text="${businessEmail}">info@dynamiq.dev</span>
+                    </div>
+                    <div class="brand-meta" th:text="${businessAddress}">100 Cherry Ln, Airmont, NY 10952</div>
                 </td>
             </tr>
         </table>

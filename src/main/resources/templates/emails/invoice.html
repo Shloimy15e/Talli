@@ -15,15 +15,19 @@
 
           <!-- Brand bar -->
           <tr>
-            <td style="background:#161f30; padding:20px 32px;">
+            <td style="background:#161f30; padding:22px 32px;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                 <tr>
-                  <td style="color:#ffffff; font-size:18px; font-weight:600; letter-spacing:-0.01em;"
-                      th:text="${fromName}">
-                    Dynamiq Solutions
+                  <td style="color:#ffffff; font-size:19px; font-weight:700; line-height:1.25; width:70%;">
+                    <div th:text="${businessName}">Dynamiq Solutions Inc</div>
+                    <div style="margin-top:6px; color:#cbd5e1; font-size:12px; font-weight:400; line-height:1.45;">
+                      <a th:href="'mailto:' + ${businessEmail}" th:text="${businessEmail}"
+                         style="color:#cbd5e1; text-decoration:none;">info@dynamiq.dev</a><br>
+                      <span th:text="${businessAddress}">100 Cherry Ln, Airmont, NY 10952</span>
+                    </div>
                   </td>
-                  <td align="right" style="color:#ea7c28; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">
-                    Invoice
+                  <td align="right" style="color:#ffffff; font-size:12px; line-height:1.45; width:30%; vertical-align:top;">
+                    <div style="color:#ea7c28; text-transform:uppercase; letter-spacing:0.08em; font-weight:700;">Invoice</div>
                   </td>
                 </tr>
               </table>
@@ -85,7 +89,7 @@
 
               <p style="margin:24px 0 0; font-size:14px; color:#1a1a1a;">
                 Thanks,<br>
-                <span th:text="${fromName}">Dynamiq Solutions</span>
+                <span th:text="${businessName}">Dynamiq Solutions Inc</span>
               </p>
 
             </td>
@@ -95,10 +99,12 @@
           <tr>
             <td style="padding:20px 32px; background:#f8fafc; border-top:1px solid #e2e8f0; text-align:center;">
               <p style="margin:0; font-size:12px; color:#94a3b8; line-height:1.5;">
-                <span th:text="${fromName}">Dynamiq Solutions</span>
+                <span th:text="${businessName}">Dynamiq Solutions Inc</span>
                 <span style="color:#cbd5e1;">&middot;</span>
-                <a th:href="'mailto:' + ${fromAddress}" th:text="${fromAddress}"
-                   style="color:#94a3b8; text-decoration:none;">contact@example.com</a>
+                <a th:href="'mailto:' + ${businessEmail}" th:text="${businessEmail}"
+                   style="color:#94a3b8; text-decoration:none;">info@dynamiq.dev</a>
+                <span style="color:#cbd5e1;">&middot;</span>
+                <span th:text="${businessAddress}">100 Cherry Ln, Airmont, NY 10952</span>
               </p>
             </td>
           </tr>

@@ -48,7 +48,8 @@
 <!-- Header -->
 <div class="header">
     <div class="left">
-        <div class="brand-name">Dynamiq Solutions</div>
+        <div class="brand-name" th:text="${businessName}">Dynamiq Solutions Inc</div>
+        <div class="meta" th:text="${businessAddress}">100 Cherry Ln, Airmont, NY 10952</div>
         <div class="doc-title">Account Statement</div>
         <div class="meta" th:text="'Generated ' + ${#temporals.format(today, 'MMMM d, yyyy')}">Generated April 16, 2026</div>
     </div>
@@ -129,7 +130,7 @@
 </table>
 
 <div class="footer">
-    Dynamiq Solutions &#183; This statement reflects invoices as of the date generated.
+    <span th:text="${businessName}">Dynamiq Solutions Inc</span> &#183; <span th:text="${businessAddress}">100 Cherry Ln, Airmont, NY 10952</span> &#183; This statement reflects invoices as of the date generated.
 </div>
 
 </body>

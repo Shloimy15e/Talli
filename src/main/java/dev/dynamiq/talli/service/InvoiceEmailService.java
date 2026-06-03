@@ -52,7 +52,7 @@ public class InvoiceEmailService {
         Media pdf = pdfs.get(0); // newest — forOwner returns most recent first.
         byte[] bytes = mediaService.loadBytes(pdf);
 
-        String subject = "Invoice " + invoice.getReference() + " from Dynamiq Solutions";
+        String subject = "Invoice " + invoice.getReference() + " from Dynamiq Solutions Inc";
         Map<String, Object> vars = Map.of("invoice", invoice, "client", client);
 
         // BCC active users linked to this client (skip the primary recipient to avoid duplicates)
