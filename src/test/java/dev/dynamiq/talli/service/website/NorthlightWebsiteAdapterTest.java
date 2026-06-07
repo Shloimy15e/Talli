@@ -23,16 +23,15 @@ class NorthlightWebsiteAdapterTest {
     private final NorthlightWebsiteAdapter adapter = new NorthlightWebsiteAdapter(objectMapper);
 
     @Test
-    void toFormLoadsExpectedNorthlightFields() {
-        NorthlightWebsiteForm form = adapter.toForm(NorthlightWebsiteFactory.repoFiles());
+    void toEditorFormLoadsExpectedNorthlightFields() {
+        WebsiteEditorForm form = adapter.toEditorForm(NorthlightWebsiteFactory.repoFiles());
 
-        assertThat(form.homeHeroHeadline()).isEqualTo("Old headline");
-        assertThat(form.homePillars()).hasSize(1);
-        assertThat(form.homePillars().get(0).title()).isEqualTo("Understand");
-        assertThat(form.aboutFounderName()).isEqualTo("Harrison Rand");
-        assertThat(form.services()).hasSize(1);
-        assertThat(form.transactions().get(0).images()).containsExactly("/images/transactions/a.jpg");
-        assertThat(form.contactEmail()).isEqualTo("info@example.com");
+        assertThat(fieldValue(form, "homeHeroHeadline")).isEqualTo("Old headline");
+        assertThat(fieldValue(form, "homePillars__title")).isEqualTo("Understand");
+        assertThat(fieldValue(form, "aboutFounderName")).isEqualTo("Harrison Rand");
+        assertThat(fieldValue(form, "services__title")).isEqualTo("Advisory");
+        assertThat(fieldValues(form, "transactions__images")).containsExactly("/images/transactions/a.jpg");
+        assertThat(fieldValue(form, "contactEmail")).isEqualTo("info@example.com");
     }
 
     @Test
@@ -47,8 +46,8 @@ class NorthlightWebsiteAdapterTest {
                 .map(WebsiteEditorField::name)
                 .toList();
 
-        assertThat(fieldNames).contains("homePillarTitle", "homePillarDescription");
-        assertThat(fieldNames).doesNotContain("homePillarNumber");
+        assertThat(fieldNames).contains("homePillars__title", "homePillars__description");
+        assertThat(fieldNames).doesNotContain("homePillars__number");
     }
 
     @Test
@@ -95,17 +94,17 @@ class NorthlightWebsiteAdapterTest {
     @Test
     void applyAddsNewRepeatableRows() throws Exception {
         Map<String, String[]> params = NorthlightWebsiteFactory.formParams();
-        params.put("homePillarTitle_1", NorthlightWebsiteFactory.one("Execute"));
-        params.put("homePillarDescription_1", NorthlightWebsiteFactory.one("Move decisively"));
-        params.put("homeExpertiseTitle_1", NorthlightWebsiteFactory.one("Retail"));
-        params.put("aboutValueName_1", NorthlightWebsiteFactory.one("Clarity"));
-        params.put("aboutValueDescription_1", NorthlightWebsiteFactory.one("Plain-spoken advice"));
-        params.put("serviceTitle_1", NorthlightWebsiteFactory.one("Capital Markets"));
-        params.put("serviceDescription_1", NorthlightWebsiteFactory.one("Debt and equity strategy"));
-        params.put("transactionLocation_1", NorthlightWebsiteFactory.one("Brooklyn, NY"));
-        params.put("transactionUnits_1", NorthlightWebsiteFactory.one("84 Units"));
-        params.put("transactionImagesTouched_1", NorthlightWebsiteFactory.one("true"));
-        params.put("transactionImageExisting_1_0", NorthlightWebsiteFactory.one("/images/transactions/b.jpg"));
+        params.put("homePillars__title_1", NorthlightWebsiteFactory.one("Execute"));
+        params.put("homePillars__description_1", NorthlightWebsiteFactory.one("Move decisively"));
+        params.put("homeExpertiseCategories__title_1", NorthlightWebsiteFactory.one("Retail"));
+        params.put("aboutValues__name_1", NorthlightWebsiteFactory.one("Clarity"));
+        params.put("aboutValues__description_1", NorthlightWebsiteFactory.one("Plain-spoken advice"));
+        params.put("services__title_1", NorthlightWebsiteFactory.one("Capital Markets"));
+        params.put("services__description_1", NorthlightWebsiteFactory.one("Debt and equity strategy"));
+        params.put("transactions__location_1", NorthlightWebsiteFactory.one("Brooklyn, NY"));
+        params.put("transactions__units_1", NorthlightWebsiteFactory.one("84 Units"));
+        params.put("transactions__imagesTouched_1", NorthlightWebsiteFactory.one("true"));
+        params.put("transactions__imagesExisting_1_0", NorthlightWebsiteFactory.one("/images/transactions/b.jpg"));
 
         List<GithubFileChange> changes = adapter.apply(NorthlightWebsiteFactory.PROJECT_ID,
                 NorthlightWebsiteFactory.repoFiles(), params,
@@ -133,11 +132,11 @@ class NorthlightWebsiteAdapterTest {
     @Test
     void applyUploadsImageForNewServiceRow() throws Exception {
         Map<String, String[]> params = NorthlightWebsiteFactory.formParams();
-        params.put("serviceTitle_1", NorthlightWebsiteFactory.one("Capital Markets"));
-        params.put("serviceDescription_1", NorthlightWebsiteFactory.one("Debt and equity strategy"));
+        params.put("services__title_1", NorthlightWebsiteFactory.one("Capital Markets"));
+        params.put("services__description_1", NorthlightWebsiteFactory.one("Debt and equity strategy"));
         LinkedMultiValueMap<String, MultipartFile> uploads = new LinkedMultiValueMap<>();
-        uploads.add("serviceImage_1", new MockMultipartFile(
-                "serviceImage_1", "capital.webp", "image/webp", "service-image".getBytes(StandardCharsets.UTF_8)));
+        uploads.add("services__image_1", new MockMultipartFile(
+                "services__image_1", "capital.webp", "image/webp", "service-image".getBytes(StandardCharsets.UTF_8)));
 
         List<GithubFileChange> changes = adapter.apply(NorthlightWebsiteFactory.PROJECT_ID,
                 NorthlightWebsiteFactory.repoFiles(), params, uploads);
@@ -148,6 +147,7 @@ class NorthlightWebsiteAdapterTest {
         String expectedImagePath = "/images/cms/" + NorthlightWebsiteFactory.PROJECT_ID + "/service-2.webp";
 
         assertThat(services.path("serviceImages").get(1).path("src").asText()).isEqualTo(expectedImagePath);
+        assertThat(services.path("services").get(1).path("image").isMissingNode()).isTrue();
         assertThat(byPath).containsKey("public" + expectedImagePath);
     }
 
@@ -162,5 +162,29 @@ class NorthlightWebsiteAdapterTest {
                 NorthlightWebsiteFactory.repoFiles(), params, uploads))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Only JPG, PNG, and WEBP");
+    }
+
+    private String fieldValue(WebsiteEditorForm form, String name) {
+        return form.sections().stream()
+                .flatMap(section -> section.blocks().stream())
+                .flatMap(block -> block.kind().equals("repeat")
+                        ? block.repeat().items().stream().flatMap(item -> item.fields().stream())
+                        : block.fields().stream())
+                .filter(field -> field.name().equals(name))
+                .findFirst()
+                .map(WebsiteEditorField::value)
+                .orElse("");
+    }
+
+    private List<String> fieldValues(WebsiteEditorForm form, String name) {
+        return form.sections().stream()
+                .flatMap(section -> section.blocks().stream())
+                .flatMap(block -> block.kind().equals("repeat")
+                        ? block.repeat().items().stream().flatMap(item -> item.fields().stream())
+                        : block.fields().stream())
+                .filter(field -> field.name().equals(name))
+                .findFirst()
+                .map(WebsiteEditorField::values)
+                .orElse(List.of());
     }
 }

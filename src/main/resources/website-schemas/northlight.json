@@ -1,0 +1,565 @@
+{
+  "version": "talli-editor/v1",
+  "contentFiles": [
+    "content/home.json",
+    "content/about.json",
+    "content/services.json",
+    "content/transactions.json",
+    "content/contact.json"
+  ],
+  "sections": [
+    {
+      "id": "home",
+      "label": "Home page",
+      "title": "First impression",
+      "icon": "home",
+      "blocks": [
+        {
+          "type": "fields",
+          "layout": "two-column",
+          "fields": [
+            {
+              "id": "homeHeroHeadline",
+              "type": "text",
+              "label": "Main headline",
+              "placeholder": "The headline visitors see first",
+              "width": "half",
+              "source": {"file": "content/home.json", "path": "/hero/headline"},
+              "required": "Home page main headline is empty."
+            },
+            {
+              "id": "homeHeroSubheadline",
+              "type": "text",
+              "label": "Small headline above it",
+              "placeholder": "Short intro line",
+              "width": "half",
+              "source": {"file": "content/home.json", "path": "/hero/subheadline"}
+            },
+            {
+              "id": "homeHeroText",
+              "type": "textarea",
+              "label": "Intro text",
+              "placeholder": "A short paragraph introducing the company",
+              "rows": 4,
+              "width": "full",
+              "source": {"file": "content/home.json", "path": "/hero/text"}
+            }
+          ]
+        },
+        {
+          "type": "fields",
+          "layout": "two-column",
+          "fields": [
+            {
+              "id": "homeApproachTitle",
+              "type": "text",
+              "label": "Approach heading",
+              "placeholder": "Section heading",
+              "width": "half",
+              "source": {"file": "content/home.json", "path": "/approach/title"}
+            },
+            {
+              "id": "homeApproachIntro",
+              "type": "text",
+              "label": "Approach intro",
+              "placeholder": "One sentence overview",
+              "width": "half",
+              "source": {"file": "content/home.json", "path": "/approach/intro"}
+            }
+          ]
+        },
+        {
+          "type": "repeat",
+          "id": "homePillars",
+          "title": "Approach pillars",
+          "help": "Short cards that explain the way the business works.",
+          "itemLabel": "Pillar",
+          "addLabel": "Add pillar",
+          "source": {"file": "content/home.json", "path": "/approach/pillars"},
+          "computed": [
+            {"path": "/number", "value": "index", "start": 1, "format": "plain"}
+          ],
+          "fields": [
+            {
+              "id": "title",
+              "type": "text",
+              "label": "Title",
+              "placeholder": "Pillar title",
+              "width": "half",
+              "path": "/title",
+              "required": "Pillar {number} needs a title."
+            },
+            {
+              "id": "description",
+              "type": "textarea",
+              "label": "Description",
+              "placeholder": "Short explanation",
+              "rows": 3,
+              "width": "full",
+              "path": "/description"
+            }
+          ]
+        },
+        {
+          "type": "fields",
+          "layout": "two-column",
+          "fields": [
+            {
+              "id": "homePhilosophyTitle",
+              "type": "text",
+              "label": "Philosophy heading",
+              "placeholder": "Section heading",
+              "width": "half",
+              "source": {"file": "content/home.json", "path": "/philosophy/title"}
+            },
+            {
+              "id": "homeExpertiseTitle",
+              "type": "text",
+              "label": "Expertise heading",
+              "placeholder": "Section heading",
+              "width": "half",
+              "source": {"file": "content/home.json", "path": "/expertise/title"}
+            },
+            {
+              "id": "homePhilosophyParagraphs",
+              "type": "textarea",
+              "label": "Philosophy paragraphs",
+              "placeholder": "Paragraphs shown in the philosophy section",
+              "rows": 5,
+              "width": "full",
+              "source": {"file": "content/home.json", "path": "/philosophy/paragraphs"},
+              "transform": "paragraphs"
+            },
+            {
+              "id": "homeExpertiseSubtitle",
+              "type": "text",
+              "label": "Expertise intro",
+              "placeholder": "One sentence under the expertise heading",
+              "width": "full",
+              "source": {"file": "content/home.json", "path": "/expertise/subtitle"}
+            }
+          ]
+        },
+        {
+          "type": "repeat",
+          "id": "homeExpertiseCategories",
+          "title": "Expertise list",
+          "itemLabel": "Expertise",
+          "addLabel": "Add expertise",
+          "source": {"file": "content/home.json", "path": "/expertise/categories"},
+          "fields": [
+            {
+              "id": "title",
+              "type": "text",
+              "label": "Expertise",
+              "placeholder": "Expertise item",
+              "width": "full",
+              "path": "/title",
+              "required": "Expertise {number} needs text."
+            }
+          ]
+        },
+        {
+          "type": "fields",
+          "layout": "two-column",
+          "fields": [
+            {
+              "id": "homeHighlightsImage",
+              "type": "image",
+              "label": "Highlights image",
+              "width": "half",
+              "help": "JPG, PNG, or WEBP. Large photos work best.",
+              "source": {"file": "content/home.json", "path": "/highlightsImage"},
+              "upload": {
+                "directory": "public/images/cms/{projectId}",
+                "filename": "home-highlights",
+                "publicPath": "/images/cms/{projectId}/{filename}.{extension}"
+              }
+            },
+            {
+              "id": "homeImpactShowcaseImage",
+              "type": "image",
+              "label": "Impact image",
+              "width": "half",
+              "help": "JPG, PNG, or WEBP. Large photos work best.",
+              "source": {"file": "content/home.json", "path": "/impactShowcaseImage"},
+              "upload": {
+                "directory": "public/images/cms/{projectId}",
+                "filename": "home-impact",
+                "publicPath": "/images/cms/{projectId}/{filename}.{extension}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "about",
+      "label": "About",
+      "title": "Company story",
+      "icon": "building-2",
+      "blocks": [
+        {
+          "type": "fields",
+          "layout": "two-column",
+          "fields": [
+            {
+              "id": "aboutHeading",
+              "type": "text",
+              "label": "Page heading",
+              "placeholder": "About the company",
+              "width": "half",
+              "source": {"file": "content/about.json", "path": "/heading"}
+            },
+            {
+              "id": "aboutCompanyName",
+              "type": "text",
+              "label": "Company name",
+              "placeholder": "Company name",
+              "width": "half",
+              "source": {"file": "content/about.json", "path": "/companyName"}
+            },
+            {
+              "id": "aboutIntroTitle",
+              "type": "text",
+              "label": "Intro heading",
+              "placeholder": "Section heading",
+              "width": "half",
+              "source": {"file": "content/about.json", "path": "/intro/title"}
+            },
+            {
+              "id": "aboutFounderName",
+              "type": "text",
+              "label": "Founder name",
+              "placeholder": "Founder name",
+              "width": "half",
+              "source": {"file": "content/about.json", "path": "/founder/name"}
+            },
+            {
+              "id": "aboutFounderTitle",
+              "type": "text",
+              "label": "Founder title",
+              "placeholder": "Founder title",
+              "width": "half",
+              "source": {"file": "content/about.json", "path": "/founder/title"}
+            },
+            {
+              "id": "aboutFounderImage",
+              "type": "image",
+              "label": "Founder photo",
+              "width": "half",
+              "help": "JPG, PNG, or WEBP.",
+              "source": {"file": "content/about.json", "path": "/founder/image/src"},
+              "upload": {
+                "directory": "public/images/cms/{projectId}",
+                "filename": "about-founder",
+                "publicPath": "/images/cms/{projectId}/{filename}.{extension}"
+              }
+            },
+            {
+              "id": "aboutIntroParagraphs",
+              "type": "textarea",
+              "label": "Intro paragraphs",
+              "placeholder": "Main about page introduction",
+              "rows": 5,
+              "width": "full",
+              "source": {"file": "content/about.json", "path": "/intro/paragraphs"},
+              "transform": "paragraphs"
+            },
+            {
+              "id": "aboutFounderBio",
+              "type": "textarea",
+              "label": "Founder bio",
+              "placeholder": "Short biography",
+              "rows": 5,
+              "width": "full",
+              "source": {"file": "content/about.json", "path": "/founder/bio"},
+              "transform": "paragraphs"
+            }
+          ]
+        },
+        {
+          "type": "repeat",
+          "id": "aboutValues",
+          "title": "Values",
+          "help": "A short list shown on the about page.",
+          "itemLabel": "Value",
+          "addLabel": "Add value",
+          "source": {"file": "content/about.json", "path": "/values/list"},
+          "fields": [
+            {
+              "id": "name",
+              "type": "text",
+              "label": "Name",
+              "placeholder": "Value name",
+              "width": "half",
+              "path": "/name",
+              "required": "Value {number} needs a name."
+            },
+            {
+              "id": "description",
+              "type": "text",
+              "label": "Description",
+              "placeholder": "Short description",
+              "width": "half",
+              "path": "/description"
+            }
+          ]
+        },
+        {
+          "type": "fields",
+          "layout": "two-column",
+          "fields": [
+            {
+              "id": "aboutWhatSetsUsApartTitle",
+              "type": "text",
+              "label": "What sets us apart heading",
+              "placeholder": "Section heading",
+              "width": "half",
+              "source": {"file": "content/about.json", "path": "/whatSetsUsApart/title"}
+            },
+            {
+              "id": "aboutChoosingNorthlightTitle",
+              "type": "text",
+              "label": "Why choose us heading",
+              "placeholder": "Section heading",
+              "width": "half",
+              "source": {"file": "content/about.json", "path": "/choosingNorthlight/title"}
+            },
+            {
+              "id": "aboutWhatSetsUsApartContent",
+              "type": "textarea",
+              "label": "What sets us apart text",
+              "placeholder": "Supporting copy",
+              "rows": 4,
+              "width": "half",
+              "source": {"file": "content/about.json", "path": "/whatSetsUsApart/content"}
+            },
+            {
+              "id": "aboutChoosingNorthlightContent",
+              "type": "textarea",
+              "label": "Why choose us text",
+              "placeholder": "Supporting copy",
+              "rows": 4,
+              "width": "half",
+              "source": {"file": "content/about.json", "path": "/choosingNorthlight/content"}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "services",
+      "label": "Services",
+      "title": "What the business offers",
+      "icon": "briefcase-business",
+      "blocks": [
+        {
+          "type": "fields",
+          "layout": "two-column",
+          "fields": [
+            {
+              "id": "servicesIntroTitle",
+              "type": "text",
+              "label": "Services heading",
+              "placeholder": "Section heading",
+              "width": "half",
+              "source": {"file": "content/services.json", "path": "/intro/title"}
+            },
+            {
+              "id": "servicesIntroSubtitle",
+              "type": "text",
+              "label": "Services subheading",
+              "placeholder": "Short subheading",
+              "width": "half",
+              "source": {"file": "content/services.json", "path": "/intro/subtitle"}
+            },
+            {
+              "id": "servicesIntroParagraph",
+              "type": "textarea",
+              "label": "Services intro",
+              "placeholder": "Paragraph shown before the service list",
+              "rows": 4,
+              "width": "full",
+              "source": {"file": "content/services.json", "path": "/intro/paragraph"}
+            }
+          ]
+        },
+        {
+          "type": "repeat",
+          "id": "services",
+          "title": "Service cards",
+          "help": "Each service can include a title, description, and image.",
+          "itemLabel": "Service",
+          "addLabel": "Add service",
+          "source": {"file": "content/services.json", "path": "/services"},
+          "fields": [
+            {
+              "id": "title",
+              "type": "text",
+              "label": "Title",
+              "placeholder": "Service title",
+              "width": "half",
+              "path": "/title",
+              "required": "Service {number} needs a title."
+            },
+            {
+              "id": "description",
+              "type": "textarea",
+              "label": "Description",
+              "placeholder": "What this service includes",
+              "rows": 4,
+              "width": "full",
+              "path": "/description"
+            },
+            {
+              "id": "image",
+              "type": "image",
+              "label": "Image",
+              "path": "/image/src",
+              "upload": {
+                "directory": "public/images/cms/{projectId}",
+                "filename": "service-{rowNumber}",
+                "publicPath": "/images/cms/{projectId}/{filename}.{extension}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "transactions",
+      "label": "Transactions",
+      "title": "Project showcase",
+      "icon": "gallery-horizontal-end",
+      "blocks": [
+        {
+          "type": "fields",
+          "layout": "two-column",
+          "fields": [
+            {
+              "id": "transactionsHeading",
+              "type": "text",
+              "label": "Showcase heading",
+              "placeholder": "Section heading",
+              "width": "half",
+              "source": {"file": "content/transactions.json", "path": "/heading"}
+            },
+            {
+              "id": "transactionsSubheading",
+              "type": "text",
+              "label": "Showcase subheading",
+              "placeholder": "Short subheading",
+              "width": "half",
+              "source": {"file": "content/transactions.json", "path": "/subheading"}
+            }
+          ]
+        },
+        {
+          "type": "repeat",
+          "id": "transactions",
+          "title": "Transactions",
+          "help": "Locations, units, and images shown in the project gallery.",
+          "itemLabel": "Transaction",
+          "addLabel": "Add transaction",
+          "source": {"file": "content/transactions.json", "path": "/transactions"},
+          "fields": [
+            {
+              "id": "location",
+              "type": "text",
+              "label": "Location",
+              "placeholder": "City, state",
+              "width": "half",
+              "path": "/location",
+              "required": "Transaction {number} needs a location."
+            },
+            {
+              "id": "units",
+              "type": "text",
+              "label": "Units",
+              "placeholder": "120 units",
+              "width": "half",
+              "path": "/units"
+            },
+            {
+              "id": "images",
+              "type": "imageList",
+              "label": "Images",
+              "path": "/images",
+              "upload": {
+                "directory": "public/images/cms/{projectId}",
+                "filename": "transaction-{rowNumber}-{imageNumber}",
+                "publicPath": "/images/cms/{projectId}/{filename}.{extension}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "contact",
+      "label": "Contact",
+      "title": "Contact details",
+      "icon": "mail",
+      "blocks": [
+        {
+          "type": "fields",
+          "layout": "two-column",
+          "fields": [
+            {
+              "id": "contactHeading",
+              "type": "text",
+              "label": "Contact heading",
+              "placeholder": "Contact heading",
+              "width": "half",
+              "source": {"file": "content/contact.json", "path": "/heading"}
+            },
+            {
+              "id": "contactEmail",
+              "type": "email",
+              "label": "Email address",
+              "placeholder": "info@example.com",
+              "width": "half",
+              "source": {"file": "content/contact.json", "path": "/footer/email"},
+              "required": "Contact email is empty."
+            },
+            {
+              "id": "contactText",
+              "type": "textarea",
+              "label": "Main contact text",
+              "placeholder": "Primary contact message",
+              "rows": 4,
+              "width": "half",
+              "source": {"file": "content/contact.json", "path": "/text"}
+            },
+            {
+              "id": "contactSubtext",
+              "type": "textarea",
+              "label": "Secondary contact text",
+              "placeholder": "Optional supporting message",
+              "rows": 4,
+              "width": "half",
+              "source": {"file": "content/contact.json", "path": "/subtext"}
+            },
+            {
+              "id": "contactAddress",
+              "type": "text",
+              "label": "Address",
+              "placeholder": "Business address",
+              "width": "half",
+              "source": {"file": "content/contact.json", "path": "/footer/address"}
+            },
+            {
+              "id": "contactCopyright",
+              "type": "text",
+              "label": "Footer copyright",
+              "placeholder": "Copyright line",
+              "width": "half",
+              "source": {"file": "content/contact.json", "path": "/footer/copyright"}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
