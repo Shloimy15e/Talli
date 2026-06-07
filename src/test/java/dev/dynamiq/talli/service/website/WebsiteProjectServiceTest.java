@@ -8,11 +8,16 @@ import dev.dynamiq.talli.service.github.GithubRepositoryClient;
 import dev.dynamiq.talli.support.factory.ProjectFactory;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class WebsiteProjectServiceTest {
@@ -112,6 +117,34 @@ class WebsiteProjectServiceTest {
                 .hasMessageContaining("GitHub App is not installed")
                 .hasMessageContaining("https://github.com/owner/repo")
                 .hasMessageContaining("GITHUB_APP_ID");
+    }
+
+    @Test
+    void connectVerifiesSchemaDeclaredContentFiles() {
+        Project project = ProjectFactory.configuredWebsiteProject();
+        ProjectRepository projects = mock(ProjectRepository.class);
+        GithubRepositoryClient github = mock(GithubRepositoryClient.class);
+        WebsiteContentAdapters adapters = mock(WebsiteContentAdapters.class);
+        WebsiteContentAdapter adapter = mock(WebsiteContentAdapter.class);
+
+        when(projects.findById(project.getId())).thenReturn(Optional.of(project));
+        when(github.findInstallationId("owner", "repo")).thenReturn(123L);
+        when(github.branchHeadSha("owner", "repo", "main", 123L)).thenReturn("sha");
+        when(adapters.require(project.getWebsiteType())).thenReturn(adapter);
+        when(adapter.expectedPaths()).thenReturn(List.of("talli/editor.schema.json"));
+        when(adapter.additionalPaths(any())).thenReturn(List.of("content/home.json"));
+        when(github.readFile(eq("owner"), eq("repo"), eq("main"), eq(123L), eq("talli/editor.schema.json")))
+                .thenReturn("schema".getBytes(StandardCharsets.UTF_8));
+        when(github.readFile(eq("owner"), eq("repo"), eq("main"), eq(123L), eq("content/home.json")))
+                .thenReturn("home".getBytes(StandardCharsets.UTF_8));
+
+        WebsiteProjectService service = new WebsiteProjectService(projects, github, adapters);
+
+        service.connect(project.getId());
+
+        assertThat(project.getGithubInstallationId()).isEqualTo(123L);
+        verify(github).readFile("owner", "repo", "main", 123L, "talli/editor.schema.json");
+        verify(github).readFile("owner", "repo", "main", 123L, "content/home.json");
     }
 
 }

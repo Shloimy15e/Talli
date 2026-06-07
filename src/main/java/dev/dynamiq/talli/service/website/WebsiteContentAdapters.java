@@ -18,7 +18,9 @@ public class WebsiteContentAdapters {
             byType.put(adapter.type(), adapter);
         }
         this.adapters = Map.copyOf(byType);
-        this.defaultType = byType.keySet().stream().sorted().findFirst()
+        this.defaultType = byType.containsKey(TalliWebsiteSchemaAdapter.TYPE)
+                ? TalliWebsiteSchemaAdapter.TYPE
+                : byType.keySet().stream().sorted().findFirst()
                 .orElseThrow(() -> new IllegalStateException("No website content adapters are registered."));
     }
 

@@ -8,6 +8,9 @@ import dev.dynamiq.talli.service.github.GithubRepositoryClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -72,9 +75,17 @@ public class WebsiteProjectService {
 
         github.branchHeadSha(project.getGithubOwner(), project.getGithubRepo(), project.getGithubBranch(), installationId);
         WebsiteContentAdapter adapter = adapters.require(project.getWebsiteType());
+        Map<String, byte[]> files = new LinkedHashMap<>();
         for (String path : adapter.expectedPaths()) {
-            github.readFile(project.getGithubOwner(), project.getGithubRepo(), project.getGithubBranch(),
-                    installationId, path);
+            files.put(path, github.readFile(project.getGithubOwner(), project.getGithubRepo(), project.getGithubBranch(),
+                    installationId, path));
+        }
+        List<String> additionalPaths = adapter.additionalPaths(files);
+        if (additionalPaths != null) {
+            for (String path : additionalPaths) {
+                files.computeIfAbsent(path, key -> github.readFile(project.getGithubOwner(), project.getGithubRepo(),
+                        project.getGithubBranch(), installationId, key));
+            }
         }
     }
 

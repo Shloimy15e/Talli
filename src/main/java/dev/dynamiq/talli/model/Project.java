@@ -71,7 +71,7 @@ public class Project implements HasMedia {
     private String websitePublicUrl;
 
     @Column(name = "website_type", nullable = false)
-    private String websiteType = "northlight_json_v1";
+    private String websiteType = "talli_schema_v1";
 
     @Column(name = "github_owner")
     private String githubOwner;

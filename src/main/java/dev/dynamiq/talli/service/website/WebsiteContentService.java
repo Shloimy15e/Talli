@@ -74,6 +74,13 @@ public class WebsiteContentService {
             files.put(path, github.readFile(project.getGithubOwner(), project.getGithubRepo(),
                     project.getGithubBranch(), project.getGithubInstallationId(), path));
         }
+        List<String> additionalPaths = adapter.additionalPaths(files);
+        if (additionalPaths != null) {
+            for (String path : additionalPaths) {
+                files.computeIfAbsent(path, key -> github.readFile(project.getGithubOwner(), project.getGithubRepo(),
+                        project.getGithubBranch(), project.getGithubInstallationId(), key));
+            }
+        }
         return files;
     }
 }

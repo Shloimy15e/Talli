@@ -8,6 +8,7 @@ import dev.dynamiq.talli.service.github.GithubRepositoryClient;
 import dev.dynamiq.talli.support.factory.ProjectFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.LinkedMultiValueMap;
@@ -57,6 +58,29 @@ class WebsiteContentServiceTest {
 
         assertThat(result.changed()).isFalse();
         verify(github, never()).commitFiles(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void saveReadsAdditionalPathsBeforeApplyingChanges() {
+        Project project = ProjectFactory.connectedWebsiteProject();
+        when(adapters.require(project.getWebsiteType())).thenReturn(adapter);
+        when(adapter.expectedPaths()).thenReturn(List.of("talli/editor.schema.json"));
+        when(adapter.additionalPaths(any())).thenReturn(List.of("content/home.json"));
+        when(github.readFile(eq("owner"), eq("repo"), eq("main"), eq(123L), eq("talli/editor.schema.json")))
+                .thenReturn("schema".getBytes(StandardCharsets.UTF_8));
+        when(github.readFile(eq("owner"), eq("repo"), eq("main"), eq(123L), eq("content/home.json")))
+                .thenReturn("home".getBytes(StandardCharsets.UTF_8));
+        when(adapter.apply(eq(1L), any(), any(), any())).thenReturn(List.of());
+
+        WebsiteContentService service = new WebsiteContentService(projectRepository, websiteProjectService, github, adapters);
+
+        service.save(project, Map.of(), new LinkedMultiValueMap<>());
+
+        ArgumentCaptor<Map<String, byte[]>> files = ArgumentCaptor.forClass(Map.class);
+        verify(adapter).apply(eq(1L), files.capture(), any(), any());
+        assertThat(new String(files.getValue().get("talli/editor.schema.json"), StandardCharsets.UTF_8)).isEqualTo("schema");
+        assertThat(new String(files.getValue().get("content/home.json"), StandardCharsets.UTF_8)).isEqualTo("home");
     }
 
     @Test

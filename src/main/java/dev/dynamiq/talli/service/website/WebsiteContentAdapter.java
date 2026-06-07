@@ -13,6 +13,10 @@ public interface WebsiteContentAdapter {
 
     List<String> expectedPaths();
 
+    default List<String> additionalPaths(Map<String, byte[]> files) {
+        return List.of();
+    }
+
     WebsiteEditorForm toEditorForm(Map<String, byte[]> files);
 
     List<GithubFileChange> apply(Long projectId,
