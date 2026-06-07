@@ -5,6 +5,10 @@
     <main>
       <style>
         .cms-section[hidden] { display: none; }
+        [data-row-body][hidden] { display: none; }
+        #website-editor-form textarea {
+          resize: vertical;
+        }
       </style>
 
       <div data-website-editor class="space-y-6">
@@ -16,7 +20,7 @@
             </a>
             <div class="mt-3 flex flex-wrap items-center gap-3">
               <h1 class="text-2xl font-semibold tracking-tight text-slate-950" th:text="${project.name} + ' website editor'">Website editor</h1>
-              <span data-save-state class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600">Ready to publish</span>
+              <span data-save-state class="inline-flex items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-600">Up to date</span>
             </div>
             <p class="mt-2 max-w-2xl text-sm text-slate-500">Choose a section, update the content, then publish it to the live website.</p>
           </div>
@@ -55,7 +59,8 @@
                 <button th:each="section : ${form.sections}" type="button" th:data-section-target="${section.key}"
                         class="flex w-full items-center gap-3 border-l-4 border-transparent px-4 py-3 text-left text-sm font-semibold text-slate-600 hover:bg-slate-50">
                   <i th:attr="data-lucide=${section.icon}" class="h-4 w-4" aria-hidden="true"></i>
-                  <span th:text="${section.label}">Section</span>
+                  <span class="min-w-0 flex-1 truncate" th:text="${section.label}">Section</span>
+                  <span data-section-health class="hidden ml-auto shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-800">Needs review</span>
                 </button>
               </nav>
             </aside>
@@ -66,9 +71,11 @@
                 <select data-section-select class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm">
                   <option th:each="section : ${form.sections}" th:value="${section.key}" th:text="${section.label}">Section</option>
                 </select>
+                <span data-section-health-summary class="mt-2 block text-xs text-slate-500">Sections will be checked before publishing.</span>
               </label>
 
               <section th:each="section : ${form.sections}" th:id="${'section-' + section.key}" th:data-editor-section="${section.key}"
+                       th:data-section-label="${section.label}"
                        class="cms-section overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                 <div class="border-b border-slate-200 px-5 py-4">
                   <p class="text-xs font-semibold uppercase tracking-wider text-[#ea7c28]" th:text="${section.label}">Section</p>
@@ -90,7 +97,7 @@
                           <p class="mb-2 text-sm font-semibold text-slate-700" th:text="${field.label}">Image</p>
                           <div data-preview-shell class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                             <img th:if="${!#strings.isEmpty(field.value)}" data-preview-img th:src="${@websiteAssetUrls.src(project, field.value)}" class="h-40 w-full object-cover" alt="">
-                            <div th:unless="${!#strings.isEmpty(field.value)}" data-preview-placeholder class="flex h-40 items-center justify-center text-sm text-slate-400">No image selected</div>
+                            <div th:unless="${!#strings.isEmpty(field.value)}" data-preview-placeholder class="flex h-40 items-center justify-center text-sm text-slate-400">No current image</div>
                           </div>
                           <input type="file" th:name="${field.name}" accept="image/jpeg,image/png,image/webp" data-preview-input th:data-image-help="${field.help}" class="mt-3 w-full text-xs">
                         </div>
@@ -118,15 +125,22 @@
                       </div>
 
                       <template data-repeat-template>
-                        <div data-repeat-row class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                          <div class="mb-3 flex items-center justify-between gap-3">
-                            <p data-row-label class="text-sm font-semibold text-slate-800" th:text="${block.repeat.itemLabel}">Item</p>
+                        <div data-repeat-row class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                          <div class="flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-2">
+                            <button type="button" data-toggle-row class="flex min-w-0 flex-1 items-center gap-2 text-left" aria-expanded="true">
+                              <i data-lucide="chevron-down" data-row-chevron class="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true"></i>
+                              <span class="min-w-0">
+                                <span data-row-label class="block text-sm font-semibold text-slate-800" th:text="${block.repeat.itemLabel}">Item</span>
+                                <span data-row-summary class="block truncate text-xs text-slate-500">Not filled in yet</span>
+                              </span>
+                            </button>
                             <button type="button" data-remove-row class="portal-icon-button" title="Remove item" aria-label="Remove item">
                               <i data-lucide="trash-2" aria-hidden="true"></i>
                             </button>
                           </div>
-                          <div class="grid gap-3 md:grid-cols-2">
-                            <th:block th:each="field : ${block.repeat.templateFields}" th:switch="${field.kind}">
+                          <div data-row-body class="p-4">
+                            <div class="grid gap-3 md:grid-cols-2">
+                              <th:block th:each="field : ${block.repeat.templateFields}" th:switch="${field.kind}">
                               <label th:case="'textarea'" class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
                                 <span class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500" th:text="${field.label}">Field</span>
                                 <textarea th:data-repeat-field="${field.name}" th:rows="${field.rows}" th:placeholder="${field.placeholder}"
@@ -138,7 +152,7 @@
                                 <input th:if="${field.existingName != null}" type="hidden" th:data-repeat-field="${field.existingName}" value="">
                                 <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500" th:text="${field.label}">Image</p>
                                 <div data-preview-shell class="overflow-hidden rounded-lg border border-slate-200 bg-white">
-                                  <div data-preview-placeholder class="flex h-28 items-center justify-center text-xs text-slate-400">No image</div>
+                                  <div data-preview-placeholder class="flex h-28 items-center justify-center text-xs text-slate-400">No current image</div>
                                 </div>
                                 <input type="file" th:data-repeat-field="${field.name}" data-preview-input accept="image/jpeg,image/png,image/webp" class="mt-3 w-full text-xs">
                               </div>
@@ -150,7 +164,7 @@
                                   <div data-image-row class="rounded-lg border border-slate-200 bg-white p-3">
                                     <input type="hidden" th:data-image-field="${field.existingName}" value="">
                                     <div data-preview-shell class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                                      <div data-preview-placeholder class="flex h-28 items-center justify-center text-xs text-slate-400">No image</div>
+                                      <div data-preview-placeholder class="flex h-28 items-center justify-center text-xs text-slate-400">No current image</div>
                                     </div>
                                     <div class="mt-3 flex items-center gap-2">
                                       <input type="file" th:data-image-field="${field.name}" data-preview-input accept="image/jpeg,image/png,image/webp" class="min-w-0 flex-1 text-xs">
@@ -173,22 +187,30 @@
                                        th:attr="data-repeat-required=${field.requiredMessage}"
                                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                               </label>
-                            </th:block>
+                              </th:block>
+                            </div>
                           </div>
                         </div>
                       </template>
 
                       <div class="space-y-3" data-repeat-rows>
-                        <div data-repeat-row class="rounded-lg border border-slate-200 bg-slate-50 p-4"
+                        <div data-repeat-row class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
                              th:each="item, itemStat : ${block.repeat.items}">
-                          <div class="mb-3 flex items-center justify-between gap-3">
-                            <p data-row-label class="text-sm font-semibold text-slate-800" th:text="${block.repeat.itemLabel + ' ' + (itemStat.index + 1)}">Item</p>
+                          <div class="flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-2">
+                            <button type="button" data-toggle-row class="flex min-w-0 flex-1 items-center gap-2 text-left" aria-expanded="true">
+                              <i data-lucide="chevron-down" data-row-chevron class="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true"></i>
+                              <span class="min-w-0">
+                                <span data-row-label class="block text-sm font-semibold text-slate-800" th:text="${block.repeat.itemLabel + ' ' + (itemStat.index + 1)}">Item</span>
+                                <span data-row-summary class="block truncate text-xs text-slate-500">Not filled in yet</span>
+                              </span>
+                            </button>
                             <button type="button" data-remove-row class="portal-icon-button" title="Remove item" aria-label="Remove item">
                               <i data-lucide="trash-2" aria-hidden="true"></i>
                             </button>
                           </div>
-                          <div class="grid gap-3 md:grid-cols-2">
-                            <th:block th:each="field : ${item.fields}" th:switch="${field.kind}">
+                          <div data-row-body class="p-4">
+                            <div class="grid gap-3 md:grid-cols-2">
+                              <th:block th:each="field : ${item.fields}" th:switch="${field.kind}">
                               <label th:case="'textarea'" class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
                                 <span class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500" th:text="${field.label}">Field</span>
                                 <textarea th:data-repeat-field="${field.name}" th:name="${field.name + '_' + itemStat.index}" th:rows="${field.rows}" th:text="${field.value}" th:placeholder="${field.placeholder}"
@@ -201,7 +223,7 @@
                                 <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500" th:text="${field.label}">Image</p>
                                 <div data-preview-shell class="overflow-hidden rounded-lg border border-slate-200 bg-white">
                                   <img th:if="${!#strings.isEmpty(field.value)}" data-preview-img th:src="${@websiteAssetUrls.src(project, field.value)}" class="h-28 w-full object-cover" alt="">
-                                  <div th:unless="${!#strings.isEmpty(field.value)}" data-preview-placeholder class="flex h-28 items-center justify-center text-xs text-slate-400">No image</div>
+                                  <div th:unless="${!#strings.isEmpty(field.value)}" data-preview-placeholder class="flex h-28 items-center justify-center text-xs text-slate-400">No current image</div>
                                 </div>
                                 <input type="file" th:data-repeat-field="${field.name}" th:name="${field.name + '_' + itemStat.index}" data-preview-input accept="image/jpeg,image/png,image/webp" class="mt-3 w-full text-xs">
                               </div>
@@ -213,7 +235,7 @@
                                   <div data-image-row class="rounded-lg border border-slate-200 bg-white p-3">
                                     <input type="hidden" th:data-image-field="${field.existingName}" value="">
                                     <div data-preview-shell class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-                                      <div data-preview-placeholder class="flex h-28 items-center justify-center text-xs text-slate-400">No image</div>
+                                      <div data-preview-placeholder class="flex h-28 items-center justify-center text-xs text-slate-400">No current image</div>
                                     </div>
                                     <div class="mt-3 flex items-center gap-2">
                                       <input type="file" th:data-image-field="${field.name}" data-preview-input accept="image/jpeg,image/png,image/webp" class="min-w-0 flex-1 text-xs">
@@ -228,7 +250,7 @@
                                     <input type="hidden" th:data-image-field="${field.existingName}" th:name="${field.existingName + '_' + itemStat.index + '_' + imageStat.index}" th:value="${image}">
                                     <div data-preview-shell class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
                                       <img th:if="${!#strings.isEmpty(image)}" data-preview-img th:src="${@websiteAssetUrls.src(project, image)}" class="h-28 w-full object-cover" alt="">
-                                      <div th:unless="${!#strings.isEmpty(image)}" data-preview-placeholder class="flex h-28 items-center justify-center text-xs text-slate-400">No image</div>
+                                      <div th:unless="${!#strings.isEmpty(image)}" data-preview-placeholder class="flex h-28 items-center justify-center text-xs text-slate-400">No current image</div>
                                     </div>
                                     <div class="mt-3 flex items-center gap-2">
                                       <input type="file" th:data-image-field="${field.name}" th:name="${field.name + '_' + itemStat.index + '_' + imageStat.index}" data-preview-input accept="image/jpeg,image/png,image/webp" class="min-w-0 flex-1 text-xs">
@@ -250,7 +272,8 @@
                                        th:attr="data-repeat-required=${field.requiredMessage}"
                                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                               </label>
-                            </th:block>
+                              </th:block>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -274,13 +297,58 @@
             <ul data-publish-check-list class="mt-3 list-disc space-y-1 pl-9 text-xs"></ul>
           </div>
 
+          <div data-publish-review class="fixed inset-0 z-30 hidden items-center justify-center bg-slate-950/30 px-4 py-8">
+            <div class="w-full max-w-md rounded-lg border border-slate-200 bg-white p-5 shadow-xl">
+              <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 text-[#ea7c28]">
+                  <i data-lucide="upload-cloud" class="h-5 w-5" aria-hidden="true"></i>
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-base font-semibold text-slate-950">Ready to publish?</h2>
+                  <p data-publish-review-intro class="mt-1 text-sm text-slate-500">Review the sections that changed before updating the live website.</p>
+                </div>
+              </div>
+              <ul data-publish-review-list class="mt-4 space-y-2 text-sm text-slate-700"></ul>
+              <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button type="button" data-cancel-publish
+                        class="inline-flex h-10 items-center justify-center rounded-md border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                  Keep editing
+                </button>
+                <button type="button" data-confirm-publish
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#ea7c28] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#d66f20] focus:outline-none focus:ring-2 focus:ring-orange-200">
+                  <i data-lucide="upload-cloud" class="h-4 w-4" aria-hidden="true"></i>
+                  <span>Publish to website</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div data-editor-toast class="fixed inset-x-0 bottom-20 z-30 hidden px-4">
+            <div class="mx-auto flex max-w-md items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-lg">
+              <span data-toast-message>Item removed.</span>
+              <button type="button" data-toast-undo class="text-sm font-semibold text-[#ea7c28] hover:text-[#c7611b]">Undo</button>
+            </div>
+          </div>
+
           <div class="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-6 py-3 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] backdrop-blur">
             <div class="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p data-publish-note class="text-xs text-slate-500">Publishing updates the live site. It can take a few minutes to appear.</p>
-              <button type="submit" data-submit-button class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#ea7c28] px-5 text-sm font-semibold text-white shadow-sm hover:bg-[#d66f20] focus:outline-none focus:ring-2 focus:ring-orange-200">
-                <i data-lucide="upload-cloud" class="h-4 w-4" aria-hidden="true"></i>
-                <span data-submit-label>Publish changes</span>
-              </button>
+              <div class="flex flex-wrap items-center gap-2 sm:justify-end">
+                <button type="button" data-undo-button disabled
+                        class="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45">
+                  <i data-lucide="undo-2" class="h-4 w-4" aria-hidden="true"></i>
+                  <span>Undo</span>
+                </button>
+                <button type="button" data-redo-button disabled
+                        class="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-45">
+                  <i data-lucide="redo-2" class="h-4 w-4" aria-hidden="true"></i>
+                  <span>Redo</span>
+                </button>
+                <button type="submit" data-submit-button class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#ea7c28] px-5 text-sm font-semibold text-white shadow-sm hover:bg-[#d66f20] focus:outline-none focus:ring-2 focus:ring-orange-200">
+                  <i data-lucide="upload-cloud" class="h-4 w-4" aria-hidden="true"></i>
+                  <span data-submit-label>Publish changes</span>
+                </button>
+              </div>
             </div>
           </div>
         </form>

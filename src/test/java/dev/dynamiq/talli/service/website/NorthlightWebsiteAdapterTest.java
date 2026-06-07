@@ -36,6 +36,22 @@ class NorthlightWebsiteAdapterTest {
     }
 
     @Test
+    void toEditorFormDoesNotExposePillarNumberField() {
+        WebsiteEditorForm form = adapter.toEditorForm(NorthlightWebsiteFactory.repoFiles());
+
+        List<String> fieldNames = form.sections().stream()
+                .flatMap(section -> section.blocks().stream())
+                .flatMap(block -> block.kind().equals("repeat")
+                        ? block.repeat().items().stream().flatMap(item -> item.fields().stream())
+                        : block.fields().stream())
+                .map(WebsiteEditorField::name)
+                .toList();
+
+        assertThat(fieldNames).contains("homePillarTitle", "homePillarDescription");
+        assertThat(fieldNames).doesNotContain("homePillarNumber");
+    }
+
+    @Test
     void applyUpdatesTextAndPreservesUnknownKeys() throws Exception {
         Map<String, String[]> params = NorthlightWebsiteFactory.formParams();
         params.put("homeHeroHeadline", NorthlightWebsiteFactory.one("New headline"));
@@ -79,7 +95,6 @@ class NorthlightWebsiteAdapterTest {
     @Test
     void applyAddsNewRepeatableRows() throws Exception {
         Map<String, String[]> params = NorthlightWebsiteFactory.formParams();
-        params.put("homePillarNumber_1", NorthlightWebsiteFactory.one("2"));
         params.put("homePillarTitle_1", NorthlightWebsiteFactory.one("Execute"));
         params.put("homePillarDescription_1", NorthlightWebsiteFactory.one("Move decisively"));
         params.put("homeExpertiseTitle_1", NorthlightWebsiteFactory.one("Retail"));
@@ -104,6 +119,8 @@ class NorthlightWebsiteAdapterTest {
         JsonNode transactions = objectMapper.readTree(byPath.get("content/transactions.json"));
 
         assertThat(home.path("approach").path("pillars").size()).isEqualTo(2);
+        assertThat(home.path("approach").path("pillars").get(0).path("number").asText()).isEqualTo("1");
+        assertThat(home.path("approach").path("pillars").get(1).path("number").asText()).isEqualTo("2");
         assertThat(home.path("expertise").path("categories").size()).isEqualTo(2);
         assertThat(about.path("values").path("list").size()).isEqualTo(2);
         assertThat(services.path("services").size()).isEqualTo(2);

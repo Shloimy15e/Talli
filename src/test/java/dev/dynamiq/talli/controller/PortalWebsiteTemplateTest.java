@@ -70,8 +70,14 @@ class PortalWebsiteTemplateTest {
         String html = engine.process("portal/website", context);
 
         assertThat(html).contains("Northlight website editor");
+        assertThat(html).contains("Up to date");
         assertThat(html).contains("data-section-target=\"home\"");
+        assertThat(html).contains("data-section-health");
         assertThat(html).contains("data-repeat-list");
+        assertThat(html).contains("data-toggle-row");
+        assertThat(html).contains("data-undo-button");
+        assertThat(html).contains("data-redo-button");
+        assertThat(html).contains("data-publish-review");
         assertThat(html).contains("/js/website-editor.js");
         assertThat(html).contains("Publish changes");
     }

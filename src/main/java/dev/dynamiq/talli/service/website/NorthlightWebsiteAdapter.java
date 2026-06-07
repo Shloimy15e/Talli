@@ -131,7 +131,6 @@ public class NorthlightWebsiteAdapter implements WebsiteContentAdapter {
                                 "Pillar",
                                 "Add pillar",
                                 List.of(
-                                        WebsiteEditorField.text("homePillarNumber", "Number", "", "01", "half"),
                                         WebsiteEditorField.text("homePillarTitle", "Title", "", "Pillar title", "half")
                                                 .required("Pillar {number} needs a title."),
                                         WebsiteEditorField.textarea("homePillarDescription", "Description", "", "Short explanation", 3, "full")
@@ -256,7 +255,6 @@ public class NorthlightWebsiteAdapter implements WebsiteContentAdapter {
         if (pillars != null) {
             for (NorthlightWebsiteForm.Pillar pillar : pillars) {
                 items.add(new WebsiteEditorRepeatItem(List.of(
-                        WebsiteEditorField.text("homePillarNumber", "Number", pillar.number(), "01", "half"),
                         WebsiteEditorField.text("homePillarTitle", "Title", pillar.title(), "Pillar title", "half")
                                 .required("Pillar {number} needs a title."),
                         WebsiteEditorField.textarea("homePillarDescription", "Description", pillar.description(), "Short explanation", 3, "full")
@@ -375,15 +373,14 @@ public class NorthlightWebsiteAdapter implements WebsiteContentAdapter {
         put(approach, "intro", param(params, "homeApproachIntro"));
         ArrayNode existingPillars = array(approach, "pillars");
         ArrayNode pillars = objectMapper.createArrayNode();
-        for (int i : indexes(params, "homePillarNumber_", "homePillarTitle_", "homePillarDescription_")) {
-            String number = param(params, "homePillarNumber_" + i);
+        for (int i : indexes(params, "homePillarTitle_", "homePillarDescription_")) {
             String title = param(params, "homePillarTitle_" + i);
             String description = param(params, "homePillarDescription_" + i);
-            if (allBlank(number, title, description)) {
+            if (allBlank(title, description)) {
                 continue;
             }
             ObjectNode pillar = objectAtOrNew(existingPillars, i);
-            put(pillar, "number", number);
+            put(pillar, "number", String.valueOf(pillars.size() + 1));
             put(pillar, "title", title);
             put(pillar, "description", description);
             pillars.add(pillar);

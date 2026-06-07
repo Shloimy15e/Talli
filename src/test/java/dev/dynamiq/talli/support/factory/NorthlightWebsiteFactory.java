@@ -76,7 +76,6 @@ public final class NorthlightWebsiteFactory {
         params.put("homeHeroText", one("Old text"));
         params.put("homeApproachTitle", one("Approach"));
         params.put("homeApproachIntro", one("Intro"));
-        params.put("homePillarNumber_0", one("1"));
         params.put("homePillarTitle_0", one("Understand"));
         params.put("homePillarDescription_0", one("Listen"));
         params.put("homePhilosophyTitle", one("Philosophy"));

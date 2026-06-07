@@ -64,7 +64,7 @@
   </head>
 
   <body th:fragment="portal(content)">
-    <div class="min-h-screen bg-slate-100">
+    <div class="min-h-screen bg-slate-100 w-full">
 
       <!-- Top bar -->
       <header class="bg-[#161f30] text-white">
@@ -83,7 +83,7 @@
       </header>
 
       <!-- Content -->
-      <main class="max-w-5xl mx-auto px-6 py-8">
+      <main class="max-w-7xl mx-auto px-6 py-8">
         <th:block th:replace="${content}"></th:block>
       </main>
 
