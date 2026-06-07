@@ -69,9 +69,11 @@ class WebsiteProjectServiceTest {
 
     @Test
     void ensureWebsiteConfiguredRequiresSupportedType() {
-        WebsiteProjectService service = new WebsiteProjectService(null, null, null);
+        WebsiteContentAdapters adapters = mock(WebsiteContentAdapters.class);
+        WebsiteProjectService service = new WebsiteProjectService(null, null, adapters);
         Project project = ProjectFactory.configuredWebsiteProject();
         project.setWebsiteType("unknown");
+        when(adapters.require("unknown")).thenThrow(new IllegalStateException("Unsupported website type: unknown"));
 
         assertThatThrownBy(() -> service.ensureWebsiteConfigured(project))
                 .isInstanceOf(IllegalStateException.class)
@@ -80,8 +82,11 @@ class WebsiteProjectServiceTest {
 
     @Test
     void ensureConnectedRequiresInstallationId() {
-        WebsiteProjectService service = new WebsiteProjectService(null, null, null);
+        WebsiteContentAdapters adapters = mock(WebsiteContentAdapters.class);
+        WebsiteContentAdapter adapter = mock(WebsiteContentAdapter.class);
+        WebsiteProjectService service = new WebsiteProjectService(null, null, adapters);
         Project project = ProjectFactory.configuredWebsiteProject();
+        when(adapters.require(project.getWebsiteType())).thenReturn(adapter);
 
         assertThatThrownBy(() -> service.ensureConnected(project))
                 .isInstanceOf(IllegalStateException.class)
@@ -93,11 +98,14 @@ class WebsiteProjectServiceTest {
         Project project = ProjectFactory.configuredWebsiteProject();
         ProjectRepository projects = mock(ProjectRepository.class);
         GithubRepositoryClient github = mock(GithubRepositoryClient.class);
+        WebsiteContentAdapters adapters = mock(WebsiteContentAdapters.class);
+        WebsiteContentAdapter adapter = mock(WebsiteContentAdapter.class);
 
         when(projects.findById(project.getId())).thenReturn(Optional.of(project));
+        when(adapters.require(project.getWebsiteType())).thenReturn(adapter);
         when(github.findInstallationId("owner", "repo")).thenThrow(new GithubApiException(404, "Not Found"));
 
-        WebsiteProjectService service = new WebsiteProjectService(projects, github, null);
+        WebsiteProjectService service = new WebsiteProjectService(projects, github, adapters);
 
         assertThatThrownBy(() -> service.connect(project.getId()))
                 .isInstanceOf(IllegalStateException.class)

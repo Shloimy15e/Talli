@@ -7,7 +7,7 @@ import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.UserRepository;
 import dev.dynamiq.talli.service.website.NorthlightWebsiteAdapter;
-import dev.dynamiq.talli.service.website.NorthlightWebsiteForm;
+import dev.dynamiq.talli.service.website.WebsiteEditorForm;
 import dev.dynamiq.talli.service.website.WebsiteContentService;
 import dev.dynamiq.talli.service.website.WebsiteSaveResult;
 import dev.dynamiq.talli.support.factory.NorthlightWebsiteFactory;
@@ -61,7 +61,7 @@ class PortalWebsiteControllerTest {
     void editShowsWebsiteFormForClientsOwnProject() throws Exception {
         Client client = client(10L);
         Project project = websiteProject(client);
-        NorthlightWebsiteForm form = northlightForm();
+        WebsiteEditorForm form = northlightForm();
 
         when(userRepository.findByEmail("client@example.com")).thenReturn(Optional.of(user(client)));
         when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
@@ -120,7 +120,7 @@ class PortalWebsiteControllerTest {
                         .principal(auth()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/portal/projects/1/website"))
-                .andExpect(flash().attribute("success", "Website changes published."));
+                .andExpect(flash().attribute("success", "Website changes published. The live site can take a few minutes to update."));
 
         verify(websiteContentService).save(eq(project), any(), any());
     }
@@ -150,7 +150,7 @@ class PortalWebsiteControllerTest {
         return project;
     }
 
-    private NorthlightWebsiteForm northlightForm() {
-        return new NorthlightWebsiteAdapter(new ObjectMapper()).toForm(NorthlightWebsiteFactory.repoFiles());
+    private WebsiteEditorForm northlightForm() {
+        return new NorthlightWebsiteAdapter(new ObjectMapper()).toEditorForm(NorthlightWebsiteFactory.repoFiles());
     }
 }

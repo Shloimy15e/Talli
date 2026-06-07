@@ -22,21 +22,22 @@ public class WebsiteContentService {
     private final ProjectRepository projectRepository;
     private final WebsiteProjectService websiteProjectService;
     private final GithubRepositoryClient github;
-    private final NorthlightWebsiteAdapter northlightAdapter;
+    private final WebsiteContentAdapters adapters;
 
     public WebsiteContentService(ProjectRepository projectRepository,
                                  WebsiteProjectService websiteProjectService,
                                  GithubRepositoryClient github,
-                                 NorthlightWebsiteAdapter northlightAdapter) {
+                                 WebsiteContentAdapters adapters) {
         this.projectRepository = projectRepository;
         this.websiteProjectService = websiteProjectService;
         this.github = github;
-        this.northlightAdapter = northlightAdapter;
+        this.adapters = adapters;
     }
 
-    public NorthlightWebsiteForm load(Project project) {
+    public WebsiteEditorForm load(Project project) {
         websiteProjectService.ensureConnected(project);
-        return northlightAdapter.toForm(readFiles(project));
+        WebsiteContentAdapter adapter = adapters.require(project.getWebsiteType());
+        return adapter.toEditorForm(readFiles(project, adapter));
     }
 
     @Transactional
@@ -45,8 +46,9 @@ public class WebsiteContentService {
                                   MultiValueMap<String, MultipartFile> uploads) {
         websiteProjectService.ensureConnected(project);
 
-        Map<String, byte[]> files = readFiles(project);
-        List<GithubFileChange> changes = northlightAdapter.apply(project.getId(), files, params, uploads);
+        WebsiteContentAdapter adapter = adapters.require(project.getWebsiteType());
+        Map<String, byte[]> files = readFiles(project, adapter);
+        List<GithubFileChange> changes = adapter.apply(project.getId(), files, params, uploads);
         if (changes.isEmpty()) {
             return new WebsiteSaveResult(false, project.getLastPublishSha());
         }
@@ -66,9 +68,9 @@ public class WebsiteContentService {
         return new WebsiteSaveResult(true, result.sha());
     }
 
-    private Map<String, byte[]> readFiles(Project project) {
+    private Map<String, byte[]> readFiles(Project project, WebsiteContentAdapter adapter) {
         Map<String, byte[]> files = new LinkedHashMap<>();
-        for (String path : northlightAdapter.expectedPaths()) {
+        for (String path : adapter.expectedPaths()) {
             files.put(path, github.readFile(project.getGithubOwner(), project.getGithubRepo(),
                     project.getGithubBranch(), project.getGithubInstallationId(), path));
         }

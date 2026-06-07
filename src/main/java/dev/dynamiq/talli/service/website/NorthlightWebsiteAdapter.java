@@ -23,7 +23,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 @Component
-public class NorthlightWebsiteAdapter {
+public class NorthlightWebsiteAdapter implements WebsiteContentAdapter {
 
     public static final String TYPE = "northlight_json_v1";
 
@@ -39,8 +39,19 @@ public class NorthlightWebsiteAdapter {
         this.objectMapper = objectMapper;
     }
 
+    @Override
+    public String type() {
+        return TYPE;
+    }
+
+    @Override
     public List<String> expectedPaths() {
         return List.of(HOME, ABOUT, SERVICES, TRANSACTIONS, CONTACT);
+    }
+
+    @Override
+    public WebsiteEditorForm toEditorForm(Map<String, byte[]> files) {
+        return editorForm(toForm(files));
     }
 
     public NorthlightWebsiteForm toForm(Map<String, byte[]> files) {
@@ -101,6 +112,222 @@ public class NorthlightWebsiteAdapter {
         }
     }
 
+    private WebsiteEditorForm editorForm(NorthlightWebsiteForm form) {
+        return new WebsiteEditorForm(List.of(
+                new WebsiteEditorSection("home", "Home page", "First impression", "home", List.of(
+                        WebsiteEditorBlock.fields("two-column", List.of(
+                                WebsiteEditorField.text("homeHeroHeadline", "Main headline", form.homeHeroHeadline(), "The headline visitors see first", "half")
+                                        .required("Home page main headline is empty."),
+                                WebsiteEditorField.text("homeHeroSubheadline", "Small headline above it", form.homeHeroSubheadline(), "Short intro line", "half"),
+                                WebsiteEditorField.textarea("homeHeroText", "Intro text", form.homeHeroText(), "A short paragraph introducing the company", 4, "full")
+                        )),
+                        WebsiteEditorBlock.fields("two-column", List.of(
+                                WebsiteEditorField.text("homeApproachTitle", "Approach heading", form.homeApproachTitle(), "Section heading", "half"),
+                                WebsiteEditorField.text("homeApproachIntro", "Approach intro", form.homeApproachIntro(), "One sentence overview", "half")
+                        )),
+                        repeatBlock(
+                                "Approach pillars",
+                                "Short cards that explain the way the business works.",
+                                "Pillar",
+                                "Add pillar",
+                                List.of(
+                                        WebsiteEditorField.text("homePillarNumber", "Number", "", "01", "half"),
+                                        WebsiteEditorField.text("homePillarTitle", "Title", "", "Pillar title", "half")
+                                                .required("Pillar {number} needs a title."),
+                                        WebsiteEditorField.textarea("homePillarDescription", "Description", "", "Short explanation", 3, "full")
+                                ),
+                                pillarItems(form.homePillars())
+                        ),
+                        WebsiteEditorBlock.fields("two-column", List.of(
+                                WebsiteEditorField.text("homePhilosophyTitle", "Philosophy heading", form.homePhilosophyTitle(), "Section heading", "half"),
+                                WebsiteEditorField.text("homeExpertiseTitle", "Expertise heading", form.homeExpertiseTitle(), "Section heading", "half"),
+                                WebsiteEditorField.textarea("homePhilosophyParagraphs", "Philosophy paragraphs", form.homePhilosophyParagraphs(), "Paragraphs shown in the philosophy section", 5, "full"),
+                                WebsiteEditorField.text("homeExpertiseSubtitle", "Expertise intro", form.homeExpertiseSubtitle(), "One sentence under the expertise heading", "full")
+                        )),
+                        repeatBlock(
+                                "Expertise list",
+                                "",
+                                "Expertise",
+                                "Add expertise",
+                                List.of(WebsiteEditorField.text("homeExpertiseTitle", "Expertise", "", "Expertise item", "full")
+                                        .required("Expertise {number} needs text.")),
+                                titleItems(form.homeExpertiseCategories(), "homeExpertiseTitle", "Expertise", "Expertise item",
+                                        "Expertise {number} needs text.")
+                        ),
+                        WebsiteEditorBlock.fields("two-column", List.of(
+                                WebsiteEditorField.image("homeHighlightsImage", "Highlights image", form.homeHighlightsImage(), "half", "JPG, PNG, or WEBP. Large photos work best."),
+                                WebsiteEditorField.image("homeImpactShowcaseImage", "Impact image", form.homeImpactShowcaseImage(), "half", "JPG, PNG, or WEBP. Large photos work best.")
+                        ))
+                )),
+                new WebsiteEditorSection("about", "About", "Company story", "building-2", List.of(
+                        WebsiteEditorBlock.fields("two-column", List.of(
+                                WebsiteEditorField.text("aboutHeading", "Page heading", form.aboutHeading(), "About the company", "half"),
+                                WebsiteEditorField.text("aboutCompanyName", "Company name", form.aboutCompanyName(), "Company name", "half"),
+                                WebsiteEditorField.text("aboutIntroTitle", "Intro heading", form.aboutIntroTitle(), "Section heading", "half"),
+                                WebsiteEditorField.text("aboutFounderName", "Founder name", form.aboutFounderName(), "Founder name", "half"),
+                                WebsiteEditorField.text("aboutFounderTitle", "Founder title", form.aboutFounderTitle(), "Founder title", "half"),
+                                WebsiteEditorField.image("aboutFounderImage", "Founder photo", form.aboutFounderImage(), "half", "JPG, PNG, or WEBP."),
+                                WebsiteEditorField.textarea("aboutIntroParagraphs", "Intro paragraphs", form.aboutIntroParagraphs(), "Main about page introduction", 5, "full"),
+                                WebsiteEditorField.textarea("aboutFounderBio", "Founder bio", form.aboutFounderBio(), "Short biography", 5, "full")
+                        )),
+                        repeatBlock(
+                                "Values",
+                                "A short list shown on the about page.",
+                                "Value",
+                                "Add value",
+                                List.of(
+                                        WebsiteEditorField.text("aboutValueName", "Name", "", "Value name", "half")
+                                                .required("Value {number} needs a name."),
+                                        WebsiteEditorField.text("aboutValueDescription", "Description", "", "Short description", "half")
+                                ),
+                                namedTextItems(form.aboutValues())
+                        ),
+                        WebsiteEditorBlock.fields("two-column", List.of(
+                                WebsiteEditorField.text("aboutWhatSetsUsApartTitle", "What sets us apart heading", form.aboutWhatSetsUsApartTitle(), "Section heading", "half"),
+                                WebsiteEditorField.text("aboutChoosingNorthlightTitle", "Why choose us heading", form.aboutChoosingNorthlightTitle(), "Section heading", "half"),
+                                WebsiteEditorField.textarea("aboutWhatSetsUsApartContent", "What sets us apart text", form.aboutWhatSetsUsApartContent(), "Supporting copy", 4, "half"),
+                                WebsiteEditorField.textarea("aboutChoosingNorthlightContent", "Why choose us text", form.aboutChoosingNorthlightContent(), "Supporting copy", 4, "half")
+                        ))
+                )),
+                new WebsiteEditorSection("services", "Services", "What the business offers", "briefcase-business", List.of(
+                        WebsiteEditorBlock.fields("two-column", List.of(
+                                WebsiteEditorField.text("servicesIntroTitle", "Services heading", form.servicesIntroTitle(), "Section heading", "half"),
+                                WebsiteEditorField.text("servicesIntroSubtitle", "Services subheading", form.servicesIntroSubtitle(), "Short subheading", "half"),
+                                WebsiteEditorField.textarea("servicesIntroParagraph", "Services intro", form.servicesIntroParagraph(), "Paragraph shown before the service list", 4, "full")
+                        )),
+                        repeatBlock(
+                                "Service cards",
+                                "Each service can include a title, description, and image.",
+                                "Service",
+                                "Add service",
+                                List.of(
+                                        WebsiteEditorField.text("serviceTitle", "Title", "", "Service title", "half")
+                                                .required("Service {number} needs a title."),
+                                        WebsiteEditorField.textarea("serviceDescription", "Description", "", "What this service includes", 4, "full"),
+                                        WebsiteEditorField.repeatImage("serviceImage", "serviceImageExisting", "Image", "")
+                                ),
+                                serviceItems(form.services())
+                        )
+                )),
+                new WebsiteEditorSection("transactions", "Transactions", "Project showcase", "gallery-horizontal-end", List.of(
+                        WebsiteEditorBlock.fields("two-column", List.of(
+                                WebsiteEditorField.text("transactionsHeading", "Showcase heading", form.transactionsHeading(), "Section heading", "half"),
+                                WebsiteEditorField.text("transactionsSubheading", "Showcase subheading", form.transactionsSubheading(), "Short subheading", "half")
+                        )),
+                        repeatBlock(
+                                "Transactions",
+                                "Locations, units, and images shown in the project gallery.",
+                                "Transaction",
+                                "Add transaction",
+                                List.of(
+                                        WebsiteEditorField.text("transactionLocation", "Location", "", "City, state", "half")
+                                                .required("Transaction {number} needs a location."),
+                                        WebsiteEditorField.text("transactionUnits", "Units", "", "120 units", "half"),
+                                        WebsiteEditorField.imageList("transactionImage", "transactionImageExisting", "transactionImagesTouched", "Images", List.of())
+                                ),
+                                transactionItems(form.transactions())
+                        )
+                )),
+                new WebsiteEditorSection("contact", "Contact", "Contact details", "mail", List.of(
+                        WebsiteEditorBlock.fields("two-column", List.of(
+                                WebsiteEditorField.text("contactHeading", "Contact heading", form.contactHeading(), "Contact heading", "half"),
+                                WebsiteEditorField.email("contactEmail", "Email address", form.contactEmail(), "info@example.com", "half")
+                                        .required("Contact email is empty."),
+                                WebsiteEditorField.textarea("contactText", "Main contact text", form.contactText(), "Primary contact message", 4, "half"),
+                                WebsiteEditorField.textarea("contactSubtext", "Secondary contact text", form.contactSubtext(), "Optional supporting message", 4, "half"),
+                                WebsiteEditorField.text("contactAddress", "Address", form.contactAddress(), "Business address", "half"),
+                                WebsiteEditorField.text("contactCopyright", "Footer copyright", form.contactCopyright(), "Copyright line", "half")
+                        ))
+                ))
+        ));
+    }
+
+    private WebsiteEditorBlock repeatBlock(String title,
+                                           String help,
+                                           String itemLabel,
+                                           String addLabel,
+                                           List<WebsiteEditorField> templateFields,
+                                           List<WebsiteEditorRepeatItem> items) {
+        return WebsiteEditorBlock.repeat(title, help, new WebsiteEditorRepeat(itemLabel, addLabel, templateFields, items));
+    }
+
+    private List<WebsiteEditorRepeatItem> pillarItems(List<NorthlightWebsiteForm.Pillar> pillars) {
+        List<WebsiteEditorRepeatItem> items = new ArrayList<>();
+        if (pillars != null) {
+            for (NorthlightWebsiteForm.Pillar pillar : pillars) {
+                items.add(new WebsiteEditorRepeatItem(List.of(
+                        WebsiteEditorField.text("homePillarNumber", "Number", pillar.number(), "01", "half"),
+                        WebsiteEditorField.text("homePillarTitle", "Title", pillar.title(), "Pillar title", "half")
+                                .required("Pillar {number} needs a title."),
+                        WebsiteEditorField.textarea("homePillarDescription", "Description", pillar.description(), "Short explanation", 3, "full")
+                )));
+            }
+        }
+        return items;
+    }
+
+    private List<WebsiteEditorRepeatItem> titleItems(List<NorthlightWebsiteForm.TitleItem> values,
+                                                     String fieldName,
+                                                     String label,
+                                                     String placeholder,
+                                                     String requiredMessage) {
+        List<WebsiteEditorRepeatItem> items = new ArrayList<>();
+        if (values != null) {
+            for (NorthlightWebsiteForm.TitleItem value : values) {
+                items.add(new WebsiteEditorRepeatItem(List.of(
+                        WebsiteEditorField.text(fieldName, label, value.title(), placeholder, "full")
+                                .required(requiredMessage)
+                )));
+            }
+        }
+        return items;
+    }
+
+    private List<WebsiteEditorRepeatItem> namedTextItems(List<NorthlightWebsiteForm.NamedText> values) {
+        List<WebsiteEditorRepeatItem> items = new ArrayList<>();
+        if (values != null) {
+            for (NorthlightWebsiteForm.NamedText value : values) {
+                items.add(new WebsiteEditorRepeatItem(List.of(
+                        WebsiteEditorField.text("aboutValueName", "Name", value.name(), "Value name", "half")
+                                .required("Value {number} needs a name."),
+                        WebsiteEditorField.text("aboutValueDescription", "Description", value.description(), "Short description", "half")
+                )));
+            }
+        }
+        return items;
+    }
+
+    private List<WebsiteEditorRepeatItem> serviceItems(List<NorthlightWebsiteForm.ServiceItem> services) {
+        List<WebsiteEditorRepeatItem> items = new ArrayList<>();
+        if (services != null) {
+            for (NorthlightWebsiteForm.ServiceItem service : services) {
+                items.add(new WebsiteEditorRepeatItem(List.of(
+                        WebsiteEditorField.text("serviceTitle", "Title", service.title(), "Service title", "half")
+                                .required("Service {number} needs a title."),
+                        WebsiteEditorField.textarea("serviceDescription", "Description", service.description(), "What this service includes", 4, "full"),
+                        WebsiteEditorField.repeatImage("serviceImage", "serviceImageExisting", "Image", service.image())
+                )));
+            }
+        }
+        return items;
+    }
+
+    private List<WebsiteEditorRepeatItem> transactionItems(List<NorthlightWebsiteForm.TransactionItem> transactions) {
+        List<WebsiteEditorRepeatItem> items = new ArrayList<>();
+        if (transactions != null) {
+            for (NorthlightWebsiteForm.TransactionItem transaction : transactions) {
+                items.add(new WebsiteEditorRepeatItem(List.of(
+                        WebsiteEditorField.text("transactionLocation", "Location", transaction.location(), "City, state", "half")
+                                .required("Transaction {number} needs a location."),
+                        WebsiteEditorField.text("transactionUnits", "Units", transaction.units(), "120 units", "half"),
+                        WebsiteEditorField.imageList("transactionImage", "transactionImageExisting", "transactionImagesTouched", "Images", transaction.images())
+                )));
+            }
+        }
+        return items;
+    }
+
+    @Override
     public List<GithubFileChange> apply(Long projectId,
                                         Map<String, byte[]> files,
                                         Map<String, String[]> params,

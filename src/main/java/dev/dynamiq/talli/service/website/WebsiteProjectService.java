@@ -20,21 +20,21 @@ public class WebsiteProjectService {
 
     private final ProjectRepository projectRepository;
     private final GithubRepositoryClient github;
-    private final NorthlightWebsiteAdapter northlightAdapter;
+    private final WebsiteContentAdapters adapters;
 
     public WebsiteProjectService(ProjectRepository projectRepository,
                                  GithubRepositoryClient github,
-                                 NorthlightWebsiteAdapter northlightAdapter) {
+                                 WebsiteContentAdapters adapters) {
         this.projectRepository = projectRepository;
         this.github = github;
-        this.northlightAdapter = northlightAdapter;
+        this.adapters = adapters;
     }
 
     public void applySettings(Project target, Project submitted, String githubRepoUrl) {
         boolean enabled = Boolean.TRUE.equals(submitted.getWebsiteEnabled());
         target.setWebsiteEnabled(enabled);
         target.setWebsitePublicUrl(blankToNull(submitted.getWebsitePublicUrl()));
-        target.setWebsiteType(blankToDefault(submitted.getWebsiteType(), NorthlightWebsiteAdapter.TYPE));
+        target.setWebsiteType(blankToDefault(submitted.getWebsiteType(), adapters.defaultType()));
         target.setGithubBranch(blankToDefault(submitted.getGithubBranch(), "main"));
 
         if (githubRepoUrl != null && !githubRepoUrl.isBlank()) {
@@ -71,7 +71,8 @@ public class WebsiteProjectService {
         project.setGithubInstallationId(installationId);
 
         github.branchHeadSha(project.getGithubOwner(), project.getGithubRepo(), project.getGithubBranch(), installationId);
-        for (String path : northlightAdapter.expectedPaths()) {
+        WebsiteContentAdapter adapter = adapters.require(project.getWebsiteType());
+        for (String path : adapter.expectedPaths()) {
             github.readFile(project.getGithubOwner(), project.getGithubRepo(), project.getGithubBranch(),
                     installationId, path);
         }
@@ -81,9 +82,7 @@ public class WebsiteProjectService {
         if (!Boolean.TRUE.equals(project.getWebsiteEnabled())) {
             throw new IllegalStateException("Website editing is not enabled for this project.");
         }
-        if (!NorthlightWebsiteAdapter.TYPE.equals(project.getWebsiteType())) {
-            throw new IllegalStateException("Unsupported website type: " + project.getWebsiteType());
-        }
+        adapters.require(project.getWebsiteType());
         if (project.getGithubOwner() == null || project.getGithubRepo() == null) {
             throw new IllegalStateException("Repository URL is missing.");
         }
