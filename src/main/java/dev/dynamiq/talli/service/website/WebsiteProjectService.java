@@ -25,6 +25,9 @@ public class WebsiteProjectService {
     private final GithubRepositoryClient github;
     private final WebsiteContentAdapters adapters;
 
+    public record WebsiteContentSnapshot(WebsiteContentAdapter adapter, Map<String, byte[]> files) {
+    }
+
     public WebsiteProjectService(ProjectRepository projectRepository,
                                  GithubRepositoryClient github,
                                  WebsiteContentAdapters adapters) {
@@ -74,19 +77,29 @@ public class WebsiteProjectService {
         project.setGithubInstallationId(installationId);
 
         github.branchHeadSha(project.getGithubOwner(), project.getGithubRepo(), project.getGithubBranch(), installationId);
-        WebsiteContentAdapter adapter = adapters.require(project.getWebsiteType());
+        readContent(project);
+    }
+
+    @Transactional
+    public WebsiteContentSnapshot readContent(Project project) {
+        if (project.getGithubInstallationId() == null) {
+            throw new IllegalStateException("Website project is not connected to GitHub yet.");
+        }
+
         Map<String, byte[]> files = new LinkedHashMap<>();
+        WebsiteContentAdapter adapter = detectAdapter(project, files);
         for (String path : adapter.expectedPaths()) {
-            files.put(path, github.readFile(project.getGithubOwner(), project.getGithubRepo(), project.getGithubBranch(),
-                    installationId, path));
+            files.computeIfAbsent(path, key -> github.readFile(project.getGithubOwner(), project.getGithubRepo(),
+                    project.getGithubBranch(), project.getGithubInstallationId(), key));
         }
         List<String> additionalPaths = adapter.additionalPaths(files);
         if (additionalPaths != null) {
             for (String path : additionalPaths) {
                 files.computeIfAbsent(path, key -> github.readFile(project.getGithubOwner(), project.getGithubRepo(),
-                        project.getGithubBranch(), installationId, key));
+                        project.getGithubBranch(), project.getGithubInstallationId(), key));
             }
         }
+        return new WebsiteContentSnapshot(adapter, files);
     }
 
     public void ensureWebsiteConfigured(Project project) {
@@ -133,5 +146,40 @@ public class WebsiteProjectService {
 
     private String blankToDefault(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private WebsiteContentAdapter detectAdapter(Project project, Map<String, byte[]> files) {
+        byte[] schema = readOptionalFile(project, TalliWebsiteSchemaAdapter.SCHEMA_PATH);
+        if (schema != null) {
+            files.put(TalliWebsiteSchemaAdapter.SCHEMA_PATH, schema);
+            markTalliSchema(project);
+            return adapters.require(TalliWebsiteSchemaAdapter.TYPE);
+        }
+
+        if (TalliWebsiteSchemaAdapter.TYPE.equals(project.getWebsiteType())) {
+            throw new IllegalStateException("Talli website schema is missing: " + TalliWebsiteSchemaAdapter.SCHEMA_PATH);
+        }
+
+        return adapters.require(project.getWebsiteType());
+    }
+
+    private byte[] readOptionalFile(Project project, String path) {
+        try {
+            return github.readFile(project.getGithubOwner(), project.getGithubRepo(), project.getGithubBranch(),
+                    project.getGithubInstallationId(), path);
+        } catch (GithubApiException e) {
+            if (e.statusCode() == 404) {
+                return null;
+            }
+            throw e;
+        }
+    }
+
+    private void markTalliSchema(Project project) {
+        project.setWebsiteType(TalliWebsiteSchemaAdapter.TYPE);
+        if (project.getId() != null) {
+            projectRepository.findById(project.getId())
+                    .ifPresent(managed -> managed.setWebsiteType(TalliWebsiteSchemaAdapter.TYPE));
+        }
     }
 }

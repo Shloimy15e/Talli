@@ -38,21 +38,15 @@ class WebsiteContentServiceTest {
     private GithubRepositoryClient github;
 
     @Mock
-    private WebsiteContentAdapters adapters;
-
-    @Mock
     private WebsiteContentAdapter adapter;
 
     @Test
     void saveReturnsUnchangedWhenAdapterProducesNoChanges() {
         Project project = ProjectFactory.connectedWebsiteProject();
-        when(github.readFile(eq("owner"), eq("repo"), eq("main"), eq(123L), any()))
-                .thenReturn("{}".getBytes(StandardCharsets.UTF_8));
-        when(adapters.require(project.getWebsiteType())).thenReturn(adapter);
-        when(adapter.expectedPaths()).thenReturn(List.of("content/home.json"));
+        when(websiteProjectService.readContent(project)).thenReturn(snapshot(Map.of("content/home.json", bytes("{}"))));
         when(adapter.apply(eq(1L), any(), any(), any())).thenReturn(List.of());
 
-        WebsiteContentService service = new WebsiteContentService(projectRepository, websiteProjectService, github, adapters);
+        WebsiteContentService service = new WebsiteContentService(projectRepository, websiteProjectService, github);
 
         WebsiteSaveResult result = service.save(project, Map.of(), new LinkedMultiValueMap<>());
 
@@ -62,18 +56,15 @@ class WebsiteContentServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void saveReadsAdditionalPathsBeforeApplyingChanges() {
+    void savePassesLoadedContentToAdapter() {
         Project project = ProjectFactory.connectedWebsiteProject();
-        when(adapters.require(project.getWebsiteType())).thenReturn(adapter);
-        when(adapter.expectedPaths()).thenReturn(List.of("talli/editor.schema.json"));
-        when(adapter.additionalPaths(any())).thenReturn(List.of("content/home.json"));
-        when(github.readFile(eq("owner"), eq("repo"), eq("main"), eq(123L), eq("talli/editor.schema.json")))
-                .thenReturn("schema".getBytes(StandardCharsets.UTF_8));
-        when(github.readFile(eq("owner"), eq("repo"), eq("main"), eq(123L), eq("content/home.json")))
-                .thenReturn("home".getBytes(StandardCharsets.UTF_8));
+        when(websiteProjectService.readContent(project)).thenReturn(snapshot(Map.of(
+                "talli/editor.schema.json", bytes("schema"),
+                "content/home.json", bytes("home")
+        )));
         when(adapter.apply(eq(1L), any(), any(), any())).thenReturn(List.of());
 
-        WebsiteContentService service = new WebsiteContentService(projectRepository, websiteProjectService, github, adapters);
+        WebsiteContentService service = new WebsiteContentService(projectRepository, websiteProjectService, github);
 
         service.save(project, Map.of(), new LinkedMultiValueMap<>());
 
@@ -88,16 +79,13 @@ class WebsiteContentServiceTest {
         Project project = ProjectFactory.connectedWebsiteProject();
         Project managed = ProjectFactory.connectedWebsiteProject();
         GithubFileChange change = new GithubFileChange("content/home.json", "{}".getBytes(StandardCharsets.UTF_8));
-        when(github.readFile(eq("owner"), eq("repo"), eq("main"), eq(123L), any()))
-                .thenReturn("{}".getBytes(StandardCharsets.UTF_8));
-        when(adapters.require(project.getWebsiteType())).thenReturn(adapter);
-        when(adapter.expectedPaths()).thenReturn(List.of("content/home.json"));
+        when(websiteProjectService.readContent(project)).thenReturn(snapshot(Map.of("content/home.json", bytes("{}"))));
         when(adapter.apply(eq(1L), any(), any(), any())).thenReturn(List.of(change));
         when(github.commitFiles(eq("owner"), eq("repo"), eq("main"), eq(123L), any(), eq(List.of(change))))
                 .thenReturn(new GithubCommitResult("abc123"));
         when(projectRepository.findById(1L)).thenReturn(Optional.of(managed));
 
-        WebsiteContentService service = new WebsiteContentService(projectRepository, websiteProjectService, github, adapters);
+        WebsiteContentService service = new WebsiteContentService(projectRepository, websiteProjectService, github);
 
         WebsiteSaveResult result = service.save(project, Map.of(), new LinkedMultiValueMap<>());
 
@@ -110,17 +98,22 @@ class WebsiteContentServiceTest {
     @Test
     void saveEnsuresProjectIsConnectedBeforePublishing() {
         Project project = ProjectFactory.connectedWebsiteProject();
-        when(adapters.require(project.getWebsiteType())).thenReturn(adapter);
-        when(adapter.expectedPaths()).thenReturn(List.of("content/home.json"));
-        when(github.readFile(eq("owner"), eq("repo"), eq("main"), eq(123L), any()))
-                .thenReturn("{}".getBytes(StandardCharsets.UTF_8));
+        when(websiteProjectService.readContent(project)).thenReturn(snapshot(Map.of("content/home.json", bytes("{}"))));
         when(adapter.apply(eq(1L), any(), any(), any())).thenReturn(List.of());
 
-        WebsiteContentService service = new WebsiteContentService(projectRepository, websiteProjectService, github, adapters);
+        WebsiteContentService service = new WebsiteContentService(projectRepository, websiteProjectService, github);
 
         service.save(project, Map.of(), new LinkedMultiValueMap<>());
 
         verify(websiteProjectService).ensureConnected(project);
+    }
+
+    private WebsiteProjectService.WebsiteContentSnapshot snapshot(Map<String, byte[]> files) {
+        return new WebsiteProjectService.WebsiteContentSnapshot(adapter, files);
+    }
+
+    private byte[] bytes(String value) {
+        return value.getBytes(StandardCharsets.UTF_8);
     }
 
 }
