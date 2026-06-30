@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setupSections(editor);
   setupHistoryControls(editor, history);
+  setupRichTextEditors(editor, history);
+  setupColorFields(editor, history);
   setupFieldHistory(form, history);
   editor.querySelectorAll('[data-repeat-list]').forEach(list => setupRepeatList(editor, list, history));
   setupImagePickers(editor, history);
@@ -17,6 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
   updateSectionHealth(editor, form);
   refreshIcons();
 });
+
+const RICH_TEXT_MARKS = {
+  accent: {
+    token: '**',
+    className: 'cms-rich-text-accent',
+  },
+};
+
+const RICH_TEXT_MARK_ORDER = Object.keys(RICH_TEXT_MARKS);
 
 function setupFormState(editor, form, history) {
   const saveState = editor.querySelector('[data-save-state]');
@@ -198,6 +209,452 @@ function setupFieldHistory(form, history) {
   });
 }
 
+function setupRichTextEditors(scope, history) {
+  scope.querySelectorAll('[data-rich-text-field]').forEach(field => {
+    if (field.dataset.richTextReady === 'true') return;
+
+    const editor = field.querySelector('[data-rich-text-editor]');
+    const input = field.querySelector('[data-rich-text-input]');
+    if (!editor || !input) return;
+
+    renderRichTextValue(editor, input.value || '');
+    editor.dataset.historyValue = input.value || '';
+    field.dataset.richTextReady = 'true';
+
+    field.querySelectorAll('[data-rich-text-command]').forEach(button => {
+      button.addEventListener('mousedown', event => event.preventDefault());
+      button.addEventListener('click', () => applyRichTextCommand(field, button.dataset.richTextCommand, history));
+    });
+
+    editor.addEventListener('input', () => {
+      syncRichTextInput(field);
+      updateRichTextToolbar(field);
+    });
+    editor.addEventListener('focus', () => {
+      editor.dataset.historyValue = input.value || '';
+      updateRichTextToolbar(field);
+    });
+    editor.addEventListener('blur', () => {
+      recordRichTextChange(field, history, editor.dataset.historyValue ?? '', input.value || '');
+    });
+    editor.addEventListener('keydown', event => {
+      if (event.key === 'Enter') event.preventDefault();
+    });
+    editor.addEventListener('keyup', () => updateRichTextToolbar(field));
+    editor.addEventListener('mouseup', () => updateRichTextToolbar(field));
+    editor.addEventListener('paste', event => {
+      event.preventDefault();
+      insertPlainTextAtSelection(event.clipboardData?.getData('text/plain') || '');
+      syncRichTextInput(field);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  });
+
+  if (document.documentElement.dataset.richTextSelectionReady === 'true') return;
+  document.documentElement.dataset.richTextSelectionReady = 'true';
+  document.addEventListener('selectionchange', () => {
+    document.querySelectorAll('[data-rich-text-field]').forEach(updateRichTextToolbar);
+  });
+}
+
+function setupColorFields(scope, history) {
+  scope.querySelectorAll('[data-color-field]').forEach(field => {
+    if (field.dataset.colorReady === 'true') return;
+
+    const input = field.querySelector('[data-color-value]');
+    const picker = field.querySelector('[data-color-picker]');
+    if (!input || !picker) return;
+
+    syncColorPicker(field);
+    field.dataset.colorReady = 'true';
+
+    input.addEventListener('input', () => {
+      if (input.value !== input.value.toUpperCase()) {
+        const position = input.selectionStart;
+        input.value = input.value.toUpperCase();
+        if (position !== null) input.setSelectionRange(position, position);
+      }
+      syncColorPicker(field);
+    });
+    input.addEventListener('blur', () => {
+      if (isHexColor(input.value)) input.value = normalizeColor(input.value);
+      syncColorPicker(field);
+    });
+    picker.addEventListener('focus', () => {
+      picker.dataset.historyValue = input.value || '';
+    });
+    picker.addEventListener('input', () => setColorValue(field, picker.value));
+    picker.addEventListener('change', () => {
+      const before = picker.dataset.historyValue ?? '';
+      const after = setColorValue(field, picker.value);
+      if (before !== after) {
+        history.record({
+          source: input,
+          undo() {
+            setColorValue(field, before);
+          },
+          redo() {
+            setColorValue(field, after);
+          },
+        });
+      }
+      picker.dataset.historyValue = after;
+    });
+  });
+}
+
+function applyRichTextCommand(field, mark, history) {
+  if (!RICH_TEXT_MARKS[mark]) return;
+
+  syncRichTextInput(field);
+  const editor = field.querySelector('[data-rich-text-editor]');
+  const input = field.querySelector('[data-rich-text-input]');
+  const selection = richTextSelection(editor);
+  if (!input || !selection || selection.start === selection.end) return;
+
+  const before = input.value || '';
+  const after = markedRichTextValue(before, selection.start, selection.end, mark);
+  if (before === after) return;
+
+  setRichTextValue(field, after);
+  setRichTextSelection(editor, selection.start, selection.end);
+  recordRichTextChange(field, history, before, after);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  updateRichTextToolbar(field);
+}
+
+function syncRichTextInput(field) {
+  const editor = field.querySelector('[data-rich-text-editor]');
+  const input = field.querySelector('[data-rich-text-input]');
+  if (!editor || !input) return;
+
+  const before = input.value || '';
+  input.value = serializeRichTextSegments(segmentsFromRichTextEditor(editor));
+  updateRichTextEmptyState(editor);
+  if (input.value !== before) {
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+}
+
+function setRichTextValue(field, value) {
+  const editor = field.querySelector('[data-rich-text-editor]');
+  const input = field.querySelector('[data-rich-text-input]');
+  if (!editor || !input) return;
+
+  input.value = value || '';
+  renderRichTextValue(editor, input.value);
+}
+
+function recordRichTextChange(field, history, before, after) {
+  if (before === after) return;
+
+  const editor = field.querySelector('[data-rich-text-editor]');
+  const input = field.querySelector('[data-rich-text-input]');
+  history.record({
+    source: editor || input,
+    undo() {
+      setRichTextValue(field, before);
+      input?.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+    redo() {
+      setRichTextValue(field, after);
+      input?.dispatchEvent(new Event('input', { bubbles: true }));
+    },
+  });
+  if (editor) editor.dataset.historyValue = after;
+}
+
+function updateRichTextToolbar(field) {
+  const editor = field.querySelector('[data-rich-text-editor]');
+  const input = field.querySelector('[data-rich-text-input]');
+  const selection = richTextSelection(editor);
+
+  field.querySelectorAll('[data-rich-text-command]').forEach(button => {
+    const mark = button.dataset.richTextCommand;
+    const active = selection
+        ? selectionAllHaveMark(parseRichTextValue(input?.value || ''), selection.start, selection.end, mark)
+        : false;
+    button.disabled = !selection;
+    button.dataset.active = active ? 'true' : 'false';
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    button.classList.toggle('opacity-50', !selection);
+  });
+}
+
+function renderRichTextValue(editor, value) {
+  editor.replaceChildren();
+  parseRichTextValue(value).forEach(segment => {
+    if (segment.marks.size === 0) {
+      editor.appendChild(document.createTextNode(segment.text));
+      return;
+    }
+
+    const span = document.createElement('span');
+    span.dataset.richTextMark = [...segment.marks].join(' ');
+    span.className = [...segment.marks]
+        .map(mark => RICH_TEXT_MARKS[mark]?.className)
+        .filter(Boolean)
+        .join(' ');
+    span.textContent = segment.text;
+    editor.appendChild(span);
+  });
+  updateRichTextEmptyState(editor);
+}
+
+function parseRichTextValue(value) {
+  const segments = [];
+  const active = new Set();
+  let text = '';
+
+  for (let index = 0; index < (value || '').length;) {
+    const mark = richTextMarkAt(value, index);
+    if (mark) {
+      pushRichTextSegment(segments, text, active);
+      text = '';
+      if (active.has(mark)) {
+        active.delete(mark);
+      } else {
+        active.add(mark);
+      }
+      index += RICH_TEXT_MARKS[mark].token.length;
+      continue;
+    }
+
+    text += value[index];
+    index++;
+  }
+
+  pushRichTextSegment(segments, text, active);
+  return mergeRichTextSegments(segments);
+}
+
+function richTextMarkAt(value, index) {
+  return RICH_TEXT_MARK_ORDER.find(mark => value.startsWith(RICH_TEXT_MARKS[mark].token, index));
+}
+
+function segmentsFromRichTextEditor(editor) {
+  const segments = [];
+
+  function visit(node, marks) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      pushRichTextSegment(segments, node.nodeValue || '', marks);
+      return;
+    }
+    if (!isElement(node)) return;
+
+    const nextMarks = new Set(marks);
+    (node.dataset.richTextMark || '').split(/\s+/).filter(Boolean).forEach(mark => {
+      if (RICH_TEXT_MARKS[mark]) nextMarks.add(mark);
+    });
+    node.childNodes.forEach(child => visit(child, nextMarks));
+  }
+
+  editor.childNodes.forEach(child => visit(child, new Set()));
+  return mergeRichTextSegments(segments);
+}
+
+function serializeRichTextSegments(segments) {
+  return mergeRichTextSegments(segments).map(segment => {
+    let text = segment.text;
+    RICH_TEXT_MARK_ORDER.forEach(mark => {
+      if (segment.marks.has(mark)) {
+        const token = RICH_TEXT_MARKS[mark].token;
+        text = `${token}${text}${token}`;
+      }
+    });
+    return text;
+  }).join('');
+}
+
+function markedRichTextValue(value, start, end, mark) {
+  const segments = parseRichTextValue(value);
+  const shouldApply = selectionHasUnmarkedText(segments, start, end, mark);
+  return serializeRichTextSegments(setMarkInRange(segments, start, end, mark, shouldApply));
+}
+
+function plainRichTextValue(value) {
+  return parseRichTextValue(value).map(segment => segment.text).join('').trim();
+}
+
+function setMarkInRange(segments, start, end, mark, enabled) {
+  const output = [];
+  let position = 0;
+
+  segments.forEach(segment => {
+    const segmentStart = position;
+    const segmentEnd = position + segment.text.length;
+    position = segmentEnd;
+
+    if (segmentEnd <= start || segmentStart >= end) {
+      output.push(segment);
+      return;
+    }
+
+    const beforeEnd = Math.max(0, start - segmentStart);
+    const markedStart = Math.max(0, start - segmentStart);
+    const markedEnd = Math.min(segment.text.length, end - segmentStart);
+
+    pushRichTextSegment(output, segment.text.slice(0, beforeEnd), segment.marks);
+    const marks = new Set(segment.marks);
+    if (enabled) {
+      marks.add(mark);
+    } else {
+      marks.delete(mark);
+    }
+    pushRichTextSegment(output, segment.text.slice(markedStart, markedEnd), marks);
+    pushRichTextSegment(output, segment.text.slice(markedEnd), segment.marks);
+  });
+
+  return mergeRichTextSegments(output);
+}
+
+function selectionHasUnmarkedText(segments, start, end, mark) {
+  let position = 0;
+  return segments.some(segment => {
+    const segmentStart = position;
+    const segmentEnd = position + segment.text.length;
+    position = segmentEnd;
+    return segmentEnd > start && segmentStart < end && !segment.marks.has(mark);
+  });
+}
+
+function selectionAllHaveMark(segments, start, end, mark) {
+  if (!mark || start === end) return false;
+  let hasText = false;
+  let allMarked = true;
+  let position = 0;
+
+  segments.forEach(segment => {
+    const segmentStart = position;
+    const segmentEnd = position + segment.text.length;
+    position = segmentEnd;
+    if (segmentEnd <= start || segmentStart >= end) return;
+    hasText = true;
+    allMarked = allMarked && segment.marks.has(mark);
+  });
+
+  return hasText && allMarked;
+}
+
+function pushRichTextSegment(segments, text, marks) {
+  if (!text) return;
+  segments.push({ text, marks: new Set(marks) });
+}
+
+function mergeRichTextSegments(segments) {
+  const merged = [];
+  segments.forEach(segment => {
+    if (!segment.text) return;
+    const previous = merged[merged.length - 1];
+    if (previous && sameMarks(previous.marks, segment.marks)) {
+      previous.text += segment.text;
+    } else {
+      merged.push({ text: segment.text, marks: new Set(segment.marks) });
+    }
+  });
+  return merged;
+}
+
+function sameMarks(left, right) {
+  return left.size === right.size && [...left].every(mark => right.has(mark));
+}
+
+function richTextSelection(editor) {
+  if (!editor) return null;
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0 || selection.isCollapsed) return null;
+
+  const range = selection.getRangeAt(0);
+  if (!editor.contains(range.startContainer) || !editor.contains(range.endContainer)) return null;
+
+  const start = richTextOffset(editor, range.startContainer, range.startOffset);
+  const end = richTextOffset(editor, range.endContainer, range.endOffset);
+  return start <= end ? { start, end } : { start: end, end: start };
+}
+
+function richTextOffset(editor, node, offset) {
+  const range = document.createRange();
+  range.selectNodeContents(editor);
+  range.setEnd(node, offset);
+  return range.toString().length;
+}
+
+function setRichTextSelection(editor, start, end) {
+  if (!editor) return;
+  const startPosition = richTextPosition(editor, start);
+  const endPosition = richTextPosition(editor, end);
+  if (!startPosition || !endPosition) {
+    editor.focus();
+    return;
+  }
+
+  const range = document.createRange();
+  range.setStart(startPosition.node, startPosition.offset);
+  range.setEnd(endPosition.node, endPosition.offset);
+  const selection = window.getSelection();
+  selection.removeAllRanges();
+  selection.addRange(range);
+  editor.focus();
+}
+
+function richTextPosition(editor, offset) {
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+  let position = 0;
+  let last = null;
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    last = node;
+    const nextPosition = position + node.nodeValue.length;
+    if (offset <= nextPosition) {
+      return { node, offset: offset - position };
+    }
+    position = nextPosition;
+  }
+
+  return last ? { node: last, offset: last.nodeValue.length } : null;
+}
+
+function updateRichTextEmptyState(editor) {
+  editor.dataset.empty = editor.textContent.trim() ? 'false' : 'true';
+}
+
+function insertPlainTextAtSelection(text) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+  range.deleteContents();
+  range.insertNode(document.createTextNode(text));
+  range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
+function setColorValue(field, value) {
+  const input = field.querySelector('[data-color-value]');
+  if (!input) return '';
+
+  input.value = normalizeColor(value);
+  syncColorPicker(field);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  return input.value;
+}
+
+function syncColorPicker(field) {
+  const input = field.querySelector('[data-color-value]');
+  const picker = field.querySelector('[data-color-picker]');
+  if (!input || !picker || !isHexColor(input.value)) return;
+  picker.value = normalizeColor(input.value).toLowerCase();
+}
+
+function normalizeColor(value) {
+  return (value || '').trim().toUpperCase();
+}
+
+function isHexColor(value) {
+  return /^#[0-9A-Fa-f]{6}$/.test((value || '').trim());
+}
+
 function setupKeyboardShortcuts(history) {
   document.addEventListener('keydown', event => {
     if (!(event.ctrlKey || event.metaKey)) return;
@@ -371,7 +828,13 @@ function recordListChange(list, history, callback) {
 }
 
 function snapshotRepeatRows(list) {
-  return list.querySelector('[data-repeat-rows]')?.innerHTML || '';
+  const rows = list.querySelector('[data-repeat-rows]');
+  if (!rows) return '';
+
+  const snapshot = rows.cloneNode(true);
+  snapshot.querySelectorAll('[data-rich-text-field]').forEach(field => delete field.dataset.richTextReady);
+  snapshot.querySelectorAll('[data-color-field]').forEach(field => delete field.dataset.colorReady);
+  return snapshot.innerHTML;
 }
 
 function restoreRepeatRows(list, html, history) {
@@ -385,6 +848,8 @@ function restoreRepeatRows(list, html, history) {
 function hydrateRepeatList(list, history) {
   resetImagePickers(list);
   renumberRepeatList(list);
+  setupRichTextEditors(list, history);
+  setupColorFields(list, history);
   setupImagePickers(list, history);
 }
 
@@ -476,10 +941,10 @@ function updateRowSummary(row) {
   if (!summary) return;
 
   const textFields = Array.from(row.querySelectorAll('[data-repeat-field]'))
-      .filter(field => field.type !== 'hidden' && field.type !== 'file')
+      .filter(field => (field.type !== 'hidden' || field.matches('[data-rich-text-input]')) && field.type !== 'file')
       .map(field => ({
         field,
-        value: fieldValue(field),
+        value: field.matches('[data-rich-text-input]') ? plainRichTextValue(fieldValue(field)) : fieldValue(field),
         label: repeatFieldLabel(field),
       }))
       .filter(item => item.value.length > 0);
@@ -746,6 +1211,13 @@ function collectPublishIssues(scope) {
     }
   });
 
+  scope.querySelectorAll('[data-publish-color]').forEach(field => {
+    const value = fieldValue(field);
+    if (value && !isHexColor(value)) {
+      issues.push(field.dataset.publishColor);
+    }
+  });
+
   scope.querySelectorAll('[data-repeat-list]').forEach(list => {
     const rows = list.querySelectorAll('[data-repeat-rows] > [data-repeat-row]');
     rows.forEach((row, index) => {
@@ -754,6 +1226,12 @@ function collectPublishIssues(scope) {
       row.querySelectorAll('[data-repeat-required]').forEach(field => {
         if (!fieldValue(field)) {
           issues.push(field.dataset.repeatRequired.replace('{number}', index + 1));
+        }
+      });
+      row.querySelectorAll('[data-repeat-color]').forEach(field => {
+        const value = fieldValue(field);
+        if (value && !isHexColor(value)) {
+          issues.push(field.dataset.repeatColor.replace('{number}', index + 1));
         }
       });
     });
@@ -882,14 +1360,14 @@ function fieldValue(field) {
 }
 
 function rowHasContent(row) {
-  return Array.from(row.querySelectorAll('input, textarea')).some(field => {
-    if (field.type === 'hidden') return false;
+  return Array.from(row.querySelectorAll('input, textarea, [data-rich-text-editor]')).some(field => {
+    if (field.type === 'hidden' && !field.matches('[data-rich-text-input]')) return false;
     return Boolean(fieldValue(field));
   });
 }
 
 function firstEditableField(row) {
-  return row.querySelector('input:not([type="hidden"]):not([type="file"]), textarea');
+  return row.querySelector('[data-rich-text-editor], input:not([type="hidden"]):not([type="file"]), textarea');
 }
 
 function markListChanged(list) {

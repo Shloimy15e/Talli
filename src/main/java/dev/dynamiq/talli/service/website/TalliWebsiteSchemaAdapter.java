@@ -17,16 +17,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 @Component
 public class TalliWebsiteSchemaAdapter implements WebsiteContentAdapter {
 
     public static final String TYPE = "talli_schema_v1";
     public static final String SCHEMA_PATH = "talli/editor.schema.json";
+    private static final Pattern HEX_COLOR = Pattern.compile("^#[0-9A-Fa-f]{6}$");
 
     private final ObjectMapper objectMapper;
 
@@ -208,8 +211,9 @@ public class TalliWebsiteSchemaAdapter implements WebsiteContentAdapter {
                 existingName,
                 touchedName,
                 values,
+                marks(field),
                 nullableText(field, "required"),
-                nullableText(field, "invalid")
+                invalidMessage(field, type)
         );
     }
 
@@ -344,6 +348,10 @@ public class TalliWebsiteSchemaAdapter implements WebsiteContentAdapter {
     private void applyTextValue(ObjectNode root, String path, JsonNode field, String value) {
         if ("paragraphs".equals(text(field, "transform", ""))) {
             setNode(root, path, lines(value));
+            return;
+        }
+        if ("color".equals(text(field, "type", "text"))) {
+            setText(root, path, normalizedColor(value));
             return;
         }
         setText(root, path, value);
@@ -588,6 +596,43 @@ public class TalliWebsiteSchemaAdapter implements WebsiteContentAdapter {
             return "";
         }
         return value.asText("");
+    }
+
+    private List<String> marks(JsonNode field) {
+        List<String> marks = new ArrayList<>();
+        for (JsonNode mark : iterable(field.path("marks"))) {
+            String value = mark.asText("");
+            if (!value.isBlank()) {
+                marks.add(value);
+            }
+        }
+        return List.copyOf(marks);
+    }
+
+    private String invalidMessage(JsonNode field, String type) {
+        String invalid = nullableText(field, "invalid");
+        if (invalid != null) {
+            return invalid;
+        }
+        String label = text(field, "label", "This field");
+        if ("email".equals(type)) {
+            return label + " is not a valid email address.";
+        }
+        if ("color".equals(type)) {
+            return label + " must be a hex color like #D2A84F.";
+        }
+        return null;
+    }
+
+    private String normalizedColor(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String color = value.trim();
+        if (!HEX_COLOR.matcher(color).matches()) {
+            throw new IllegalArgumentException("Color fields must use a hex color like #D2A84F.");
+        }
+        return color.toUpperCase(Locale.ROOT);
     }
 
     private List<String> imageValues(JsonNode value, JsonNode itemSchema) {

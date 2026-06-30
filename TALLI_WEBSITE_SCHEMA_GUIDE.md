@@ -237,6 +237,8 @@ The Talli schema should stay small. These are the preferred field types:
 text
 email
 textarea
+richText
+color
 image
 imageList
 ```
@@ -249,6 +251,8 @@ repeat
 ```
 
 Avoid adding field types unless the editor truly needs them. Every new field type increases the chance the editor starts feeling like Wix.
+
+Use `richText` only for heading-scale copy that explicitly needs one supported mark. Do not use it for body paragraphs, buttons, navigation labels, alt text, URLs, or operational labels.
 
 ## Field Object Reference
 
@@ -301,6 +305,45 @@ Avoid adding field types unless the editor truly needs them. Every new field typ
 ```
 
 `transform: "paragraphs"` means Talli may show the array as one textarea and split it back into an array on publish.
+
+### Rich Text
+
+```json
+{
+  "id": "homeHeroHeadline",
+  "type": "richText",
+  "label": "Main headline",
+  "marks": ["accent"],
+  "source": {
+    "file": "content/home.json",
+    "path": "/hero/headline"
+  }
+}
+```
+
+For now, `accent` is the only supported mark. Talli stores it in the content string with double asterisks:
+
+```text
+Strategic **clarity** for investment real estate.
+```
+
+Future marks may be added through `marks`, but do not turn this into a full document editor unless a site actually needs bold, italic, links, or lists.
+
+### Color
+
+```json
+{
+  "id": "brandAccentColor",
+  "type": "color",
+  "label": "Accent color",
+  "source": {
+    "file": "content/global.json",
+    "path": "/brand/accentColor"
+  }
+}
+```
+
+Color values must be six-digit hex strings such as `#D2A84F`.
 
 ### Image
 
@@ -590,6 +633,7 @@ Talli's schema adapter can:
 - resolve JSON Pointer paths
 - render repeat blocks
 - apply text/email/textarea/image/imageList updates
+- apply richText strings and color values
 - apply computed values
 - preserve unknown keys
 - write changed JSON files

@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class TalliWebsiteSchemaAdapterTest {
 
@@ -24,7 +25,7 @@ class TalliWebsiteSchemaAdapterTest {
     void additionalPathsReadsContentFilesFromSchema() {
         assertThat(adapter.expectedPaths()).containsExactly(TalliWebsiteSchemaAdapter.SCHEMA_PATH);
         assertThat(adapter.additionalPaths(filesWithSchemaOnly()))
-                .containsExactly("content/home.json", "content/contact.json");
+                .containsExactly("content/home.json", "content/contact.json", "content/global.json");
     }
 
     @Test
@@ -37,7 +38,15 @@ class TalliWebsiteSchemaAdapterTest {
 
         WebsiteEditorField headline = home.blocks().get(0).fields().get(0);
         assertThat(headline.name()).isEqualTo("homeHeroHeadline");
-        assertThat(headline.value()).isEqualTo("Old headline");
+        assertThat(headline.kind()).isEqualTo("richText");
+        assertThat(headline.value()).isEqualTo("Old **headline**");
+        assertThat(headline.marks()).containsExactly("accent");
+        assertThat(headline.supportsMark("accent")).isTrue();
+
+        WebsiteEditorField color = form.sections().get(1).blocks().get(0).fields().get(1);
+        assertThat(color.kind()).isEqualTo("color");
+        assertThat(color.value()).isEqualTo("#D2A84F");
+        assertThat(color.invalidMessage()).isEqualTo("Accent color must be a hex color like #D2A84F.");
 
         WebsiteEditorBlock pillars = home.blocks().get(1);
         assertThat(pillars.repeat().itemLabel()).isEqualTo("Pillar");
@@ -84,13 +93,14 @@ class TalliWebsiteSchemaAdapterTest {
     @Test
     void applyUpdatesContentWithComputedRepeatValuesAndUploads() throws Exception {
         Map<String, String[]> params = Map.ofEntries(
-                Map.entry("homeHeroHeadline", one("New headline")),
+                Map.entry("homeHeroHeadline", one("New **headline**")),
                 Map.entry("homeIntroParagraphs", one("First paragraph\n\nSecond paragraph")),
                 Map.entry("homePillars__title_0", one("Understanding")),
                 Map.entry("homePillars__description_0", one("Updated description")),
                 Map.entry("homePillars__title_1", one("Execution")),
                 Map.entry("homePillars__description_1", one("Move carefully")),
-                Map.entry("contactEmail", one("hello@example.com"))
+                Map.entry("contactEmail", one("hello@example.com")),
+                Map.entry("brandAccentColor", one("#d2a84f"))
         );
         LinkedMultiValueMap<String, MultipartFile> uploads = new LinkedMultiValueMap<>();
         uploads.add("homeHeroImage", new MockMultipartFile(
@@ -102,8 +112,9 @@ class TalliWebsiteSchemaAdapterTest {
 
         JsonNode home = objectMapper.readTree(byPath.get("content/home.json"));
         JsonNode contact = objectMapper.readTree(byPath.get("content/contact.json"));
+        JsonNode global = objectMapper.readTree(byPath.get("content/global.json"));
 
-        assertThat(home.path("hero").path("headline").asText()).isEqualTo("New headline");
+        assertThat(home.path("hero").path("headline").asText()).isEqualTo("New **headline**");
         assertThat(home.path("hero").path("image").path("src").asText()).isEqualTo("/images/cms/7/home-hero.png");
         assertThat(home.path("intro").path("paragraphs")).hasSize(2);
         assertThat(home.path("approach").path("pillars")).hasSize(2);
@@ -111,7 +122,17 @@ class TalliWebsiteSchemaAdapterTest {
         assertThat(home.path("approach").path("pillars").get(1).path("number").asText()).isEqualTo("02");
         assertThat(home.path("approach").path("pillars").get(1).path("title").asText()).isEqualTo("Execution");
         assertThat(contact.path("footer").path("email").asText()).isEqualTo("hello@example.com");
+        assertThat(global.path("brand").path("accentColor").asText()).isEqualTo("#D2A84F");
         assertThat(byPath).containsKey("public/images/cms/7/home-hero.png");
+    }
+
+    @Test
+    void applyRejectsInvalidColorValues() {
+        assertThatThrownBy(() -> adapter.apply(7L, files(), Map.ofEntries(
+                Map.entry("brandAccentColor", one("gold"))
+        ), new LinkedMultiValueMap<>()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("hex color");
     }
 
     private Map<String, byte[]> filesWithSchemaOnly() {
@@ -124,7 +145,7 @@ class TalliWebsiteSchemaAdapterTest {
                 "content/home.json", bytes("""
                         {
                           "hero": {
-                            "headline": "Old headline",
+                            "headline": "Old **headline**",
                             "text": "Old text",
                             "image": {
                               "src": "/images/old.jpg"
@@ -149,6 +170,13 @@ class TalliWebsiteSchemaAdapterTest {
                         {
                           "footer": {
                             "email": "old@example.com"
+                          }
+                        }
+                        """),
+                "content/global.json", bytes("""
+                        {
+                          "brand": {
+                            "accentColor": "#D2A84F"
                           }
                         }
                         """)
@@ -186,7 +214,7 @@ class TalliWebsiteSchemaAdapterTest {
         return """
                 {
                   "version": "talli-editor/v1",
-                  "contentFiles": ["content/home.json", "content/contact.json"],
+                  "contentFiles": ["content/home.json", "content/contact.json", "content/global.json"],
                   "sections": [
                     {
                       "id": "home",
@@ -200,8 +228,9 @@ class TalliWebsiteSchemaAdapterTest {
                           "fields": [
                             {
                               "id": "homeHeroHeadline",
-                              "type": "text",
+                              "type": "richText",
                               "label": "Main headline",
+                              "marks": ["accent"],
                               "source": {
                                 "file": "content/home.json",
                                 "path": "/hero/headline"
@@ -289,6 +318,15 @@ class TalliWebsiteSchemaAdapterTest {
                                 "path": "/footer/email"
                               },
                               "required": "Contact email is empty."
+                            },
+                            {
+                              "id": "brandAccentColor",
+                              "type": "color",
+                              "label": "Accent color",
+                              "source": {
+                                "file": "content/global.json",
+                                "path": "/brand/accentColor"
+                              }
                             }
                           ]
                         }

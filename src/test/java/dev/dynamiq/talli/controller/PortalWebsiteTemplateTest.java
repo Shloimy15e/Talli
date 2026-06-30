@@ -77,6 +77,10 @@ class PortalWebsiteTemplateTest {
         assertThat(html).contains("data-toggle-row");
         assertThat(html).contains("data-undo-button");
         assertThat(html).contains("data-redo-button");
+        assertThat(html).contains("data-rich-text-editor");
+        assertThat(html).contains("data-rich-text-command=\"accent\"");
+        assertThat(html).contains("data-color-picker");
+        assertThat(html).contains("data-color-value");
         assertThat(html).contains("data-publish-review");
         assertThat(html).contains("/js/website-editor.js");
         assertThat(html).contains("Publish changes");
@@ -114,8 +118,9 @@ class PortalWebsiteTemplateTest {
         return new WebsiteEditorForm(List.of(
                 new WebsiteEditorSection("home", "Home page", "First impression", "home", List.of(
                         WebsiteEditorBlock.fields("two-column", List.of(
-                                WebsiteEditorField.text("homeHeroHeadline", "Main headline", "Old headline", "", "half")
+                                WebsiteEditorField.richText("homeHeroHeadline", "Main headline", "Old **headline**", "", "half", List.of("accent"))
                                         .required("Home page main headline is empty."),
+                                WebsiteEditorField.color("brandAccentColor", "Accent color", "#D2A84F", "#D2A84F", "half"),
                                 WebsiteEditorField.email("contactEmail", "Email address", "info@example.com", "", "half")
                                         .required("Contact email is empty.")
                         )),

@@ -9,6 +9,23 @@
         #website-editor-form textarea {
           resize: vertical;
         }
+        .cms-rich-text-editor[data-empty="true"]::before {
+          content: attr(data-placeholder);
+          color: #64748b;
+          pointer-events: none;
+        }
+        .cms-rich-text-accent {
+          border-radius: 0.25rem;
+          background: #fef3c7;
+          color: #9a3412;
+          font-weight: 600;
+          padding: 0 0.125rem;
+        }
+        .cms-rich-text-button[data-active="true"] {
+          border-color: #fb923c;
+          background: #ffedd5;
+          color: #9a3412;
+        }
       </style>
 
       <div data-website-editor class="space-y-6">
@@ -93,6 +110,36 @@
                                     class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-[#ea7c28] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100"></textarea>
                         </label>
 
+                        <div th:case="'richText'" data-rich-text-field class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
+                          <span class="mb-2 block text-sm font-semibold text-slate-700" th:text="${field.label}">Field</span>
+                          <div class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 shadow-sm focus-within:border-[#ea7c28] focus-within:bg-white focus-within:ring-2 focus-within:ring-orange-100">
+                            <div class="flex items-center gap-2 border-b border-slate-200 bg-white px-2 py-1.5">
+                              <button th:if="${field.supportsMark('accent')}" type="button" data-rich-text-command="accent"
+                                      class="cms-rich-text-button inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                <i data-lucide="highlighter" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                <span>Accent</span>
+                              </button>
+                            </div>
+                            <div data-rich-text-editor contenteditable="true" role="textbox" aria-multiline="false"
+                                 th:attr="aria-label=${field.label},data-placeholder=${field.placeholder}"
+                                 class="cms-rich-text-editor min-h-11 w-full px-3 py-2.5 text-sm text-slate-900 outline-none"></div>
+                          </div>
+                          <input type="hidden" data-rich-text-input th:name="${field.name}" th:value="${field.value}"
+                                 th:attr="data-publish-required=${field.requiredMessage}">
+                        </div>
+
+                        <label th:case="'color'" data-color-field class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
+                          <span class="mb-2 block text-sm font-semibold text-slate-700" th:text="${field.label}">Field</span>
+                          <span class="flex items-center gap-2">
+                            <input type="color" data-color-picker value="#D2A84F"
+                                   class="h-10 w-12 shrink-0 cursor-pointer rounded-md border border-slate-200 bg-white p-1 shadow-sm">
+                            <input type="text" data-color-value th:name="${field.name}" th:value="${field.value}" th:placeholder="${field.placeholder}"
+                                   pattern="#[0-9A-Fa-f]{6}" maxlength="7"
+                                   th:attr="data-publish-required=${field.requiredMessage},data-publish-color=${field.invalidMessage}"
+                                   class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm text-slate-900 uppercase shadow-sm focus:border-[#ea7c28] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100">
+                          </span>
+                        </label>
+
                         <div th:case="'image'" class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
                           <p class="mb-2 text-sm font-semibold text-slate-700" th:text="${field.label}">Image</p>
                           <div data-preview-shell class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
@@ -146,6 +193,36 @@
                                 <textarea th:data-repeat-field="${field.name}" th:rows="${field.rows}" th:placeholder="${field.placeholder}"
                                           th:attr="data-repeat-required=${field.requiredMessage}"
                                           class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"></textarea>
+                              </label>
+
+                              <div th:case="'richText'" data-rich-text-field class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
+                                <span class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500" th:text="${field.label}">Field</span>
+                                <div class="overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-[#ea7c28] focus-within:ring-2 focus-within:ring-orange-100">
+                                  <div class="flex items-center gap-2 border-b border-slate-200 bg-white px-2 py-1.5">
+                                    <button th:if="${field.supportsMark('accent')}" type="button" data-rich-text-command="accent"
+                                            class="cms-rich-text-button inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                      <i data-lucide="highlighter" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                      <span>Accent</span>
+                                    </button>
+                                  </div>
+                                  <div data-rich-text-editor contenteditable="true" role="textbox" aria-multiline="false"
+                                       th:attr="aria-label=${field.label},data-placeholder=${field.placeholder}"
+                                       class="cms-rich-text-editor min-h-10 w-full px-3 py-2 text-sm text-slate-900 outline-none"></div>
+                                </div>
+                                <input type="hidden" data-rich-text-input th:data-repeat-field="${field.name}" value=""
+                                       th:attr="data-repeat-required=${field.requiredMessage}">
+                              </div>
+
+                              <label th:case="'color'" data-color-field class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
+                                <span class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500" th:text="${field.label}">Field</span>
+                                <span class="flex items-center gap-2">
+                                  <input type="color" data-color-picker value="#D2A84F"
+                                         class="h-9 w-11 shrink-0 cursor-pointer rounded-md border border-slate-200 bg-white p-1">
+                                  <input type="text" data-color-value th:data-repeat-field="${field.name}" th:placeholder="${field.placeholder}"
+                                         pattern="#[0-9A-Fa-f]{6}" maxlength="7"
+                                         th:attr="data-repeat-required=${field.requiredMessage},data-repeat-color=${field.invalidMessage}"
+                                         class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm uppercase">
+                                </span>
                               </label>
 
                               <div th:case="'image'" class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
@@ -216,6 +293,36 @@
                                 <textarea th:data-repeat-field="${field.name}" th:name="${field.name + '_' + itemStat.index}" th:rows="${field.rows}" th:text="${field.value}" th:placeholder="${field.placeholder}"
                                           th:attr="data-repeat-required=${field.requiredMessage}"
                                           class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"></textarea>
+                              </label>
+
+                              <div th:case="'richText'" data-rich-text-field class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
+                                <span class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500" th:text="${field.label}">Field</span>
+                                <div class="overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-[#ea7c28] focus-within:ring-2 focus-within:ring-orange-100">
+                                  <div class="flex items-center gap-2 border-b border-slate-200 bg-white px-2 py-1.5">
+                                    <button th:if="${field.supportsMark('accent')}" type="button" data-rich-text-command="accent"
+                                            class="cms-rich-text-button inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                                      <i data-lucide="highlighter" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                      <span>Accent</span>
+                                    </button>
+                                  </div>
+                                  <div data-rich-text-editor contenteditable="true" role="textbox" aria-multiline="false"
+                                       th:attr="aria-label=${field.label},data-placeholder=${field.placeholder}"
+                                       class="cms-rich-text-editor min-h-10 w-full px-3 py-2 text-sm text-slate-900 outline-none"></div>
+                                </div>
+                                <input type="hidden" data-rich-text-input th:data-repeat-field="${field.name}" th:name="${field.name + '_' + itemStat.index}" th:value="${field.value}"
+                                       th:attr="data-repeat-required=${field.requiredMessage}">
+                              </div>
+
+                              <label th:case="'color'" data-color-field class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
+                                <span class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500" th:text="${field.label}">Field</span>
+                                <span class="flex items-center gap-2">
+                                  <input type="color" data-color-picker value="#D2A84F"
+                                         class="h-9 w-11 shrink-0 cursor-pointer rounded-md border border-slate-200 bg-white p-1">
+                                  <input type="text" data-color-value th:data-repeat-field="${field.name}" th:name="${field.name + '_' + itemStat.index}" th:value="${field.value}" th:placeholder="${field.placeholder}"
+                                         pattern="#[0-9A-Fa-f]{6}" maxlength="7"
+                                         th:attr="data-repeat-required=${field.requiredMessage},data-repeat-color=${field.invalidMessage}"
+                                         class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm uppercase">
+                                </span>
                               </label>
 
                               <div th:case="'image'" class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
