@@ -43,6 +43,10 @@ public class Email implements HasMedia {
     @Column(columnDefinition = "TEXT")
     private String bcc;
 
+    /** Comma-separated CC addresses. */
+    @Column(columnDefinition = "TEXT")
+    private String cc;
+
     @Column(nullable = false)
     private String subject;
 
@@ -129,6 +133,14 @@ public class Email implements HasMedia {
 
     public void setBcc(String bcc) {
         this.bcc = bcc;
+    }
+
+    public String getCc() {
+        return cc;
+    }
+
+    public void setCc(String cc) {
+        this.cc = cc;
     }
 
     public String getSubject() {

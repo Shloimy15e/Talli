@@ -7,6 +7,7 @@ import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.UserRepository;
 import dev.dynamiq.talli.service.EmailAttachmentPolicy;
 import dev.dynamiq.talli.service.EmailService;
+import dev.dynamiq.talli.service.EmailTemplateCatalog;
 import dev.dynamiq.talli.service.MediaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,8 @@ class EmailControllerTest {
                 emailService,
                 mock(UserRepository.class),
                 mediaService,
-                new EmailAttachmentPolicy("20MB", "25MB"));
+                new EmailAttachmentPolicy("20MB", "25MB"),
+                new EmailTemplateCatalog("", ""));
 
         when(emailRepository.save(any(Email.class))).thenAnswer(invocation -> {
             Email email = invocation.getArgument(0);
@@ -64,12 +66,12 @@ class EmailControllerTest {
 
         when(mediaService.attach(any(Email.class), eq(upload), eq("attachments"))).thenReturn(stored);
         when(mediaService.loadBytes(stored)).thenReturn(content);
-        when(emailService.sendPlain(any(), any(), any(), any(), any()))
+        when(emailService.sendPlain(any(), any(), any(), any(), any(), any()))
                 .thenReturn(new EmailService.Result("", "msg_123"));
 
         String view = controller.send(
                 null, null, "to@example.com", "Files", "See attached",
-                null, null, null, List.of(upload), new RedirectAttributesModelMap());
+                null, null, null, null, null, List.of(upload), new RedirectAttributesModelMap());
 
         assertThat(view).isEqualTo("redirect:/emails");
 
@@ -79,7 +81,8 @@ class EmailControllerTest {
 
         ArgumentCaptor<List> attachments = ArgumentCaptor.forClass(List.class);
         verify(emailService).sendPlain(
-                eq("to@example.com"), eq(List.of()), eq("Files"), eq("See attached"), attachments.capture());
+                eq("to@example.com"), eq(List.of()), eq(List.of()),
+                eq("Files"), eq("See attached"), attachments.capture());
         EmailService.Attachment sent = (EmailService.Attachment) attachments.getValue().getFirst();
         assertThat(sent.filename()).isEqualTo("notes.txt");
         assertThat(sent.contentType()).isEqualTo("text/plain");
@@ -100,13 +103,31 @@ class EmailControllerTest {
         RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
         String view = controller.send(
                 null, null, "to@example.com", "Files", "See attached",
-                null, null, null, List.of(upload), redirectAttributes);
+                null, null, null, null, null, List.of(upload), redirectAttributes);
 
         assertThat(view).isEqualTo("redirect:/emails");
         assertThat(redirectAttributes.getFlashAttributes().get("error").toString())
                 .contains("large.pdf", "20 MB");
         verify(emailRepository, org.mockito.Mockito.never()).save(any());
         verify(emailService, org.mockito.Mockito.never())
-                .sendPlain(any(), any(), any(), any(), any());
+                .sendPlain(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void storesCcAndKeepsCcRecipientsOutOfBcc() {
+        when(emailService.sendPlain(any(), any(), any(), any(), any(), any()))
+                .thenReturn(new EmailService.Result("", "msg_123"));
+
+        controller.send(null, null, "to@example.com", "Hello", "Body", null,
+                null, "cc@example.com, to@example.com",
+                null, "bcc@example.com, cc@example.com",
+                null, new RedirectAttributesModelMap());
+
+        verify(emailService).sendPlain("to@example.com", List.of("cc@example.com"),
+                List.of("bcc@example.com"), "Hello", "Body", List.of());
+        ArgumentCaptor<Email> saved = ArgumentCaptor.forClass(Email.class);
+        verify(emailRepository, org.mockito.Mockito.times(2)).save(saved.capture());
+        assertThat(saved.getValue().getCc()).isEqualTo("cc@example.com");
+        assertThat(saved.getValue().getBcc()).isEqualTo("bcc@example.com");
     }
 }

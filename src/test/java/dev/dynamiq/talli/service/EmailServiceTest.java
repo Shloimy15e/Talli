@@ -68,6 +68,17 @@ class EmailServiceTest {
     }
 
     @Test
+    void sendPlain_postsCcAndBccToResend() throws Exception {
+        service.sendPlain("to@example.com", List.of("cc@example.com"),
+                List.of("bcc@example.com"), "Hello", "body text");
+
+        JsonNode payload = new ObjectMapper().readTree(readBody(captureRequest()));
+        assertThat(payload.path("to").get(0).asText()).isEqualTo("to@example.com");
+        assertThat(payload.path("cc").get(0).asText()).isEqualTo("cc@example.com");
+        assertThat(payload.path("bcc").get(0).asText()).isEqualTo("bcc@example.com");
+    }
+
+    @Test
     void sendHtml_encodesAttachmentsInResendPayload() throws Exception {
         List<EmailService.Attachment> attachments = List.of(
                 new EmailService.Attachment("report.txt", "hello".getBytes(StandardCharsets.UTF_8), "text/plain"),

@@ -110,7 +110,17 @@ public class EmailService {
 
     public Result sendPlain(String to, List<String> bcc, String subject, String body,
                             List<Attachment> attachments) {
-        String id = send(to, bcc, subject, null, body, attachments);
+        return sendPlain(to, List.of(), bcc, subject, body, attachments);
+    }
+
+    public Result sendPlain(String to, List<String> cc, List<String> bcc,
+                            String subject, String body) {
+        return sendPlain(to, cc, bcc, subject, body, List.of());
+    }
+
+    public Result sendPlain(String to, List<String> cc, List<String> bcc,
+                            String subject, String body, List<Attachment> attachments) {
+        String id = send(to, cc, bcc, subject, null, body, attachments);
         return new Result("", id);
     }
 
@@ -124,7 +134,18 @@ public class EmailService {
 
     public Result sendHtml(String to, List<String> bcc, String subject, String text, String html,
                            List<Attachment> attachments) {
-        String id = send(to, bcc, subject, html, text, attachments);
+        return sendHtml(to, List.of(), bcc, subject, text, html, attachments);
+    }
+
+    public Result sendHtml(String to, List<String> cc, List<String> bcc,
+                           String subject, String text, String html) {
+        return sendHtml(to, cc, bcc, subject, text, html, List.of());
+    }
+
+    public Result sendHtml(String to, List<String> cc, List<String> bcc,
+                           String subject, String text, String html,
+                           List<Attachment> attachments) {
+        String id = send(to, cc, bcc, subject, html, text, attachments);
         return new Result(html, id);
     }
 
@@ -150,13 +171,19 @@ public class EmailService {
 
     public Result sendTemplate(String to, List<String> bcc, String subject, String templateName,
                                Map<String, Object> variables) {
-        return sendTemplate(to, bcc, subject, templateName, variables, List.of());
+        return sendTemplate(to, List.of(), bcc, subject, templateName, variables, List.of());
     }
 
     public Result sendTemplate(String to, List<String> bcc, String subject, String templateName,
                                Map<String, Object> variables, List<Attachment> attachments) {
+        return sendTemplate(to, List.of(), bcc, subject, templateName, variables, attachments);
+    }
+
+    public Result sendTemplate(String to, List<String> cc, List<String> bcc,
+                               String subject, String templateName,
+                               Map<String, Object> variables, List<Attachment> attachments) {
         String html = render(templateName, variables);
-        String id = send(to, bcc, subject, html, null, attachments);
+        String id = send(to, cc, bcc, subject, html, null, attachments);
         return new Result(html, id);
     }
 
@@ -173,8 +200,17 @@ public class EmailService {
                                              Map<String, Object> variables,
                                              byte[] attachmentBytes, String attachmentFilename,
                                              String attachmentMime) {
+        return sendTemplateWithAttachment(to, List.of(), bcc, subject, templateName,
+                variables, attachmentBytes, attachmentFilename, attachmentMime);
+    }
+
+    public Result sendTemplateWithAttachment(String to, List<String> cc, List<String> bcc,
+                                             String subject, String templateName,
+                                             Map<String, Object> variables,
+                                             byte[] attachmentBytes, String attachmentFilename,
+                                             String attachmentMime) {
         Attachment attachment = new Attachment(attachmentFilename, attachmentBytes, attachmentMime);
-        return sendTemplate(to, bcc, subject, templateName, variables, List.of(attachment));
+        return sendTemplate(to, cc, bcc, subject, templateName, variables, List.of(attachment));
     }
 
     private String render(String templateName, Map<String, Object> variables) {
@@ -188,7 +224,7 @@ public class EmailService {
         return templateEngine.process("emails/" + templateName, context);
     }
 
-    private String send(String to, List<String> bcc, String subject,
+    private String send(String to, List<String> cc, List<String> bcc, String subject,
                         String html, String text,
                         List<Attachment> attachments) {
         if (apiKey == null || apiKey.isBlank()) {
@@ -201,6 +237,7 @@ public class EmailService {
         payload.put("subject", subject);
         if (html != null) payload.put("html", html);
         if (text != null) payload.put("text", text);
+        if (cc != null && !cc.isEmpty()) payload.put("cc", cc);
         if (bcc != null && !bcc.isEmpty()) payload.put("bcc", bcc);
         if (attachments != null && !attachments.isEmpty()) {
             payload.put("attachments", attachments.stream()
