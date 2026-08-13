@@ -1,5 +1,6 @@
 package dev.dynamiq.talli.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.dynamiq.talli.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,9 +31,11 @@ import java.util.List;
 public class SecurityConfig {
 
     private final ApiTokenAuthenticationFilter apiTokenAuthenticationFilter;
+    private final McpLegacyProtocolFilter mcpLegacyProtocolFilter;
 
-    public SecurityConfig(ApiTokenAuthenticationFilter apiTokenAuthenticationFilter) {
+    public SecurityConfig(ApiTokenAuthenticationFilter apiTokenAuthenticationFilter, ObjectMapper objectMapper) {
         this.apiTokenAuthenticationFilter = apiTokenAuthenticationFilter;
+        this.mcpLegacyProtocolFilter = new McpLegacyProtocolFilter(objectMapper);
     }
 
     /**
@@ -56,6 +59,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(apiTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(mcpLegacyProtocolFilter, ApiTokenAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.GET,  "/api/v1/projects").hasAuthority("view-projects")
                 .requestMatchers(HttpMethod.POST, "/api/v1/projects").hasAuthority("manage-projects")
