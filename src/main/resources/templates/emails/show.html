@@ -120,6 +120,12 @@
               to@example.com
             </p>
           </div>
+          <div th:if="${email.cc != null and !email.cc.isEmpty()}">
+            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">CC</p>
+            <p class="text-slate-700 font-mono break-all text-xs" th:text="${email.cc}">
+              cc@example.com
+            </p>
+          </div>
           <div th:if="${email.bcc != null and !email.bcc.isEmpty()}">
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">BCC</p>
             <p class="text-slate-700 font-mono break-all text-xs" th:text="${email.bcc}">

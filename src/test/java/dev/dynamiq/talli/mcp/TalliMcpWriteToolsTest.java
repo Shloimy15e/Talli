@@ -1,6 +1,7 @@
 package dev.dynamiq.talli.mcp;
 
 import dev.dynamiq.talli.model.Client;
+import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.Payment;
@@ -10,14 +11,18 @@ import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
+import dev.dynamiq.talli.service.AgentEmailService;
 import dev.dynamiq.talli.service.ExpenseService;
 import dev.dynamiq.talli.service.InvoiceService;
 import dev.dynamiq.talli.service.PaymentService;
 import dev.dynamiq.talli.service.ProjectService;
 import dev.dynamiq.talli.service.TimeEntryService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,6 +49,7 @@ class TalliMcpWriteToolsTest {
     private InvoiceRepository invoices;
     private PaymentService paymentService;
     private InvoiceService invoiceService;
+    private AgentEmailService agentEmailService;
     private TalliMcpWriteTools tools;
 
     @BeforeEach
@@ -57,9 +63,15 @@ class TalliMcpWriteToolsTest {
         invoices = mock(InvoiceRepository.class);
         paymentService = mock(PaymentService.class);
         invoiceService = mock(InvoiceService.class);
+        agentEmailService = mock(AgentEmailService.class);
         tools = new TalliMcpWriteTools(clients, projects, timeEntries,
                 timeEntryService, expenseService, projectService,
-                invoices, paymentService, invoiceService);
+                invoices, paymentService, invoiceService, agentEmailService);
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -196,6 +208,38 @@ class TalliMcpWriteToolsTest {
 
         assertThat(result.paymentUrl()).isEqualTo(invoice.getMercuryPaymentUrl());
         assertThat(result.buttonLabel()).isEqualTo("Pay with ACH");
+    }
+
+    @Test
+    void previewsThenSendsClientEmailUsingAuthenticatedAgentAndSignedDefault() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("finance@dynamiq.dev", null));
+        when(agentEmailService.preview("finance@dynamiq.dev", 7L, "Invoice update",
+                "Hello", "branded", true))
+                .thenReturn(new AgentEmailService.Preview(7L, "billing@acme.test",
+                        "shloimy@dynamiq.dev", "Invoice update", "Hello", "<html>Preview</html>",
+                        "branded", true, "preview-token"));
+        Email email = new Email();
+        email.setId(12L);
+        email.setToAddress("billing@acme.test");
+        email.setCc("shloimy@dynamiq.dev");
+        email.setSubject("Invoice update");
+        email.setStatus("sent");
+        when(agentEmailService.send("finance@dynamiq.dev", 7L, "Invoice update",
+                "Hello", "branded", true, "preview-token", true))
+                .thenReturn(new AgentEmailService.SendResult(email, "branded", true));
+
+        var preview = tools.previewClientEmail(7L, "Invoice update", "Hello", "branded", null);
+        var result = tools.sendClientEmail(7L, "Invoice update", "Hello",
+                "branded", null, preview.previewToken(), true);
+
+        assertThat(preview.ccAddress()).isEqualTo("shloimy@dynamiq.dev");
+        assertThat(result.emailId()).isEqualTo(12L);
+        assertThat(result.toAddress()).isEqualTo("billing@acme.test");
+        assertThat(result.ccAddress()).isEqualTo("shloimy@dynamiq.dev");
+        assertThat(result.signatureIncluded()).isTrue();
+        verify(agentEmailService).send("finance@dynamiq.dev", 7L, "Invoice update",
+                "Hello", "branded", true, "preview-token", true);
     }
 
     private static Client client(Long id, String name) {

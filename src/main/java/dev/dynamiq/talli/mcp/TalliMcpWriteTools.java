@@ -9,6 +9,7 @@ import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
+import dev.dynamiq.talli.service.AgentEmailService;
 import dev.dynamiq.talli.service.ExpenseService;
 import dev.dynamiq.talli.service.InvoiceService;
 import dev.dynamiq.talli.service.PaymentService;
@@ -17,6 +18,8 @@ import dev.dynamiq.talli.service.TimeEntryService;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,12 +44,13 @@ public class TalliMcpWriteTools {
     private final InvoiceRepository invoices;
     private final PaymentService paymentService;
     private final InvoiceService invoiceService;
+    private final AgentEmailService agentEmailService;
 
     public TalliMcpWriteTools(ClientRepository clients, ProjectRepository projects,
                               TimeEntryRepository timeEntries, TimeEntryService timeEntryService,
                               ExpenseService expenseService, ProjectService projectService,
                               InvoiceRepository invoices, PaymentService paymentService,
-                              InvoiceService invoiceService) {
+                              InvoiceService invoiceService, AgentEmailService agentEmailService) {
         this.clients = clients;
         this.projects = projects;
         this.timeEntries = timeEntries;
@@ -56,6 +60,7 @@ public class TalliMcpWriteTools {
         this.invoices = invoices;
         this.paymentService = paymentService;
         this.invoiceService = invoiceService;
+        this.agentEmailService = agentEmailService;
     }
 
     @McpTool(name = "create_client", title = "Create a client",
@@ -401,6 +406,59 @@ public class TalliMcpWriteTools {
                 invoice.getMercuryPaymentUrl(), invoice.getMercuryPaymentUrl() == null ? null : "Pay with ACH");
     }
 
+    @McpTool(name = "preview_client_email", title = "Preview a client email",
+            description = "Render a no-send preview addressed to an existing Talli client's saved email. Returns the fixed CC, plain and HTML bodies, and a token binding the exact recipient, content, template, and signature choice for send_client_email.",
+            annotations = @McpTool.McpAnnotations(title = "Preview a client email", readOnlyHint = true,
+                    destructiveHint = false, idempotentHint = true, openWorldHint = false))
+    @PreAuthorize("hasAuthority('send-emails')")
+    public EmailPreview previewClientEmail(
+            @McpToolParam(description = "Existing client ID; preview uses that client's saved email address", required = true) Long clientId,
+            @McpToolParam(description = "Email subject", required = true) String subject,
+            @McpToolParam(description = "Plain-text email body", required = true) String body,
+            @McpToolParam(description = "Optional template: branded, branded-notice, formal, or minimal", required = false) String templateId,
+            @McpToolParam(description = "Include the authenticated agent user's configured signature; defaults to true", required = false) Boolean includeSignature) {
+        if (clientId == null) throw new IllegalArgumentException("client_id is required");
+        AgentEmailService.Preview preview = agentEmailService.preview(
+                authenticatedEmail(), clientId, subject, body, templateId,
+                includeSignature == null || includeSignature);
+        return new EmailPreview(preview.clientId(), preview.toAddress(), preview.ccAddress(),
+                preview.subject(), preview.body(), preview.bodyHtml(), preview.templateId(),
+                preview.signatureIncluded(), preview.previewToken());
+    }
+
+    @McpTool(name = "send_client_email", title = "Send a client email",
+            description = "Send an explicitly approved client email exactly as returned by preview_client_email and audit it in Talli. Requires the matching preview_token and confirm_send=true. Every agent email visibly CCs the configured MCP_EMAIL_CC address.",
+            annotations = @McpTool.McpAnnotations(title = "Send a client email", readOnlyHint = false,
+                    destructiveHint = true, idempotentHint = false, openWorldHint = true))
+    @PreAuthorize("hasAuthority('send-emails')")
+    public SentEmail sendClientEmail(
+            @McpToolParam(description = "Existing client ID; email is sent only to that client's saved email address", required = true) Long clientId,
+            @McpToolParam(description = "Approved email subject", required = true) String subject,
+            @McpToolParam(description = "Approved plain-text email body", required = true) String body,
+            @McpToolParam(description = "Optional template: branded, branded-notice, formal, or minimal", required = false) String templateId,
+            @McpToolParam(description = "Include the authenticated agent user's configured signature; defaults to true", required = false) Boolean includeSignature,
+            @McpToolParam(description = "Token returned by preview_client_email for these exact inputs", required = true) String previewToken,
+            @McpToolParam(description = "Must be true only after a human approves this exact recipient, subject, and body", required = true) Boolean confirmSend) {
+        if (clientId == null) throw new IllegalArgumentException("client_id is required");
+
+        AgentEmailService.SendResult result = agentEmailService.send(
+                authenticatedEmail(), clientId, subject, body, templateId,
+                includeSignature == null || includeSignature, previewToken,
+                Boolean.TRUE.equals(confirmSend));
+        var email = result.email();
+        return new SentEmail(email.getId(), clientId, email.getToAddress(), email.getCc(),
+                email.getSubject(), email.getStatus(), email.getSentAt(), result.templateId(),
+                result.signatureIncluded(), email.getErrorMessage());
+    }
+
+    private static String authenticatedEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.getName() == null) {
+            throw new IllegalStateException("Authenticated MCP user is required");
+        }
+        return authentication.getName();
+    }
+
     private static String requireText(String value, String name) {
         if (value == null || value.isBlank()) throw new IllegalArgumentException(name + " is required");
         return value.trim();
@@ -440,4 +498,13 @@ public class TalliMcpWriteTools {
 
     public record InvoicePaymentLink(Long invoiceId, String invoiceReference,
                                      String paymentUrl, String buttonLabel) {}
+
+    public record EmailPreview(Long clientId, String toAddress, String ccAddress,
+                               String subject, String body, String bodyHtml,
+                               String templateId, boolean signatureIncluded,
+                               String previewToken) {}
+
+    public record SentEmail(Long emailId, Long clientId, String toAddress, String ccAddress,
+                            String subject, String status, LocalDateTime sentAt, String templateId,
+                            boolean signatureIncluded, String errorMessage) {}
 }
