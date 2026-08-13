@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final ApiTokenAuthenticationFilter apiTokenAuthenticationFilter;
@@ -34,13 +36,13 @@ public class SecurityConfig {
 
     /**
      * API filter chain — stateless, no CSRF, Bearer token auth.
-     * Matches /api/** paths before the web chain gets a chance.
+     * Matches API and MCP paths before the web chain gets a chance.
      */
     @Bean
     @Order(1)
     SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/api/**")
+            .securityMatcher("/api/**", "/mcp", "/mcp/**")
             .cors(cors -> cors.configurationSource(request -> {
                 var config = new CorsConfiguration();
                 config.addAllowedOriginPattern("chrome-extension://*");
@@ -61,6 +63,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/expenses").hasAuthority("manage-expenses")
                 .requestMatchers(HttpMethod.GET,  "/api/v1/clients/**").hasAuthority("view-clients")
                 .requestMatchers(HttpMethod.POST, "/api/v1/clients").hasAuthority("manage-clients")
+                .requestMatchers("/mcp", "/mcp/**").authenticated()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(eh -> eh

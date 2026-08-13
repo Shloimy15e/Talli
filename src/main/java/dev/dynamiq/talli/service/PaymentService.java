@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class PaymentService {
@@ -46,6 +47,44 @@ public class PaymentService {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow();
         Payment payment = buildPayment(invoice, paidAt, amount, method, reference, notes);
         payment.setSource("direct");
+        payment = paymentRepository.save(payment);
+        syncInvoice(invoice);
+        return payment;
+    }
+
+    /**
+     * Record a bank-sourced payment exactly once. Provider plus external ID is
+     * the stable identity, so identifiers from different banks cannot collide.
+     */
+    @Transactional
+    public Payment recordExternal(Long invoiceId, LocalDate paidAt, BigDecimal amount,
+                                  String method, String reference, String notes,
+                                  String externalProvider, String externalId) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new IllegalArgumentException("Payment amount must be positive.");
+        }
+        String provider = requireText(externalProvider, "External provider").toLowerCase(Locale.ROOT);
+        String transactionId = requireText(externalId, "External transaction ID");
+        LocalDate effectivePaidAt = paidAt != null ? paidAt : LocalDate.now();
+
+        var existing = paymentRepository.findByExternalProviderAndExternalId(provider, transactionId);
+        if (existing.isPresent()) {
+            Payment payment = existing.get();
+            boolean samePayment = payment.getInvoice().getId().equals(invoiceId)
+                    && payment.getAmount().compareTo(amount) == 0
+                    && payment.getPaidAt().equals(effectivePaidAt);
+            if (!samePayment) {
+                throw new IllegalStateException(
+                        "External transaction is already linked to a different payment.");
+            }
+            return payment;
+        }
+
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow();
+        Payment payment = buildPayment(invoice, effectivePaidAt, amount, method, reference, notes);
+        payment.setSource("direct");
+        payment.setExternalProvider(provider);
+        payment.setExternalId(transactionId);
         payment = paymentRepository.save(payment);
         syncInvoice(invoice);
         return payment;
@@ -119,6 +158,13 @@ public class PaymentService {
         payment.setNotes(notes);
         payment.setExchangeRate(exchangeRateService.getRate(invoice.getCurrency()));
         return payment;
+    }
+
+    private String requireText(String value, String field) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(field + " is required.");
+        }
+        return value.trim();
     }
 
     /** Recompute amount_paid from SUM and adjust invoice status accordingly. */

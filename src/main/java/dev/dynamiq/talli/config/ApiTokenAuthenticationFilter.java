@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Authenticates API requests (paths starting with /api/) using Bearer tokens.
+ * Authenticates API and MCP requests using Bearer tokens.
  * Builds the same authorities (roles + permissions) as the session-based
  * UserDetailsService so that @PreAuthorize / hasAuthority checks work identically.
  */
@@ -69,11 +69,14 @@ public class ApiTokenAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    /** Only apply this filter to /api/** paths, and skip CORS preflight (OPTIONS) requests. */
+    /** Only apply this filter to API/MCP paths, and skip CORS preflight requests. */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getServletPath().startsWith("/api/")
-                || "OPTIONS".equalsIgnoreCase(request.getMethod());
+        String path = request.getRequestURI().substring(request.getContextPath().length());
+        boolean protectedPath = path.startsWith("/api/")
+                || path.equals("/mcp")
+                || path.startsWith("/mcp/");
+        return !protectedPath || "OPTIONS".equalsIgnoreCase(request.getMethod());
     }
 
     private void sendUnauthorized(HttpServletResponse response, String message) throws IOException {

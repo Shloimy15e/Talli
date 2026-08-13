@@ -35,10 +35,10 @@ class MercuryInvoiceTemplateTest {
 
         assertThat(templateEngine.process("emails/invoice", email))
                 .contains("href=\"" + paymentUrl + "\"")
-                .contains("Pay invoice securely");
+                .contains("Pay with ACH");
         assertThat(templateEngine.process("invoices/pdf", pdf))
                 .contains("href=\"" + paymentUrl + "\"")
-                .contains("Pay this invoice");
+                .contains("Pay with ACH through Mercury");
     }
 
     @Test

@@ -72,6 +72,55 @@ class PaymentServiceTest {
     }
 
     @Test
+    void recordExternalStoresProviderIdentity() {
+        when(paymentRepository.findByExternalProviderAndExternalId("mercury", "txn-123"))
+                .thenReturn(Optional.empty());
+        when(paymentRepository.sumAmountByInvoiceId(1L)).thenReturn(new BigDecimal("250.00"));
+
+        Payment payment = service.recordExternal(1L, LocalDate.of(2026, 8, 13),
+                new BigDecimal("250.00"), "ACH", "bank-ref", null,
+                "Mercury", "txn-123");
+
+        assertThat(payment.getExternalProvider()).isEqualTo("mercury");
+        assertThat(payment.getExternalId()).isEqualTo("txn-123");
+        assertThat(payment.getReference()).isEqualTo("bank-ref");
+    }
+
+    @Test
+    void recordExternalReturnsExistingPaymentForSafeRetry() {
+        Payment existing = new Payment();
+        existing.setId(22L);
+        existing.setInvoice(invoice);
+        existing.setAmount(new BigDecimal("250.00"));
+        existing.setPaidAt(LocalDate.of(2026, 8, 13));
+        when(paymentRepository.findByExternalProviderAndExternalId("mercury", "txn-123"))
+                .thenReturn(Optional.of(existing));
+
+        Payment payment = service.recordExternal(1L, LocalDate.of(2026, 8, 13),
+                new BigDecimal("250.00"), "ACH", null, null,
+                "mercury", "txn-123");
+
+        assertThat(payment).isSameAs(existing);
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void recordExternalRejectsReusingTransactionForDifferentPayment() {
+        Payment existing = new Payment();
+        existing.setInvoice(invoice);
+        existing.setAmount(new BigDecimal("250.00"));
+        existing.setPaidAt(LocalDate.of(2026, 8, 13));
+        when(paymentRepository.findByExternalProviderAndExternalId("mercury", "txn-123"))
+                .thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.recordExternal(1L, LocalDate.of(2026, 8, 13),
+                new BigDecimal("300.00"), "ACH", null, null,
+                "mercury", "txn-123"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("different payment");
+    }
+
+    @Test
     void record_rejectsOverpayment() {
         // Invoice total 1000, balance 1000 — attempting to record 1200 must throw.
         assertThatThrownBy(() -> service.record(1L, LocalDate.now(),

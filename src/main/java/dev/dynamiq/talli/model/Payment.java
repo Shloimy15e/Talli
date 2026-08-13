@@ -30,6 +30,12 @@ public class Payment {
     private String method;
     private String reference;
 
+    @Column(name = "external_provider", length = 60)
+    private String externalProvider;
+
+    @Column(name = "external_id", length = 255)
+    private String externalId;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -80,6 +86,12 @@ public class Payment {
 
     public String getReference() { return reference; }
     public void setReference(String reference) { this.reference = reference; }
+
+    public String getExternalProvider() { return externalProvider; }
+    public void setExternalProvider(String externalProvider) { this.externalProvider = externalProvider; }
+
+    public String getExternalId() { return externalId; }
+    public void setExternalId(String externalId) { this.externalId = externalId; }
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }

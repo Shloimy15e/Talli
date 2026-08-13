@@ -317,7 +317,7 @@
 <div class="payment-block"
      th:if="${mercuryPaymentUrl != null and invoice.outstanding}">
     <div class="block-label">Pay this invoice</div>
-    <a th:href="${mercuryPaymentUrl}">Open the secure Mercury payment page</a>
+    <a th:href="${mercuryPaymentUrl}">Pay with ACH through Mercury</a>
     <div class="payment-url" th:text="${mercuryPaymentUrl}">https://app.mercury.com/pay/example</div>
 </div>
 
