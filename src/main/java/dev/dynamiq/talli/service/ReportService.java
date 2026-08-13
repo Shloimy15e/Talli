@@ -244,9 +244,8 @@ public class ReportService {
         List<ARLine> lines = new ArrayList<>();
 
         for (Invoice inv : invoiceRepository.findAll()) {
-            if (!"unpaid".equals(inv.getStatus()) && !"overdue".equals(inv.getStatus())) continue;
+            if (!inv.isOutstanding()) continue;
             BigDecimal balance = inv.balance();
-            if (balance.signum() <= 0) continue;
 
             long daysOutstanding = inv.getDueAt() != null
                     ? ChronoUnit.DAYS.between(inv.getDueAt(), today) : 0;
@@ -352,8 +351,7 @@ public class ReportService {
     public List<OutstandingInvoice> outstandingInvoices() {
         LocalDate today = LocalDate.now();
         return invoiceRepository.findAll().stream()
-                .filter(i -> "unpaid".equals(i.getStatus()) || "overdue".equals(i.getStatus()))
-                .filter(i -> i.balance().signum() > 0)
+                .filter(Invoice::isOutstanding)
                 .sorted(Comparator.comparing((Invoice i) -> i.getDueAt() != null ? i.getDueAt() : LocalDate.MAX))
                 .map(i -> {
                     long days = i.getDueAt() != null ? ChronoUnit.DAYS.between(i.getDueAt(), today) : 0;

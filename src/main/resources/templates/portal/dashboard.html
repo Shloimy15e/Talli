@@ -14,49 +14,49 @@
         <div class="bg-white rounded-xl border border-slate-200 p-5">
           <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total billed</p>
           <p class="font-mono text-xl font-semibold tabular-nums mt-2"
-             th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(totalBilled, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+             th:text="${csym.apply(summaryCurrency)} + ${#numbers.formatDecimal(totalBilled, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 p-5">
           <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Paid</p>
           <p class="font-mono text-xl font-semibold tabular-nums mt-2 text-emerald-600"
-             th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(totalPaid, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+             th:text="${csym.apply(summaryCurrency)} + ${#numbers.formatDecimal(totalPaid, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 p-5">
           <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Outstanding</p>
           <p class="font-mono text-xl font-semibold tabular-nums mt-2"
              th:classappend="${outstanding.signum() > 0} ? 'text-[#ea7c28]' : 'text-slate-700'"
-             th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(outstanding, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+             th:text="${csym.apply(summaryCurrency)} + ${#numbers.formatDecimal(outstanding, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
       </div>
 
       <!-- Aging -->
       <div th:if="${aging.total.signum() > 0}" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
         <div class="px-6 py-4 border-b border-slate-200">
-          <h2 class="text-sm font-semibold">Aging</h2>
+          <h2 class="text-sm font-semibold">Aging <span class="text-slate-400 font-normal">(USD)</span></h2>
         </div>
         <div class="px-6 py-4 grid grid-cols-5 gap-4 text-center text-sm">
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Current</p>
-            <p class="font-mono tabular-nums" th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(aging.current, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+            <p class="font-mono tabular-nums" th:text="${csym.apply(summaryCurrency)} + ${#numbers.formatDecimal(aging.current, 1, 'COMMA', 2, 'POINT')}">0.00</p>
           </div>
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">31–60</p>
             <p class="font-mono tabular-nums" th:classappend="${aging.days31to60.signum() > 0} ? 'text-amber-600' : ''"
-               th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(aging.days31to60, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+               th:text="${csym.apply(summaryCurrency)} + ${#numbers.formatDecimal(aging.days31to60, 1, 'COMMA', 2, 'POINT')}">0.00</p>
           </div>
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">61–90</p>
             <p class="font-mono tabular-nums" th:classappend="${aging.days61to90.signum() > 0} ? 'text-[#ea7c28]' : ''"
-               th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(aging.days61to90, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+               th:text="${csym.apply(summaryCurrency)} + ${#numbers.formatDecimal(aging.days61to90, 1, 'COMMA', 2, 'POINT')}">0.00</p>
           </div>
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">90+</p>
             <p class="font-mono tabular-nums" th:classappend="${aging.over90.signum() > 0} ? 'text-red-600' : ''"
-               th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(aging.over90, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+               th:text="${csym.apply(summaryCurrency)} + ${#numbers.formatDecimal(aging.over90, 1, 'COMMA', 2, 'POINT')}">0.00</p>
           </div>
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Total</p>
-            <p class="font-mono tabular-nums font-semibold" th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(aging.total, 1, 'COMMA', 2, 'POINT')}">0.00</p>
+            <p class="font-mono tabular-nums font-semibold" th:text="${csym.apply(summaryCurrency)} + ${#numbers.formatDecimal(aging.total, 1, 'COMMA', 2, 'POINT')}">0.00</p>
           </div>
         </div>
       </div>
@@ -97,8 +97,8 @@
                   th:text="${csym.apply(inv.currency)} + ${#numbers.formatDecimal(inv.balance(), 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
               <td class="px-6 py-3">
                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
-                      th:classappend="${inv.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${inv.status == 'overdue'} ? 'bg-red-50 text-red-700' : 'bg-[#ea7c28]/10 text-[#ea7c28]')"
-                      th:text="${inv.status}">unpaid</span>
+                      th:classappend="${inv.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${inv.status == 'overdue'} ? 'bg-red-50 text-red-700' : (${inv.status == 'void' or inv.status == 'written_off'} ? 'bg-slate-100 text-slate-500' : 'bg-[#ea7c28]/10 text-[#ea7c28]'))"
+                      th:text="${inv.status == 'written_off' ? 'Written off' : inv.status}">unpaid</span>
               </td>
             </tr>
           </tbody>

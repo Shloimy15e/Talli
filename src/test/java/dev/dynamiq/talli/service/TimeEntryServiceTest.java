@@ -7,7 +7,9 @@ import dev.dynamiq.talli.repository.TimeEntryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,6 +33,9 @@ class TimeEntryServiceTest {
 
         project = new Project();
         project.setId(1L);
+        project.setRateType("hourly");
+        project.setCurrentRate(new BigDecimal("120.00"));
+        project.setCurrency("USD");
         when(projectRepository.findById(1L)).thenReturn(Optional.of(project));
 
         ExchangeRateService exchangeRateService = mock(ExchangeRateService.class);
@@ -137,5 +142,38 @@ class TimeEntryServiceTest {
         assertThatThrownBy(() -> service.update(123L, 1L, LocalDateTime.now(), null, "x", true))
                 .isInstanceOf(java.util.NoSuchElementException.class);
         verify(timeEntryRepository, never()).save(any(TimeEntry.class));
+    }
+
+    @Test
+    void indexView_countsOnlyCompletedHourlyEntriesAsUnbilled() {
+        LocalDateTime now = LocalDateTime.now();
+        TimeEntry completed = entry(1L, project, now.minusHours(2), now.minusHours(1), 60);
+        TimeEntry running = entry(2L, project, now.minusMinutes(20), null, null);
+
+        Project fixed = new Project();
+        fixed.setRateType("fixed");
+        fixed.setCurrentRate(new BigDecimal("5000.00"));
+        fixed.setCurrency("USD");
+        TimeEntry fixedTime = entry(3L, fixed, now.minusHours(3), now.minusHours(2), 60);
+        when(timeEntryRepository.findAllByOrderByStartedAtDesc())
+                .thenReturn(List.of(completed, running, fixedTime));
+
+        TimeEntryService.IndexView view = service.indexView();
+
+        assertThat(view.unbilledMinutes()).isEqualTo(60);
+        assertThat(view.unbilledValueUsd()).isEqualByComparingTo("120.00");
+    }
+
+    private TimeEntry entry(Long id, Project entryProject, LocalDateTime startedAt,
+                            LocalDateTime endedAt, Integer durationMinutes) {
+        TimeEntry entry = new TimeEntry();
+        entry.setId(id);
+        entry.setProject(entryProject);
+        entry.setStartedAt(startedAt);
+        entry.setEndedAt(endedAt);
+        entry.setDurationMinutes(durationMinutes);
+        entry.setBillable(true);
+        entry.setBilled(false);
+        return entry;
     }
 }

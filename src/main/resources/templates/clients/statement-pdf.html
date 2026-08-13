@@ -39,6 +39,7 @@
         .status-overdue { background: #fef2f2; color: #dc2626; }
         .status-paid    { background: #f0fdf4; color: #16a34a; }
         .status-void    { background: #f1f5f9; color: #64748b; }
+        .status-written-off { background: #f1f5f9; color: #64748b; }
 
         .footer { margin-top: 32pt; padding-top: 12pt; border-top: 1px solid #e2e8f0; font-size: 8pt; color: #94a3b8; text-align: center; }
     </style>
@@ -117,13 +118,13 @@
             <td class="ref" th:text="${inv.reference}">INV-1001</td>
             <td th:text="${#temporals.format(inv.issuedAt, 'MMM d, yyyy')}">—</td>
             <td th:text="${inv.dueAt != null ? #temporals.format(inv.dueAt, 'MMM d, yyyy') : '—'}">—</td>
-            <td class="num" th:text="${currency} + ' ' + ${#numbers.formatDecimal(inv.amount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-            <td class="num" th:text="${currency} + ' ' + ${#numbers.formatDecimal(inv.amountPaid, 1, 'COMMA', 2, 'POINT')}">0.00</td>
-            <td class="num" th:text="${currency} + ' ' + ${#numbers.formatDecimal(inv.balance(), 1, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td class="num" th:text="${inv.currency} + ' ' + ${#numbers.formatDecimal(inv.amount, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td class="num" th:text="${inv.currency} + ' ' + ${#numbers.formatDecimal(inv.amountPaid, 1, 'COMMA', 2, 'POINT')}">0.00</td>
+            <td class="num" th:text="${inv.currency} + ' ' + ${#numbers.formatDecimal(inv.balance(), 1, 'COMMA', 2, 'POINT')}">0.00</td>
             <td>
                 <span class="status"
-                      th:classappend="${inv.status == 'paid'} ? 'status-paid' : (${inv.status == 'overdue'} ? 'status-overdue' : (${inv.status == 'void'} ? 'status-void' : 'status-unpaid'))"
-                      th:text="${inv.status}">unpaid</span>
+                      th:classappend="${inv.status == 'paid'} ? 'status-paid' : (${inv.status == 'overdue'} ? 'status-overdue' : (${inv.status == 'void'} ? 'status-void' : (${inv.status == 'written_off'} ? 'status-written-off' : 'status-unpaid')))"
+                      th:text="${inv.status == 'written_off' ? 'Written off' : inv.status}">unpaid</span>
             </td>
         </tr>
     </tbody>

@@ -22,7 +22,8 @@ public interface TimeEntryRepository extends JpaRepository<TimeEntry, Long> {
          + "(:#{#clientIds == null || #clientIds.isEmpty()} = true OR c.id IN :clientIds) AND "
          + "(:#{#statuses == null || #statuses.isEmpty()} = true "
          + "OR ('billed' IN :statuses AND t.billed = true) "
-         + "OR ('unbilled' IN :statuses AND t.billed = false AND t.billable = true) "
+         + "OR ('unbilled' IN :statuses AND t.billed = false AND t.billable = true "
+         + "AND t.endedAt IS NOT NULL AND p.rateType = 'hourly') "
          + "OR ('nonbillable' IN :statuses AND t.billable = false)) "
          + "ORDER BY t.startedAt DESC")
     Page<TimeEntry> findFiltered(@Param("projectIds") List<Long> projectIds,

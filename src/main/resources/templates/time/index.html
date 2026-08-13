@@ -207,7 +207,7 @@
                        class="ml-1 text-[#ea7c28] hover:underline font-mono text-[10px] text-nowrap"
                        th:text="${e.invoice.reference}">INV-1001</a>
                   </span>
-                  <span th:if="${!e.billed and e.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Unbilled</span>
+                  <span th:if="${e.unbilled}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700">Unbilled</span>
                   <span th:if="${!e.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500 text-nowrap">Non-billable</span>
                 </td>
                 <td class="px-6 py-3 font-mono text-sm text-right w-32">

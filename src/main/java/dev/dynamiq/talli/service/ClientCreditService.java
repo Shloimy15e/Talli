@@ -19,13 +19,16 @@ public class ClientCreditService {
     private final ClientCreditRepository creditRepository;
     private final ClientRepository clientRepository;
     private final ProjectRepository projectRepository;
+    private final ExchangeRateService exchangeRateService;
 
     public ClientCreditService(ClientCreditRepository creditRepository,
                                ClientRepository clientRepository,
-                               ProjectRepository projectRepository) {
+                               ProjectRepository projectRepository,
+                               ExchangeRateService exchangeRateService) {
         this.creditRepository = creditRepository;
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
+        this.exchangeRateService = exchangeRateService;
     }
 
     public List<ClientCredit> listForClient(Long clientId) {
@@ -42,8 +45,11 @@ public class ClientCreditService {
         return creditRepository.totalAvailableForClient(clientId, currency);
     }
 
-    public BigDecimal totalHeld() {
-        return creditRepository.totalHeldOverall();
+    public BigDecimal totalHeldUsd() {
+        return creditRepository.findAll().stream()
+                .map(c -> exchangeRateService.toUsdCurrent(
+                        remainingBalance(c.getId()), c.getCurrency()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Transactional

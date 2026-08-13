@@ -139,7 +139,7 @@ public class TimeEntryService {
                 String currency = e.getProject().getCurrency();
                 entryValues.put(e.getId(), value);
                 entryCurrencies.put(e.getId(), currency);
-                if (Boolean.FALSE.equals(e.getBilled())) {
+                if (e.isUnbilled()) {
                     unbilledMinutes += m;
                     unbilledValueUsd = unbilledValueUsd.add(
                             exchangeRateService.toUsdCurrent(value, currency));
@@ -181,10 +181,7 @@ public class TimeEntryService {
         List<TimeEntry> entries = timeEntryRepository.findByProjectIdOrderByStartedAtDesc(projectId);
         LocalDateTime now = LocalDateTime.now();
         int unbilledMinutes = entries.stream()
-                .filter(e -> Boolean.TRUE.equals(e.getBillable()))
-                .filter(e -> !Boolean.TRUE.equals(e.getBilled()))
-                .filter(e -> e.getEndedAt() != null)
-                .filter(e -> e.getProject() != null && e.getProject().isHourly())
+                .filter(TimeEntry::isUnbilled)
                 .mapToInt(e -> minutesFor(e, now))
                 .sum();
         return new ProjectTimeTotals(valueOf(unbilledMinutes, rate), entries.size());

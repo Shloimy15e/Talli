@@ -441,6 +441,61 @@ class InvoiceServiceTest {
     }
 
     @Test
+    void writeOffBalance_closesOnlyTheRemainingBalanceAndKeepsPaymentsSeparate() {
+        Invoice inv = new Invoice();
+        inv.setId(10L);
+        inv.setAmount(new BigDecimal("1000.00"));
+        inv.setAmountPaid(new BigDecimal("975.00"));
+        inv.setStatus("overdue");
+        when(invoiceRepository.findById(10L)).thenReturn(Optional.of(inv));
+
+        service.writeOffBalance(10L, "  Small balance forgiven  ");
+
+        assertThat(inv.getAmountPaid()).isEqualByComparingTo("975.00");
+        assertThat(inv.getAmountWrittenOff()).isEqualByComparingTo("25.00");
+        assertThat(inv.balance()).isEqualByComparingTo("0");
+        assertThat(inv.getStatus()).isEqualTo("written_off");
+        assertThat(inv.getWriteOffReason()).isEqualTo("Small balance forgiven");
+        assertThat(inv.getWrittenOffAt()).isNotNull();
+        assertThat(inv.getPaidInFullBy()).isNull();
+    }
+
+    @Test
+    void writeOffBalance_rejectsClosedInvoices() {
+        Invoice inv = new Invoice();
+        inv.setId(10L);
+        inv.setAmount(new BigDecimal("100.00"));
+        inv.setStatus("void");
+        when(invoiceRepository.findById(10L)).thenReturn(Optional.of(inv));
+
+        assertThatThrownBy(() -> service.writeOffBalance(10L, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Only unpaid or overdue");
+    }
+
+    @Test
+    void restoreWriteOff_reopensTheCollectibleBalance() {
+        Invoice inv = new Invoice();
+        inv.setId(10L);
+        inv.setAmount(new BigDecimal("1000.00"));
+        inv.setAmountPaid(new BigDecimal("975.00"));
+        inv.setAmountWrittenOff(new BigDecimal("25.00"));
+        inv.setWrittenOffAt(LocalDateTime.now());
+        inv.setWriteOffReason("Small balance forgiven");
+        inv.setDueAt(LocalDate.now().minusDays(1));
+        inv.setStatus("written_off");
+        when(invoiceRepository.findById(10L)).thenReturn(Optional.of(inv));
+
+        service.restoreWriteOff(10L);
+
+        assertThat(inv.getAmountWrittenOff()).isEqualByComparingTo("0");
+        assertThat(inv.balance()).isEqualByComparingTo("25.00");
+        assertThat(inv.getStatus()).isEqualTo("overdue");
+        assertThat(inv.getWriteOffReason()).isNull();
+        assertThat(inv.getWrittenOffAt()).isNull();
+    }
+
+    @Test
     void delete_throwsIfNotVoided() {
         Invoice inv = new Invoice();
         inv.setId(10L);
