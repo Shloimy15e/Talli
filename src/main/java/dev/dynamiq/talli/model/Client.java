@@ -24,6 +24,9 @@ public class Client {
     @Column(name = "tax_id")
     private String taxId;
 
+    @Column(name = "mercury_customer_id", unique = true, length = 36)
+    private String mercuryCustomerId;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
@@ -105,6 +108,14 @@ public class Client {
 
     public void setTaxId(String taxId) {
         this.taxId = taxId;
+    }
+
+    public String getMercuryCustomerId() {
+        return mercuryCustomerId;
+    }
+
+    public void setMercuryCustomerId(String mercuryCustomerId) {
+        this.mercuryCustomerId = mercuryCustomerId;
     }
 
     public String getNotes() {

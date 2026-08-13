@@ -1,5 +1,6 @@
 package dev.dynamiq.talli.service;
 
+import dev.dynamiq.talli.integration.mercury.MercuryInvoiceSyncService;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
@@ -33,10 +34,13 @@ public class ScheduledJobs {
 
     private final InvoiceService invoiceService;
     private final ReminderService reminderService;
+    private final MercuryInvoiceSyncService mercuryInvoiceSyncService;
 
-    public ScheduledJobs(InvoiceService invoiceService, ReminderService reminderService) {
+    public ScheduledJobs(InvoiceService invoiceService, ReminderService reminderService,
+                         MercuryInvoiceSyncService mercuryInvoiceSyncService) {
         this.invoiceService = invoiceService;
         this.reminderService = reminderService;
+        this.mercuryInvoiceSyncService = mercuryInvoiceSyncService;
     }
 
     /**
@@ -59,6 +63,15 @@ public class ScheduledJobs {
     public void sendPaymentReminders() {
         if (isInSabbathQuietHours()) return;
         reminderService.sendDueReminders();
+    }
+
+    /** Refresh open Mercury invoices and retry failed initial syncs. */
+    @Scheduled(
+            fixedDelayString = "${app.mercury.sync-delay-ms:300000}",
+            initialDelayString = "${app.mercury.sync-initial-delay-ms:60000}")
+    public void syncMercuryInvoices() {
+        if (isInSabbathQuietHours()) return;
+        mercuryInvoiceSyncService.syncOutstandingInvoices();
     }
 
     /**

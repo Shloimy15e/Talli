@@ -15,6 +15,7 @@ import dev.dynamiq.talli.repository.TimeEntryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -65,10 +66,11 @@ class InvoiceServiceTest {
         client.setName("Acme Corp");
 
         ExchangeRateService exchangeRateService = mock(ExchangeRateService.class);
+        ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
         when(exchangeRateService.getRate(any())).thenReturn(java.math.BigDecimal.ONE);
         service = new InvoiceService(invoiceRepository, invoiceItemRepository,
                 timeEntryRepository, projectRepository, clientRepository, expenseRepository,
-                exchangeRateService);
+                exchangeRateService, eventPublisher);
     }
 
     // --- CRUD / reads ---

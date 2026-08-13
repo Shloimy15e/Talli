@@ -57,3 +57,25 @@ mvn spring-boot:run
 ```
 
 App runs at `http://localhost:8080`.
+
+## Mercury invoice sync
+
+Mercury integration is opt-in. Configure these environment variables in the
+deployed app:
+
+```bash
+MERCURY_ENABLED=true
+MERCURY_API_KEY=secret-token:mercury_production_...
+MERCURY_DESTINATION_ACCOUNT_ID=00000000-0000-0000-0000-000000000000
+```
+
+New local invoices are then created in Mercury immediately. Open invoices are
+reconciled every five minutes; when Mercury reports an invoice as `Paid`, Talli
+records the remaining balance as one idempotent Mercury payment. The Mercury
+payment page is shown as the primary payment action in Talli's customer portal,
+invoice PDF, and invoice email.
+
+Mercury email delivery is off by default so it does not duplicate Talli's
+existing invoice email. Set `MERCURY_SEND_INVOICES=true` if Mercury should send
+the invoice instead. For sandbox testing, set
+`MERCURY_BASE_URL=https://api-sandbox.mercury.com/api/v1` and use a sandbox token.

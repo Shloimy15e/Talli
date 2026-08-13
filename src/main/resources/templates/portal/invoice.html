@@ -24,6 +24,19 @@
           </div>
         </div>
 
+        <!-- Primary payment action -->
+        <div th:if="${mercuryPaymentUrl != null and invoice.status != 'paid' and invoice.status != 'void'}"
+             class="px-8 py-5 border-b border-slate-200 bg-orange-50 flex items-center justify-between gap-6">
+          <div>
+            <p class="font-semibold text-slate-900">Ready to pay?</p>
+            <p class="text-sm text-slate-600 mt-1">Use Mercury's secure payment page.</p>
+          </div>
+          <a th:href="${mercuryPaymentUrl}" target="_blank" rel="noopener"
+             class="inline-flex items-center justify-center bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition shrink-0">
+            Pay invoice
+          </a>
+        </div>
+
         <!-- Meta -->
         <div class="px-8 py-5 border-b border-slate-200 grid grid-cols-3 gap-6 text-sm">
           <div>

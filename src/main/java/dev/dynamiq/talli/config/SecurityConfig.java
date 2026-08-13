@@ -123,7 +123,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/expenses/**").hasAuthority("view-expenses")
 
                 // Invoices — generate, void, delete, create, email, pdf
-                .requestMatchers(HttpMethod.POST, "/invoices", "/invoices/generate", "/invoices/generate-fixed", "/invoices/generate-deposit", "/invoices/*/void", "/invoices/*/delete", "/invoices/*/notes", "/invoices/*/pdf", "/invoices/*/attachments").hasAuthority("manage-invoices")
+                .requestMatchers(HttpMethod.POST, "/invoices", "/invoices/generate", "/invoices/generate-fixed", "/invoices/generate-deposit", "/invoices/*/void", "/invoices/*/delete", "/invoices/*/notes", "/invoices/*/pdf", "/invoices/*/attachments", "/invoices/*/mercury-sync").hasAuthority("manage-invoices")
                 .requestMatchers(HttpMethod.POST, "/invoices/*/email").hasAuthority("send-emails")
                 .requestMatchers(HttpMethod.GET, "/invoices/**").hasAuthority("view-invoices")
 

@@ -2,6 +2,7 @@ package dev.dynamiq.talli.service;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
+import dev.dynamiq.talli.integration.mercury.MercuryProperties;
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
@@ -27,6 +28,7 @@ import java.util.List;
 public class PdfService {
 
     private final SpringTemplateEngine templateEngine;
+    private final MercuryProperties mercuryProperties;
 
     @Value("${app.business.name:Dynamiq Solutions Inc}")
     private String businessName;
@@ -37,8 +39,9 @@ public class PdfService {
     @Value("${app.business.address:100 Cherry Ln, Airmont, NY 10952}")
     private String businessAddress;
 
-    public PdfService(SpringTemplateEngine templateEngine) {
+    public PdfService(SpringTemplateEngine templateEngine, MercuryProperties mercuryProperties) {
         this.templateEngine = templateEngine;
+        this.mercuryProperties = mercuryProperties;
     }
 
     public byte[] renderInvoice(Invoice invoice, List<InvoiceItem> items) {
@@ -49,6 +52,8 @@ public class PdfService {
         ctx.setVariable("invoice", invoice);
         ctx.setVariable("items", items);
         ctx.setVariable("balance", balance);
+        ctx.setVariable("mercuryPaymentUrl", mercuryProperties.paymentUrl(
+                invoice.getMercuryInvoiceSlug(), invoice.getMercuryStatus()));
         addBusinessIdentity(ctx);
 
         String html = templateEngine.process("invoices/pdf", ctx);

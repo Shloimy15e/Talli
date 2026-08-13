@@ -180,6 +180,16 @@
         .foot-block p { margin: 0; font-size: 9.5pt; color: #333; line-height: 1.55; white-space: pre-wrap; }
         .foot-block p + p { margin-top: 6pt; }
 
+        .payment-block {
+            padding: 16pt;
+            background: #fff7ed;
+            border: 1pt solid #fed7aa;
+            border-left: 4pt solid #ea7c28;
+            margin-bottom: 18pt;
+        }
+        .payment-block a { color: #c65f17; font-weight: bold; text-decoration: none; }
+        .payment-url { margin-top: 5pt; font-size: 8.5pt; color: #555; word-wrap: break-word; }
+
         .footer {
             margin-top: 20pt;
             padding-top: 10pt;
@@ -296,6 +306,14 @@
             </tr>
         </table>
     </div>
+</div>
+
+<!-- Primary payment option -->
+<div class="payment-block"
+     th:if="${mercuryPaymentUrl != null and invoice.status != 'paid' and invoice.status != 'void'}">
+    <div class="block-label">Pay this invoice</div>
+    <a th:href="${mercuryPaymentUrl}">Open the secure Mercury payment page</a>
+    <div class="payment-url" th:text="${mercuryPaymentUrl}">https://app.mercury.com/pay/example</div>
 </div>
 
 <!-- Notes -->

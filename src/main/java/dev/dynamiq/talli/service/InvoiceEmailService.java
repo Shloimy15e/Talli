@@ -1,5 +1,6 @@
 package dev.dynamiq.talli.service;
 
+import dev.dynamiq.talli.integration.mercury.MercuryProperties;
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.model.Invoice;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,17 +25,20 @@ public class InvoiceEmailService {
     private final MediaService mediaService;
     private final EmailRepository emailRepository;
     private final UserRepository userRepository;
+    private final MercuryProperties mercuryProperties;
 
     public InvoiceEmailService(EmailService emailService,
                                InvoiceRepository invoiceRepository,
                                MediaService mediaService,
                                EmailRepository emailRepository,
-                               UserRepository userRepository) {
+                               UserRepository userRepository,
+                               MercuryProperties mercuryProperties) {
         this.emailService = emailService;
         this.invoiceRepository = invoiceRepository;
         this.mediaService = mediaService;
         this.emailRepository = emailRepository;
         this.userRepository = userRepository;
+        this.mercuryProperties = mercuryProperties;
     }
 
     @Transactional
@@ -53,7 +58,12 @@ public class InvoiceEmailService {
         byte[] bytes = mediaService.loadBytes(pdf);
 
         String subject = "Invoice " + invoice.getReference() + " from Dynamiq Solutions Inc";
-        Map<String, Object> vars = Map.of("invoice", invoice, "client", client);
+        Map<String, Object> vars = new LinkedHashMap<>();
+        vars.put("invoice", invoice);
+        vars.put("client", client);
+        String paymentUrl = mercuryProperties.paymentUrl(
+                invoice.getMercuryInvoiceSlug(), invoice.getMercuryStatus());
+        if (paymentUrl != null) vars.put("mercuryPaymentUrl", paymentUrl);
 
         // BCC active users linked to this client (skip the primary recipient to avoid duplicates)
         List<String> bcc = userRepository.findByClientIdAndEnabledTrue(client.getId()).stream()

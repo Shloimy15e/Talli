@@ -1,7 +1,11 @@
 package dev.dynamiq.talli.repository;
 
 import dev.dynamiq.talli.model.Client;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
@@ -17,4 +21,8 @@ import java.util.Optional;
 public interface ClientRepository extends JpaRepository<Client, Long> {
     Optional<Client> findByNameIgnoreCase(String name);
     Optional<Client> findByEmailIgnoreCase(String email);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Client c where c.id = :id")
+    Optional<Client> findByIdForMercurySync(@Param("id") Long id);
 }
