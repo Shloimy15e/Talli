@@ -17,6 +17,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @RefreshDatabaseTest
@@ -60,18 +61,31 @@ class TalliMcpServerTest {
     }
 
     @Test
-    void toolInvocationEnforcesTalliPermissions() throws Exception {
-        Role role = new Role();
-        role.setName("mcp-no-access");
-        role = roles.save(role);
+    void modernDiscoveryFallsBackToTheSupportedLegacyHandshake() throws Exception {
+        String token = tokenForRole("mcp-discovery");
 
-        User user = new User();
-        user.setName("MCP test");
-        user.setEmail("mcp-no-access@example.test");
-        user.setPassword("unused");
-        user.setRoles(Set.of(role));
-        user = users.save(user);
-        String token = apiTokens.generate(user, "MCP test");
+        mockMvc.perform(post("/mcp")
+                        .header("Authorization", "Bearer " + token)
+                        .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "jsonrpc":"2.0",
+                                  "id":"discover-1",
+                                  "method":"server/discover",
+                                  "params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28"}}
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.jsonrpc").value("2.0"))
+                .andExpect(jsonPath("$.id").value("discover-1"))
+                .andExpect(jsonPath("$.error.code").value(-32601))
+                .andExpect(jsonPath("$.error.message").value("Method not found"));
+    }
+
+    @Test
+    void toolInvocationEnforcesTalliPermissions() throws Exception {
+        String token = tokenForRole("mcp-no-access");
 
         mockMvc.perform(post("/mcp")
                         .header("Authorization", "Bearer " + token)
@@ -84,5 +98,19 @@ class TalliMcpServerTest {
                 .andExpect(status().isOk())
                 .andExpect(result -> assertThat(result.getResponse().getContentAsString())
                         .contains("isError", "true", "Access Denied"));
+    }
+
+    private String tokenForRole(String roleName) {
+        Role role = new Role();
+        role.setName(roleName);
+        role = roles.save(role);
+
+        User user = new User();
+        user.setName("MCP test");
+        user.setEmail(roleName + "@example.test");
+        user.setPassword("unused");
+        user.setRoles(Set.of(role));
+        user = users.save(user);
+        return apiTokens.generate(user, "MCP test");
     }
 }
