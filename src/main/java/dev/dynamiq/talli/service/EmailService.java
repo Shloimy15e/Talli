@@ -15,6 +15,7 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class EmailService {
@@ -52,6 +53,16 @@ public class EmailService {
 
     /** Result of a send — html is the rendered body (empty for plain), resendId is the Resend message id. */
     public record Result(String html, String resendId) {}
+
+    /** File content and metadata to include with an outbound email. */
+    public record Attachment(String filename, byte[] content, String contentType) {
+        public Attachment {
+            if (filename == null || filename.isBlank()) {
+                throw new IllegalArgumentException("Attachment filename is required.");
+            }
+            Objects.requireNonNull(content, "Attachment content is required.");
+        }
+    }
 
     /** Body of a received email fetched from the Resend receiving API. */
     public record ReceivedEmail(String text, String html) {}
@@ -94,7 +105,12 @@ public class EmailService {
     }
 
     public Result sendPlain(String to, List<String> bcc, String subject, String body) {
-        String id = send(to, bcc, subject, null, body, null);
+        return sendPlain(to, bcc, subject, body, List.of());
+    }
+
+    public Result sendPlain(String to, List<String> bcc, String subject, String body,
+                            List<Attachment> attachments) {
+        String id = send(to, bcc, subject, null, body, attachments);
         return new Result("", id);
     }
 
@@ -103,7 +119,12 @@ public class EmailService {
      * should be rendered with formatting (e.g. with a user signature appended).
      */
     public Result sendHtml(String to, List<String> bcc, String subject, String text, String html) {
-        String id = send(to, bcc, subject, html, text, null);
+        return sendHtml(to, bcc, subject, text, html, List.of());
+    }
+
+    public Result sendHtml(String to, List<String> bcc, String subject, String text, String html,
+                           List<Attachment> attachments) {
+        String id = send(to, bcc, subject, html, text, attachments);
         return new Result(html, id);
     }
 
@@ -129,8 +150,13 @@ public class EmailService {
 
     public Result sendTemplate(String to, List<String> bcc, String subject, String templateName,
                                Map<String, Object> variables) {
+        return sendTemplate(to, bcc, subject, templateName, variables, List.of());
+    }
+
+    public Result sendTemplate(String to, List<String> bcc, String subject, String templateName,
+                               Map<String, Object> variables, List<Attachment> attachments) {
         String html = render(templateName, variables);
-        String id = send(to, bcc, subject, html, null, null);
+        String id = send(to, bcc, subject, html, null, attachments);
         return new Result(html, id);
     }
 
@@ -147,13 +173,8 @@ public class EmailService {
                                              Map<String, Object> variables,
                                              byte[] attachmentBytes, String attachmentFilename,
                                              String attachmentMime) {
-        String html = render(templateName, variables);
-        Map<String, Object> attachment = Map.of(
-                "filename", attachmentFilename,
-                "content", Base64.getEncoder().encodeToString(attachmentBytes),
-                "contentType", attachmentMime);
-        String id = send(to, bcc, subject, html, null, List.of(attachment));
-        return new Result(html, id);
+        Attachment attachment = new Attachment(attachmentFilename, attachmentBytes, attachmentMime);
+        return sendTemplate(to, bcc, subject, templateName, variables, List.of(attachment));
     }
 
     private String render(String templateName, Map<String, Object> variables) {
@@ -169,7 +190,7 @@ public class EmailService {
 
     private String send(String to, List<String> bcc, String subject,
                         String html, String text,
-                        List<Map<String, Object>> attachments) {
+                        List<Attachment> attachments) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("RESEND_API_KEY is not configured.");
         }
@@ -181,7 +202,11 @@ public class EmailService {
         if (html != null) payload.put("html", html);
         if (text != null) payload.put("text", text);
         if (bcc != null && !bcc.isEmpty()) payload.put("bcc", bcc);
-        if (attachments != null && !attachments.isEmpty()) payload.put("attachments", attachments);
+        if (attachments != null && !attachments.isEmpty()) {
+            payload.put("attachments", attachments.stream()
+                    .map(EmailService::attachmentPayload)
+                    .toList());
+        }
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -205,5 +230,15 @@ public class EmailService {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Email send interrupted", e);
         }
+    }
+
+    private static Map<String, Object> attachmentPayload(Attachment attachment) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("filename", attachment.filename());
+        payload.put("content", Base64.getEncoder().encodeToString(attachment.content()));
+        if (attachment.contentType() != null && !attachment.contentType().isBlank()) {
+            payload.put("content_type", attachment.contentType());
+        }
+        return payload;
     }
 }

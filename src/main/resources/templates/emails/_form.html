@@ -37,6 +37,7 @@
              plain: '',
              previewOpen: false,
              templateHtml: '',
+             attachmentNames: [],
              compose() {
                // Wrap the editor body HTML in the selected template (if any).
                // Uses a function replacer so literal $ sequences in the body
@@ -137,7 +138,7 @@
                   class="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
         </div>
 
-        <form th:action="@{/emails}" method="post" class="p-6 space-y-5"
+        <form th:action="@{/emails}" method="post" enctype="multipart/form-data" class="p-6 space-y-5"
               @submit="onSubmit()">
 
           <div class="grid grid-cols-2 gap-4">
@@ -197,6 +198,25 @@
             <label for="subject" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Subject</label>
             <input type="text" id="subject" name="subject" required
                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+          </div>
+
+          <div>
+            <label for="attachments" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Attachments (optional)</label>
+            <label for="attachments"
+                   class="flex items-center justify-center gap-2 w-full px-4 py-3 border border-dashed border-slate-300 rounded-lg bg-slate-50 text-sm text-slate-600 hover:border-[#ea7c28] hover:text-[#ea7c28] cursor-pointer transition">
+              <i data-lucide="paperclip" class="w-4 h-4"></i>
+              <span x-text="attachmentNames.length ? attachmentNames.length + (attachmentNames.length === 1 ? ' file selected' : ' files selected') : 'Choose files'">Choose files</span>
+            </label>
+            <input type="file" id="attachments" name="attachments" multiple class="sr-only"
+                   @change="attachmentNames = Array.from($event.target.files).map(file => file.name)">
+            <ul x-show="attachmentNames.length" x-cloak class="mt-2 space-y-1">
+              <template x-for="name in attachmentNames" :key="name">
+                <li class="flex items-center gap-2 text-xs text-slate-600">
+                  <span class="text-slate-400">•</span>
+                  <span x-text="name" class="truncate"></span>
+                </li>
+              </template>
+            </ul>
           </div>
 
           <div>

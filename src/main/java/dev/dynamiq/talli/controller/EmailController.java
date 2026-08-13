@@ -7,11 +7,13 @@ import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.UserRepository;
 import dev.dynamiq.talli.service.EmailService;
+import dev.dynamiq.talli.service.MediaService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +26,7 @@ public class EmailController {
     private final ClientRepository clientRepository;
     private final EmailService emailService;
     private final UserRepository userRepository;
+    private final MediaService mediaService;
 
     @Value("${app.mail.from-name:}")
     private String fromName;
@@ -34,11 +37,13 @@ public class EmailController {
     public EmailController(EmailRepository emailRepository,
                            ClientRepository clientRepository,
                            EmailService emailService,
-                           UserRepository userRepository) {
+                           UserRepository userRepository,
+                           MediaService mediaService) {
         this.emailRepository = emailRepository;
         this.clientRepository = clientRepository;
         this.emailService = emailService;
         this.userRepository = userRepository;
+        this.mediaService = mediaService;
     }
 
     @GetMapping
@@ -79,6 +84,7 @@ public class EmailController {
     public String show(@PathVariable Long id, Model model) {
         Email email = emailRepository.findById(id).orElseThrow();
         model.addAttribute("email", email);
+        model.addAttribute("attachments", mediaService.forOwner(email, "attachments"));
         return "emails/show";
     }
 
@@ -224,7 +230,8 @@ public class EmailController {
                        @RequestParam("body") String body,
                        @RequestParam(value = "bodyHtml", required = false) String bodyHtml,
                        @RequestParam(value = "bccUserId", required = false) List<Long> bccUserIds,
-                       @RequestParam(value = "bccManual", required = false) String bccManual) {
+                       @RequestParam(value = "bccManual", required = false) String bccManual,
+                       @RequestParam(value = "attachments", required = false) List<MultipartFile> attachments) {
         Email email = new Email();
         if (clientId != null) {
             Client client = clientRepository.findById(clientId).orElse(null);
@@ -264,10 +271,13 @@ public class EmailController {
         }
         if (htmlToSend != null) email.setBodyHtml(htmlToSend);
 
+        email = emailRepository.save(email);
+
         try {
+            List<EmailService.Attachment> outboundAttachments = storeAttachments(email, attachments);
             EmailService.Result result = htmlToSend != null
-                    ? emailService.sendHtml(toAddress, bcc, subject, body, htmlToSend)
-                    : emailService.sendPlain(toAddress, bcc, subject, body);
+                    ? emailService.sendHtml(toAddress, bcc, subject, body, htmlToSend, outboundAttachments)
+                    : emailService.sendPlain(toAddress, bcc, subject, body, outboundAttachments);
             email.setResendId(result.resendId());
             email.setStatus("sent");
             email.setSentAt(LocalDateTime.now());
@@ -278,6 +288,19 @@ public class EmailController {
 
         emailRepository.save(email);
         return "redirect:/emails";
+    }
+
+    private List<EmailService.Attachment> storeAttachments(Email email, List<MultipartFile> files) {
+        if (files == null) return List.of();
+
+        return files.stream()
+                .filter(file -> !file.isEmpty())
+                .map(file -> {
+                    var media = mediaService.attach(email, file, "attachments");
+                    return new EmailService.Attachment(
+                            media.getFilename(), mediaService.loadBytes(media), media.getMimeType());
+                })
+                .toList();
     }
 
     private String currentUserSignature(Authentication auth) {

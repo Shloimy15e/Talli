@@ -5,7 +5,12 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "emails")
-public class Email {
+public class Email implements HasMedia {
+
+    @Override
+    public String mediaOwnerType() {
+        return "email";
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

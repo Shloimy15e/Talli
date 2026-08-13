@@ -147,6 +147,33 @@
         </div>
       </div>
 
+      <!-- Attachments -->
+      <div
+        th:if="${attachments != null and !#lists.isEmpty(attachments)}"
+        class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6"
+      >
+        <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
+          <h2 class="text-sm font-semibold">Attachments</h2>
+          <span class="text-xs text-slate-400" th:text="${#lists.size(attachments)} + (${#lists.size(attachments)} == 1 ? ' file' : ' files')">1 file</span>
+        </div>
+        <ul class="divide-y divide-slate-100">
+          <li th:each="attachment : ${attachments}" class="px-6 py-3">
+            <a th:href="@{/media/{id}(id=${attachment.id})}" target="_blank"
+               class="flex items-center gap-3 text-sm group">
+              <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 group-hover:bg-[#ea7c28]/10 group-hover:text-[#ea7c28] transition">
+                <i data-lucide="paperclip" class="w-4 h-4"></i>
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block text-slate-700 truncate group-hover:text-[#ea7c28]" th:text="${attachment.filename}">file.pdf</span>
+                <span class="block text-xs text-slate-400"
+                      th:text="${#numbers.formatDecimal(attachment.sizeBytes / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB'}">12.0 KB</span>
+              </span>
+              <i data-lucide="external-link" class="w-4 h-4 text-slate-300 group-hover:text-[#ea7c28]"></i>
+            </a>
+          </li>
+        </ul>
+      </div>
+
       <!-- Error message (if failed) -->
       <div
         th:if="${email.status == 'failed' and email.errorMessage != null}"
