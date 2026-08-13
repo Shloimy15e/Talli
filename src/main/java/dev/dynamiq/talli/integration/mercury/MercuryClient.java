@@ -1,6 +1,6 @@
 package dev.dynamiq.talli.integration.mercury;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -11,7 +11,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.List;
 
 @Component
 public class MercuryClient {
@@ -24,46 +23,29 @@ public class MercuryClient {
         this.properties = properties;
         this.objectMapper = objectMapper;
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
+                .connectTimeout(Duration.ofSeconds(2))
                 .build();
     }
 
-    public Customer createCustomer(String name, String email) {
-        return request("POST", "/ar/customers", new CreateCustomerRequest(name, email), Customer.class);
-    }
-
-    public Invoice createInvoice(CreateInvoiceRequest body) {
-        return request("POST", "/ar/invoices", body, Invoice.class);
-    }
-
-    public Invoice getInvoice(String invoiceId) {
-        return request("GET", "/ar/invoices/" + invoiceId, null, Invoice.class);
-    }
-
-    private <T> T request(String method, String path, Object body, Class<T> responseType) {
-        if (!properties.isConfigured()) {
-            throw new IllegalStateException(properties.configurationError());
+    public Transaction getTransaction(String transactionId) {
+        if (!properties.isApiConfigured()) {
+            throw new IllegalStateException(properties.apiConfigurationError());
         }
 
         try {
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(URI.create(properties.baseUrl() + path))
-                    .timeout(Duration.ofSeconds(20))
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(properties.baseUrl() + "/transaction/" + transactionId))
+                    .timeout(Duration.ofSeconds(4))
                     .header("Accept", "application/json")
-                    .header("Authorization", "Bearer " + properties.apiKey());
+                    .header("Authorization", "Bearer " + properties.apiKey())
+                    .GET()
+                    .build();
 
-            if (body == null) {
-                builder.method(method, HttpRequest.BodyPublishers.noBody());
-            } else {
-                builder.header("Content-Type", "application/json");
-                builder.method(method, HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(body)));
-            }
-
-            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 throw new MercuryApiException(response.statusCode(), errorMessage(response.body()));
             }
-            return objectMapper.readValue(response.body(), responseType);
+            return objectMapper.readValue(response.body(), Transaction.class);
         } catch (MercuryApiException e) {
             throw e;
         } catch (InterruptedException e) {
@@ -84,38 +66,17 @@ public class MercuryClient {
         return body == null || body.isBlank() ? "Mercury API request failed." : body;
     }
 
-    public record Customer(String id, String name, String email) {}
-
-    public record CreateCustomerRequest(String name, String email) {}
-
-    public record LineItem(String name, BigDecimal quantity, BigDecimal unitPrice) {}
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record CreateInvoiceRequest(
-            boolean achDebitEnabled,
-            List<String> ccEmails,
-            boolean creditCardEnabled,
-            String currencyCode,
-            String customerId,
-            String destinationAccountId,
-            String dueDate,
-            String internalNote,
-            String invoiceDate,
-            String invoiceNumber,
-            List<LineItem> lineItems,
-            String payerMemo,
-            String sendEmailOption,
-            String servicePeriodEndDate,
-            String servicePeriodStartDate,
-            boolean useRealAccountNumber) {}
-
-    public record Invoice(
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Transaction(
             String id,
             BigDecimal amount,
-            String currencyCode,
-            String customerId,
-            String invoiceNumber,
-            String slug,
+            String counterpartyName,
+            String kind,
             String status,
-            String updatedAt) {}
+            String bankDescription,
+            String externalMemo,
+            String mercuryCategory,
+            String note,
+            String postedAt) {
+    }
 }

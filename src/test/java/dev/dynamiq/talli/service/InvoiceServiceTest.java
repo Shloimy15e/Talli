@@ -15,7 +15,6 @@ import dev.dynamiq.talli.repository.TimeEntryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -66,11 +65,10 @@ class InvoiceServiceTest {
         client.setName("Acme Corp");
 
         ExchangeRateService exchangeRateService = mock(ExchangeRateService.class);
-        ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
         when(exchangeRateService.getRate(any())).thenReturn(java.math.BigDecimal.ONE);
         service = new InvoiceService(invoiceRepository, invoiceItemRepository,
                 timeEntryRepository, projectRepository, clientRepository, expenseRepository,
-                exchangeRateService, eventPublisher);
+                exchangeRateService);
     }
 
     // --- CRUD / reads ---
@@ -606,6 +604,30 @@ class InvoiceServiceTest {
         service.updateNotes(88L, " ");
 
         assertThat(invoice.getNotes()).isNull();
+    }
+
+    @Test
+    void updateMercuryPaymentUrl_savesValidMercuryLinkAndCanRemoveIt() {
+        Invoice invoice = new Invoice();
+        invoice.setId(88L);
+        when(invoiceRepository.findById(88L)).thenReturn(Optional.of(invoice));
+
+        service.updateMercuryPaymentUrl(88L, "  https://app.mercury.com/pay/example  ");
+        assertThat(invoice.getMercuryPaymentUrl()).isEqualTo("https://app.mercury.com/pay/example");
+
+        service.updateMercuryPaymentUrl(88L, " ");
+        assertThat(invoice.getMercuryPaymentUrl()).isNull();
+    }
+
+    @Test
+    void updateMercuryPaymentUrl_rejectsNonMercuryLinks() {
+        Invoice invoice = new Invoice();
+        invoice.setId(88L);
+        when(invoiceRepository.findById(88L)).thenReturn(Optional.of(invoice));
+
+        assertThatThrownBy(() -> service.updateMercuryPaymentUrl(88L, "https://example.com/pay/123"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Mercury");
     }
 
     private Project fixedProject(Long id, String name, String currency, String contractAmount) {

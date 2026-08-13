@@ -66,6 +66,9 @@ public class Expense implements HasMedia {
     @Column(name = "receipt_url", columnDefinition = "TEXT")
     private String receiptUrl;
 
+    @Column(name = "mercury_transaction_id", unique = true, length = 36)
+    private String mercuryTransactionId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invoice_id")
     private Invoice invoice;
@@ -195,6 +198,14 @@ public class Expense implements HasMedia {
 
     public void setReceiptUrl(String receiptUrl) {
         this.receiptUrl = receiptUrl;
+    }
+
+    public String getMercuryTransactionId() {
+        return mercuryTransactionId;
+    }
+
+    public void setMercuryTransactionId(String mercuryTransactionId) {
+        this.mercuryTransactionId = mercuryTransactionId;
     }
 
     public Invoice getInvoice() { return invoice; }

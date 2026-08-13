@@ -9,60 +9,46 @@ public class MercuryProperties {
     private final boolean enabled;
     private final String apiKey;
     private final String baseUrl;
-    private final String destinationAccountId;
-    private final boolean sendInvoices;
-    private final boolean achDebitEnabled;
-    private final boolean creditCardEnabled;
-    private final boolean useRealAccountNumber;
-    private final String paymentPageBaseUrl;
+    private final String webhookSecret;
 
     public MercuryProperties(
             @Value("${app.mercury.enabled:false}") boolean enabled,
             @Value("${app.mercury.api-key:}") String apiKey,
             @Value("${app.mercury.base-url:https://api.mercury.com/api/v1}") String baseUrl,
-            @Value("${app.mercury.destination-account-id:}") String destinationAccountId,
-            @Value("${app.mercury.send-invoices:false}") boolean sendInvoices,
-            @Value("${app.mercury.ach-debit-enabled:true}") boolean achDebitEnabled,
-            @Value("${app.mercury.credit-card-enabled:false}") boolean creditCardEnabled,
-            @Value("${app.mercury.use-real-account-number:false}") boolean useRealAccountNumber,
-            @Value("${app.mercury.payment-page-base-url:https://app.mercury.com/pay}") String paymentPageBaseUrl) {
+            @Value("${app.mercury.webhook-secret:}") String webhookSecret) {
         this.enabled = enabled;
-        this.apiKey = apiKey == null ? "" : apiKey.trim();
-        this.baseUrl = withoutTrailingSlash(baseUrl);
-        this.destinationAccountId = destinationAccountId == null ? "" : destinationAccountId.trim();
-        this.sendInvoices = sendInvoices;
-        this.achDebitEnabled = achDebitEnabled;
-        this.creditCardEnabled = creditCardEnabled;
-        this.useRealAccountNumber = useRealAccountNumber;
-        this.paymentPageBaseUrl = withoutTrailingSlash(paymentPageBaseUrl);
+        this.apiKey = clean(apiKey);
+        this.baseUrl = clean(baseUrl).replaceFirst("/+$", "");
+        this.webhookSecret = clean(webhookSecret);
     }
 
-    public boolean isConfigured() {
-        return enabled && !apiKey.isBlank() && !destinationAccountId.isBlank();
+    public boolean isExpenseSyncConfigured() {
+        return isApiConfigured() && !webhookSecret.isBlank();
+    }
+
+    public boolean isApiConfigured() {
+        return enabled && !apiKey.isBlank();
     }
 
     public String configurationError() {
-        if (!enabled) return "Mercury integration is disabled.";
+        if (!enabled) return "Mercury expense sync is disabled.";
         if (apiKey.isBlank()) return "Mercury API key is not configured.";
-        if (destinationAccountId.isBlank()) return "Mercury destination account is not configured.";
+        if (webhookSecret.isBlank()) return "Mercury webhook secret is not configured.";
         return null;
     }
 
-    public String paymentUrl(String slug, String status) {
-        boolean payable = "Unpaid".equals(status) || "Processing".equals(status);
-        return payable && slug != null && !slug.isBlank() ? paymentPageBaseUrl + "/" + slug : null;
+    public String apiConfigurationError() {
+        if (!enabled) return "Mercury expense sync is disabled.";
+        if (apiKey.isBlank()) return "Mercury API key is not configured.";
+        return null;
     }
 
+    public boolean enabled() { return enabled; }
     public String apiKey() { return apiKey; }
     public String baseUrl() { return baseUrl; }
-    public String destinationAccountId() { return destinationAccountId; }
-    public boolean sendInvoices() { return sendInvoices; }
-    public boolean achDebitEnabled() { return achDebitEnabled; }
-    public boolean creditCardEnabled() { return creditCardEnabled; }
-    public boolean useRealAccountNumber() { return useRealAccountNumber; }
+    public String webhookSecret() { return webhookSecret; }
 
-    private static String withoutTrailingSlash(String value) {
-        if (value == null) return "";
-        return value.replaceFirst("/+$", "");
+    private static String clean(String value) {
+        return value == null ? "" : value.trim();
     }
 }

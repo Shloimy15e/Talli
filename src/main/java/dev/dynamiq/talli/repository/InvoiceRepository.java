@@ -1,12 +1,10 @@
 package dev.dynamiq.talli.repository;
 
 import dev.dynamiq.talli.model.Invoice;
-import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -41,12 +39,4 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
                                                        LocalDate periodStart,
                                                        LocalDate periodEnd);
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select i from Invoice i where i.id = :id")
-    Optional<Invoice> findByIdForMercurySync(@Param("id") Long id);
-
-    @Query("select i.id from Invoice i where i.status in ('unpaid', 'overdue') and "
-         + "((i.mercuryInvoiceId is not null and (i.mercuryStatus is null or i.mercuryStatus in ('Unpaid', 'Processing'))) "
-         + "or (i.mercuryInvoiceId is null and i.mercurySyncError is not null)) order by i.id")
-    List<Long> findMercurySyncCandidateIds();
 }

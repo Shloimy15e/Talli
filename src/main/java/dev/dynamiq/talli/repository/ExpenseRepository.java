@@ -28,6 +28,8 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     List<Expense> findBySubscriptionIdOrderByIncurredOnDesc(Long subscriptionId);
 
+    boolean existsByMercuryTransactionId(String mercuryTransactionId);
+
     // For the dashboard "this month" tile — sum of all expenses in the range.
     // Returns null if there are no rows, so callers must coalesce.
     @org.springframework.data.jpa.repository.Query("""

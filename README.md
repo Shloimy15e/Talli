@@ -58,24 +58,24 @@ mvn spring-boot:run
 
 App runs at `http://localhost:8080`.
 
-## Mercury invoice sync
+## Mercury
 
-Mercury integration is opt-in. Configure these environment variables in the
-deployed app:
+Mercury invoice creation is handled outside Talli. Paste a Mercury payment link
+onto a Talli invoice to make it the primary payment action in the customer
+portal, PDF, and invoice email. When recording the payment, choose
+`Mercury ACH` and put the Mercury transaction ID in the existing reference field.
+
+Expense import is opt-in and webhook-driven. Configure:
 
 ```bash
 MERCURY_ENABLED=true
 MERCURY_API_KEY=secret-token:mercury_production_...
-MERCURY_DESTINATION_ACCOUNT_ID=00000000-0000-0000-0000-000000000000
+MERCURY_WEBHOOK_SECRET=...
 ```
 
-New local invoices are then created in Mercury immediately. Open invoices are
-reconciled every five minutes; when Mercury reports an invoice as `Paid`, Talli
-records the remaining balance as one idempotent Mercury payment. The Mercury
-payment page is shown as the primary payment action in Talli's customer portal,
-invoice PDF, and invoice email.
-
-Mercury email delivery is off by default so it does not duplicate Talli's
-existing invoice email. Set `MERCURY_SEND_INVOICES=true` if Mercury should send
-the invoice instead. For sandbox testing, set
-`MERCURY_BASE_URL=https://api-sandbox.mercury.com/api/v1` and use a sandbox token.
+Use a read-only token with transaction access; it does not require an IP
+whitelist. Register `https://your-domain/webhooks/mercury` for
+`transaction.created` and `transaction.updated` events, then store the returned
+signing secret as `MERCURY_WEBHOOK_SECRET`. Each event triggers a read-only
+transaction lookup. Settled expense transactions are imported once, keyed by
+Mercury transaction ID. Historical backfill is intentionally not included.

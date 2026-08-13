@@ -105,37 +105,6 @@ class PaymentServiceTest {
     }
 
     @Test
-    void recordExternal_isIdempotentByProviderReference() {
-        Payment existing = new Payment();
-        existing.setId(99L);
-        when(paymentRepository.findByExternalProviderAndExternalId("mercury", "invoice-123"))
-                .thenReturn(Optional.of(existing));
-
-        Payment result = service.recordExternal(
-                1L, LocalDate.now(), "mercury", "invoice-123", "mercury", null);
-
-        assertThat(result).isSameAs(existing);
-        verify(paymentRepository, never()).save(any());
-        verify(invoiceRepository, never()).findById(any());
-    }
-
-    @Test
-    void recordExternal_paysOnlyTheOutstandingBalance() {
-        invoice.setAmountPaid(new BigDecimal("250.00"));
-        when(paymentRepository.findByExternalProviderAndExternalId("mercury", "invoice-123"))
-                .thenReturn(Optional.empty());
-        when(paymentRepository.sumAmountByInvoiceId(1L)).thenReturn(new BigDecimal("1000.00"));
-
-        Payment result = service.recordExternal(
-                1L, LocalDate.now(), "mercury", "invoice-123", "mercury", "Synced");
-
-        assertThat(result.getAmount()).isEqualByComparingTo("750.00");
-        assertThat(result.getExternalProvider()).isEqualTo("mercury");
-        assertThat(result.getExternalId()).isEqualTo("invoice-123");
-        assertThat(invoice.getStatus()).isEqualTo("paid");
-    }
-
-    @Test
     void delete_recomputesAndRevertsStatus() {
         invoice.setStatus("paid");
         invoice.setAmountPaid(new BigDecimal("1000.00"));

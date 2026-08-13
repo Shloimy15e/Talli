@@ -57,31 +57,6 @@ public class PaymentService {
     }
 
     /**
-     * Record a provider-confirmed payment exactly once. Mercury only exposes a
-     * paid invoice status, so the payment covers the local outstanding balance.
-     */
-    @Transactional
-    public Payment recordExternal(Long invoiceId, LocalDate paidAt,
-                                  String provider, String externalId, String method, String notes) {
-        Payment existing = paymentRepository
-                .findByExternalProviderAndExternalId(provider, externalId)
-                .orElse(null);
-        if (existing != null) return existing;
-
-        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow();
-        BigDecimal balance = invoice.balance();
-        if (balance.signum() <= 0) return null;
-
-        Payment payment = buildPayment(invoice, paidAt, balance, method, externalId, notes);
-        payment.setSource("direct");
-        payment.setExternalProvider(provider);
-        payment.setExternalId(externalId);
-        payment = paymentRepository.save(payment);
-        syncInvoice(invoice);
-        return payment;
-    }
-
-    /**
      * Apply a client credit to an invoice. Validates credit belongs to the
      * invoice's client, currency matches, and enough balance remains.
      */

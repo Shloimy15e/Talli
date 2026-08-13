@@ -33,12 +33,6 @@ public class Payment {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    @Column(name = "external_provider", length = 30)
-    private String externalProvider;
-
-    @Column(name = "external_id", length = 120)
-    private String externalId;
-
     /** 'direct' = fresh cash. 'credit' = applied from a client_credit. */
     @Column(nullable = false)
     private String source = "direct";
@@ -89,12 +83,6 @@ public class Payment {
 
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
-
-    public String getExternalProvider() { return externalProvider; }
-    public void setExternalProvider(String externalProvider) { this.externalProvider = externalProvider; }
-
-    public String getExternalId() { return externalId; }
-    public void setExternalId(String externalId) { this.externalId = externalId; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

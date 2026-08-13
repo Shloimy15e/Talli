@@ -1,6 +1,5 @@
 package dev.dynamiq.talli.service;
 
-import dev.dynamiq.talli.integration.mercury.MercuryProperties;
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.model.Invoice;
@@ -25,20 +24,17 @@ public class InvoiceEmailService {
     private final MediaService mediaService;
     private final EmailRepository emailRepository;
     private final UserRepository userRepository;
-    private final MercuryProperties mercuryProperties;
 
     public InvoiceEmailService(EmailService emailService,
                                InvoiceRepository invoiceRepository,
                                MediaService mediaService,
                                EmailRepository emailRepository,
-                               UserRepository userRepository,
-                               MercuryProperties mercuryProperties) {
+                               UserRepository userRepository) {
         this.emailService = emailService;
         this.invoiceRepository = invoiceRepository;
         this.mediaService = mediaService;
         this.emailRepository = emailRepository;
         this.userRepository = userRepository;
-        this.mercuryProperties = mercuryProperties;
     }
 
     @Transactional
@@ -61,8 +57,7 @@ public class InvoiceEmailService {
         Map<String, Object> vars = new LinkedHashMap<>();
         vars.put("invoice", invoice);
         vars.put("client", client);
-        String paymentUrl = mercuryProperties.paymentUrl(
-                invoice.getMercuryInvoiceSlug(), invoice.getMercuryStatus());
+        String paymentUrl = invoice.getMercuryPaymentUrl();
         if (paymentUrl != null) vars.put("mercuryPaymentUrl", paymentUrl);
 
         // BCC active users linked to this client (skip the primary recipient to avoid duplicates)

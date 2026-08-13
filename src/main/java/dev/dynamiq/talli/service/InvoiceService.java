@@ -1,7 +1,6 @@
 package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Client;
-import dev.dynamiq.talli.integration.mercury.InvoiceCreatedEvent;
 import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
@@ -15,12 +14,12 @@ import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -44,7 +43,6 @@ public class InvoiceService {
     private final ClientRepository clientRepository;
     private final ExpenseRepository expenseRepository;
     private final ExchangeRateService exchangeRateService;
-    private final ApplicationEventPublisher eventPublisher;
 
     public InvoiceService(InvoiceRepository invoiceRepository,
             InvoiceItemRepository invoiceItemRepository,
@@ -52,8 +50,7 @@ public class InvoiceService {
             ProjectRepository projectRepository,
             ClientRepository clientRepository,
             ExpenseRepository expenseRepository,
-            ExchangeRateService exchangeRateService,
-            ApplicationEventPublisher eventPublisher) {
+            ExchangeRateService exchangeRateService) {
         this.invoiceRepository = invoiceRepository;
         this.invoiceItemRepository = invoiceItemRepository;
         this.timeEntryRepository = timeEntryRepository;
@@ -61,7 +58,6 @@ public class InvoiceService {
         this.clientRepository = clientRepository;
         this.expenseRepository = expenseRepository;
         this.exchangeRateService = exchangeRateService;
-        this.eventPublisher = eventPublisher;
     }
 
     public List<Invoice> listAll() {
@@ -106,7 +102,6 @@ public class InvoiceService {
         }
 
         invoice.setAmount(total);
-        eventPublisher.publishEvent(new InvoiceCreatedEvent(invoice.getId()));
         return invoice;
     }
 
@@ -263,7 +258,6 @@ public class InvoiceService {
         }
 
         invoice.setAmount(total);
-        eventPublisher.publishEvent(new InvoiceCreatedEvent(invoice.getId()));
         return invoice;
     }
 
@@ -322,7 +316,6 @@ public class InvoiceService {
             }
 
             invoice.setAmount(total);
-            eventPublisher.publishEvent(new InvoiceCreatedEvent(invoice.getId()));
         }
     }
 
@@ -377,6 +370,13 @@ public class InvoiceService {
         return invoice;
     }
 
+    @Transactional
+    public Invoice updateMercuryPaymentUrl(Long invoiceId, String paymentUrl) {
+        Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow();
+        invoice.setMercuryPaymentUrl(normalizeMercuryPaymentUrl(paymentUrl));
+        return invoice;
+    }
+
     private Invoice createSingleProjectInvoice(Project project, BigDecimal amount,
             String description, String unit, String notes) {
         LocalDate today = LocalDate.now();
@@ -394,13 +394,30 @@ public class InvoiceService {
         invoiceItemRepository.save(item);
 
         invoice.setAmount(amount);
-        invoice = invoiceRepository.save(invoice);
-        eventPublisher.publishEvent(new InvoiceCreatedEvent(invoice.getId()));
-        return invoice;
+        return invoiceRepository.save(invoice);
     }
 
     private String cleanNotes(String notes) {
         return notes == null || notes.isBlank() ? null : notes.trim();
+    }
+
+    private String normalizeMercuryPaymentUrl(String paymentUrl) {
+        if (paymentUrl == null || paymentUrl.isBlank()) return null;
+
+        URI uri;
+        try {
+            uri = URI.create(paymentUrl.trim());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Enter a valid Mercury payment URL.");
+        }
+
+        String host = uri.getHost();
+        boolean mercuryHost = host != null
+                && (host.equalsIgnoreCase("mercury.com") || host.toLowerCase().endsWith(".mercury.com"));
+        if (!"https".equalsIgnoreCase(uri.getScheme()) || !mercuryHost) {
+            throw new IllegalArgumentException("Payment URL must be an HTTPS Mercury link.");
+        }
+        return uri.toString();
     }
 
     private String withOptionalNotes(String defaultNotes, String notes) {

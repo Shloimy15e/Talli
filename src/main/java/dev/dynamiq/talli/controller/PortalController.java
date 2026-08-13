@@ -1,6 +1,5 @@
 package dev.dynamiq.talli.controller;
 
-import dev.dynamiq.talli.integration.mercury.MercuryProperties;
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.Project;
@@ -36,20 +35,17 @@ public class PortalController {
     private final InvoiceRepository invoiceRepository;
     private final ClientService clientService;
     private final PdfService pdfService;
-    private final MercuryProperties mercuryProperties;
 
     public PortalController(UserRepository userRepository,
                             ProjectRepository projectRepository,
                             InvoiceRepository invoiceRepository,
                             ClientService clientService,
-                            PdfService pdfService,
-                            MercuryProperties mercuryProperties) {
+                            PdfService pdfService) {
         this.userRepository = userRepository;
         this.projectRepository = projectRepository;
         this.invoiceRepository = invoiceRepository;
         this.clientService = clientService;
         this.pdfService = pdfService;
-        this.mercuryProperties = mercuryProperties;
     }
 
     @GetMapping
@@ -98,8 +94,7 @@ public class PortalController {
         }
         model.addAttribute("invoice", invoice);
         model.addAttribute("balance", invoice.balance());
-        model.addAttribute("mercuryPaymentUrl", mercuryProperties.paymentUrl(
-                invoice.getMercuryInvoiceSlug(), invoice.getMercuryStatus()));
+        model.addAttribute("mercuryPaymentUrl", invoice.getMercuryPaymentUrl());
         return "portal/invoice";
     }
 

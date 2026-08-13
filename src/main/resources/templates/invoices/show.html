@@ -51,11 +51,11 @@
       </div>
       <div th:if="${mercurySuccess}" class="mb-6 px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-800 flex items-center gap-2">
         <i data-lucide="check" class="w-4 h-4"></i>
-        <span th:text="${mercurySuccess}">Mercury invoice synced.</span>
+        <span th:text="${mercurySuccess}">Mercury payment link saved.</span>
       </div>
       <div th:if="${mercuryError}" class="mb-6 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800 flex items-center gap-2">
         <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
-        <span th:text="${mercuryError}">Mercury sync failed.</span>
+        <span th:text="${mercuryError}">Mercury payment link could not be saved.</span>
       </div>
 
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -98,16 +98,6 @@
             <i data-lucide="credit-card" class="w-4 h-4"></i>
             Pay with Mercury
           </a>
-
-          <form th:if="${mercuryConfigured and invoice.mercuryInvoiceId == null and unpaid}"
-                th:action="@{/invoices/{id}/mercury-sync(id=${invoice.id})}" method="post"
-                sec:authorize="hasAuthority('manage-invoices')">
-            <button type="submit"
-                    class="inline-flex items-center gap-2 text-sm bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg transition">
-              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-              Sync to Mercury
-            </button>
-          </form>
 
           <!-- Generate PDF -->
           <form th:action="@{/invoices/{id}/pdf(id=${invoice.id})}" method="post"
@@ -158,6 +148,28 @@
             Last sent <span th:replace="~{fragments/_time :: timeago(${invoice.sentAt})}"></span>
           </span>
         </div>
+
+        <form th:action="@{/invoices/{id}/mercury-link(id=${invoice.id})}" method="post"
+              sec:authorize="hasAuthority('manage-invoices')"
+              class="px-8 py-4 border-b border-slate-200 bg-orange-50/40 flex items-end gap-3">
+          <div class="flex-1">
+            <label for="mercuryPaymentUrl" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+              Mercury payment link
+            </label>
+            <input type="url" id="mercuryPaymentUrl" name="paymentUrl"
+                   th:value="${mercuryPaymentUrl}"
+                   placeholder="https://app.mercury.com/pay/..."
+                   class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+          </div>
+          <button type="submit"
+                  class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-sm px-4 py-2 rounded-lg transition">
+            Save link
+          </button>
+          <button th:if="${mercuryPaymentUrl != null}" type="submit" name="remove" value="true"
+                  class="text-sm text-red-600 hover:text-red-700 px-2 py-2">
+            Remove
+          </button>
+        </form>
 
         <!-- Status timeline -->
         <div class="px-8 py-5 border-b border-slate-200">
@@ -470,6 +482,7 @@
                         class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500">
                   <option value="">—</option>
                   <option value="zelle">Zelle</option>
+                  <option value="Mercury ACH">Mercury ACH</option>
                   <option value="check">Check</option>
                   <option value="ach">ACH</option>
                   <option value="wire">Wire</option>

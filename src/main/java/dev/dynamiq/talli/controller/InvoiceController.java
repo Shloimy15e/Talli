@@ -1,7 +1,5 @@
 package dev.dynamiq.talli.controller;
 
-import dev.dynamiq.talli.integration.mercury.MercuryInvoiceSyncService;
-import dev.dynamiq.talli.integration.mercury.MercuryProperties;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
 import dev.dynamiq.talli.repository.ClientRepository;
@@ -41,8 +39,6 @@ public class InvoiceController {
     private final EmailRepository emailRepository;
     private final PaymentService paymentService;
     private final ClientCreditService clientCreditService;
-    private final MercuryInvoiceSyncService mercuryInvoiceSyncService;
-    private final MercuryProperties mercuryProperties;
 
     public InvoiceController(InvoiceService invoiceService,
             ClientRepository clientRepository,
@@ -51,9 +47,7 @@ public class InvoiceController {
             InvoiceEmailService invoiceEmailService,
             EmailRepository emailRepository,
             PaymentService paymentService,
-            ClientCreditService clientCreditService,
-            MercuryInvoiceSyncService mercuryInvoiceSyncService,
-            MercuryProperties mercuryProperties) {
+            ClientCreditService clientCreditService) {
         this.invoiceService = invoiceService;
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
@@ -63,8 +57,6 @@ public class InvoiceController {
         this.invoiceEmailService = invoiceEmailService;
         this.emailRepository = emailRepository;
         this.paymentService = paymentService;
-        this.mercuryInvoiceSyncService = mercuryInvoiceSyncService;
-        this.mercuryProperties = mercuryProperties;
     }
 
     @GetMapping
@@ -132,9 +124,7 @@ public class InvoiceController {
         model.addAttribute("paymentProofs", mediaService.forOwner(invoice, "payment_proofs"));
         model.addAttribute("emailHistory", emailRepository.findByInvoiceIdOrderByCreatedAtDesc(id));
         model.addAttribute("payments", paymentService.listForInvoice(id));
-        model.addAttribute("mercuryConfigured", mercuryProperties.isConfigured());
-        model.addAttribute("mercuryPaymentUrl", mercuryProperties.paymentUrl(
-                invoice.getMercuryInvoiceSlug(), invoice.getMercuryStatus()));
+        model.addAttribute("mercuryPaymentUrl", invoice.getMercuryPaymentUrl());
 
         // Credits available for THIS invoice: same client, same currency, nonzero
         // remaining, and either unscoped OR scoped to a project that this invoice bills for.
@@ -248,10 +238,21 @@ public class InvoiceController {
         return "redirect:/invoices/" + id;
     }
 
-    @PostMapping("/{id}/mercury-sync")
-    public String syncMercury(@PathVariable Long id, RedirectAttributes flash) {
-        var result = mercuryInvoiceSyncService.syncInvoice(id);
-        flash.addFlashAttribute(result.success() ? "mercurySuccess" : "mercuryError", result.message());
+    @PostMapping("/{id}/mercury-link")
+    public String updateMercuryLink(@PathVariable Long id,
+            @RequestParam(value = "paymentUrl", required = false) String paymentUrl,
+            @RequestParam(value = "remove", defaultValue = "false") boolean remove,
+            RedirectAttributes flash) {
+        try {
+            String updatedPaymentUrl = remove ? null : paymentUrl;
+            invoiceService.updateMercuryPaymentUrl(id, updatedPaymentUrl);
+            flash.addFlashAttribute("mercurySuccess",
+                    updatedPaymentUrl == null || updatedPaymentUrl.isBlank()
+                            ? "Mercury payment link removed."
+                            : "Mercury payment link saved.");
+        } catch (IllegalArgumentException e) {
+            flash.addFlashAttribute("mercuryError", e.getMessage());
+        }
         return "redirect:/invoices/" + id;
     }
 

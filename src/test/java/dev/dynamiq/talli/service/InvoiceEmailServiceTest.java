@@ -1,6 +1,5 @@
 package dev.dynamiq.talli.service;
 
-import dev.dynamiq.talli.integration.mercury.MercuryProperties;
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.Media;
@@ -23,7 +22,6 @@ import static org.mockito.Mockito.*;
 class InvoiceEmailServiceTest {
 
     private EmailService emailService;
-    private MercuryProperties mercuryProperties;
     private InvoiceEmailService service;
     private Invoice invoice;
 
@@ -34,7 +32,6 @@ class InvoiceEmailServiceTest {
         MediaService mediaService = mock(MediaService.class);
         EmailRepository emailRepository = mock(EmailRepository.class);
         UserRepository userRepository = mock(UserRepository.class);
-        mercuryProperties = mock(MercuryProperties.class);
 
         Client client = new Client();
         client.setId(7L);
@@ -62,7 +59,7 @@ class InvoiceEmailServiceTest {
 
         service = new InvoiceEmailService(
                 emailService, invoiceRepository, mediaService, emailRepository,
-                userRepository, mercuryProperties);
+                userRepository);
     }
 
     @Test
@@ -74,10 +71,7 @@ class InvoiceEmailServiceTest {
 
     @Test
     void makesMercuryPaymentLinkAvailableToEmailTemplate() {
-        invoice.setMercuryInvoiceSlug("pay-123");
-        invoice.setMercuryStatus("Unpaid");
-        when(mercuryProperties.paymentUrl("pay-123", "Unpaid"))
-                .thenReturn("https://app.mercury.com/pay/pay-123");
+        invoice.setMercuryPaymentUrl("https://app.mercury.com/pay/pay-123");
 
         service.send(42L);
 

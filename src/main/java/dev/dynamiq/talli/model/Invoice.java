@@ -80,20 +80,8 @@ public class Invoice implements HasMedia {
     @Column(name = "paid_in_full_by")
     private LocalDateTime paidInFullBy;
 
-    @Column(name = "mercury_invoice_id", unique = true, length = 36)
-    private String mercuryInvoiceId;
-
-    @Column(name = "mercury_invoice_slug", columnDefinition = "TEXT")
-    private String mercuryInvoiceSlug;
-
-    @Column(name = "mercury_status", length = 30)
-    private String mercuryStatus;
-
-    @Column(name = "mercury_synced_at")
-    private LocalDateTime mercurySyncedAt;
-
-    @Column(name = "mercury_sync_error", columnDefinition = "TEXT")
-    private String mercurySyncError;
+    @Column(name = "mercury_payment_url", columnDefinition = "TEXT")
+    private String mercuryPaymentUrl;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -229,44 +217,12 @@ public class Invoice implements HasMedia {
         this.paidInFullBy = paidInFullBy;
     }
 
-    public String getMercuryInvoiceId() {
-        return mercuryInvoiceId;
+    public String getMercuryPaymentUrl() {
+        return mercuryPaymentUrl;
     }
 
-    public void setMercuryInvoiceId(String mercuryInvoiceId) {
-        this.mercuryInvoiceId = mercuryInvoiceId;
-    }
-
-    public String getMercuryInvoiceSlug() {
-        return mercuryInvoiceSlug;
-    }
-
-    public void setMercuryInvoiceSlug(String mercuryInvoiceSlug) {
-        this.mercuryInvoiceSlug = mercuryInvoiceSlug;
-    }
-
-    public String getMercuryStatus() {
-        return mercuryStatus;
-    }
-
-    public void setMercuryStatus(String mercuryStatus) {
-        this.mercuryStatus = mercuryStatus;
-    }
-
-    public LocalDateTime getMercurySyncedAt() {
-        return mercurySyncedAt;
-    }
-
-    public void setMercurySyncedAt(LocalDateTime mercurySyncedAt) {
-        this.mercurySyncedAt = mercurySyncedAt;
-    }
-
-    public String getMercurySyncError() {
-        return mercurySyncError;
-    }
-
-    public void setMercurySyncError(String mercurySyncError) {
-        this.mercurySyncError = mercurySyncError;
+    public void setMercuryPaymentUrl(String mercuryPaymentUrl) {
+        this.mercuryPaymentUrl = mercuryPaymentUrl;
     }
 
     public LocalDateTime getCreatedAt() {
