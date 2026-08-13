@@ -24,6 +24,12 @@
         </button>
       </div>
 
+      <div th:if="${error}" role="alert"
+           class="mb-5 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <i data-lucide="alert-circle" class="mt-0.5 h-4 w-4 shrink-0 text-red-600"></i>
+        <span th:text="${error}">The upload could not be accepted.</span>
+      </div>
+
       <!-- Flow tabs -->
       <div class="flex items-center gap-1 mb-5 border-b border-slate-200">
         <a

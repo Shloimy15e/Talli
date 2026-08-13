@@ -5,12 +5,15 @@ import dev.dynamiq.talli.model.Media;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.UserRepository;
+import dev.dynamiq.talli.service.EmailAttachmentPolicy;
 import dev.dynamiq.talli.service.EmailService;
 import dev.dynamiq.talli.service.MediaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -39,7 +42,8 @@ class EmailControllerTest {
                 mock(ClientRepository.class),
                 emailService,
                 mock(UserRepository.class),
-                mediaService);
+                mediaService,
+                new EmailAttachmentPolicy("20MB", "25MB"));
 
         when(emailRepository.save(any(Email.class))).thenAnswer(invocation -> {
             Email email = invocation.getArgument(0);
@@ -65,7 +69,7 @@ class EmailControllerTest {
 
         String view = controller.send(
                 null, null, "to@example.com", "Files", "See attached",
-                null, null, null, List.of(upload));
+                null, null, null, List.of(upload), new RedirectAttributesModelMap());
 
         assertThat(view).isEqualTo("redirect:/emails");
 
@@ -85,5 +89,24 @@ class EmailControllerTest {
         verify(emailRepository, org.mockito.Mockito.times(2)).save(saved.capture());
         assertThat(saved.getValue().getStatus()).isEqualTo("sent");
         assertThat(saved.getValue().getResendId()).isEqualTo("msg_123");
+    }
+
+    @Test
+    void rejectsOversizedAttachmentBeforeSavingOrSendingEmail() {
+        MultipartFile upload = mock(MultipartFile.class);
+        when(upload.getOriginalFilename()).thenReturn("large.pdf");
+        when(upload.getSize()).thenReturn(20L * 1024 * 1024 + 1);
+
+        RedirectAttributesModelMap redirectAttributes = new RedirectAttributesModelMap();
+        String view = controller.send(
+                null, null, "to@example.com", "Files", "See attached",
+                null, null, null, List.of(upload), redirectAttributes);
+
+        assertThat(view).isEqualTo("redirect:/emails");
+        assertThat(redirectAttributes.getFlashAttributes().get("error").toString())
+                .contains("large.pdf", "20 MB");
+        verify(emailRepository, org.mockito.Mockito.never()).save(any());
+        verify(emailService, org.mockito.Mockito.never())
+                .sendPlain(any(), any(), any(), any(), any());
     }
 }

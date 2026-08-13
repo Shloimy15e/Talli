@@ -6,6 +6,7 @@ import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.UserRepository;
+import dev.dynamiq.talli.service.EmailAttachmentPolicy;
 import dev.dynamiq.talli.service.EmailService;
 import dev.dynamiq.talli.service.MediaService;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +29,7 @@ public class EmailController {
     private final EmailService emailService;
     private final UserRepository userRepository;
     private final MediaService mediaService;
+    private final EmailAttachmentPolicy attachmentPolicy;
 
     @Value("${app.mail.from-name:}")
     private String fromName;
@@ -38,12 +41,14 @@ public class EmailController {
                            ClientRepository clientRepository,
                            EmailService emailService,
                            UserRepository userRepository,
-                           MediaService mediaService) {
+                           MediaService mediaService,
+                           EmailAttachmentPolicy attachmentPolicy) {
         this.emailRepository = emailRepository;
         this.clientRepository = clientRepository;
         this.emailService = emailService;
         this.userRepository = userRepository;
         this.mediaService = mediaService;
+        this.attachmentPolicy = attachmentPolicy;
     }
 
     @GetMapping
@@ -95,6 +100,9 @@ public class EmailController {
         model.addAttribute("users", userRepository.findAllByOrderByCreatedAtDesc());
         model.addAttribute("signature", currentUserSignature(auth));
         model.addAttribute("emailTemplates", renderedTemplates());
+        model.addAttribute("maxAttachmentFileBytes", attachmentPolicy.maxFileBytes());
+        model.addAttribute("maxAttachmentTotalBytes", attachmentPolicy.maxTotalBytes());
+        model.addAttribute("attachmentLimitDescription", attachmentPolicy.limitDescription());
         return "emails/_form :: form";
     }
 
@@ -231,7 +239,14 @@ public class EmailController {
                        @RequestParam(value = "bodyHtml", required = false) String bodyHtml,
                        @RequestParam(value = "bccUserId", required = false) List<Long> bccUserIds,
                        @RequestParam(value = "bccManual", required = false) String bccManual,
-                       @RequestParam(value = "attachments", required = false) List<MultipartFile> attachments) {
+                       @RequestParam(value = "attachments", required = false) List<MultipartFile> attachments,
+                       RedirectAttributes redirectAttributes) {
+        var attachmentError = attachmentPolicy.validationError(attachments);
+        if (attachmentError.isPresent()) {
+            redirectAttributes.addFlashAttribute("error", attachmentError.get());
+            return "redirect:/emails";
+        }
+
         Email email = new Email();
         if (clientId != null) {
             Client client = clientRepository.findById(clientId).orElse(null);

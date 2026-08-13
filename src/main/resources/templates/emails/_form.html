@@ -38,6 +38,7 @@
              previewOpen: false,
              templateHtml: '',
              attachmentNames: [],
+             attachmentError: '',
              compose() {
                // Wrap the editor body HTML in the selected template (if any).
                // Uses a function replacer so literal $ sequences in the body
@@ -123,7 +124,39 @@
                // Auto-reveal the preview so the user can see the styled output.
                if (this.templateHtml) this.previewOpen = true;
              },
-             onSubmit() {
+             validateAttachments(event) {
+               const input = event.target;
+               const files = Array.from(input.files || []);
+               const maxFileBytes = Number(input.dataset.maxFileBytes);
+               const maxTotalBytes = Number(input.dataset.maxTotalBytes);
+               const oversizedFile = files.find(file => file.size > maxFileBytes);
+
+               this.attachmentError = '';
+               this.attachmentNames = [];
+
+               if (oversizedFile) {
+                 this.attachmentError = `${oversizedFile.name} is too large. Each attachment must be ${this.formatFileSize(maxFileBytes)} or smaller.`;
+                 input.value = '';
+                 return;
+               }
+
+               const totalBytes = files.reduce((total, file) => total + file.size, 0);
+               if (totalBytes > maxTotalBytes) {
+                 this.attachmentError = `The selected attachments exceed the ${this.formatFileSize(maxTotalBytes)} total limit. Remove a file or choose smaller files.`;
+                 input.value = '';
+                 return;
+               }
+
+               this.attachmentNames = files.map(file => file.name);
+             },
+             formatFileSize(bytes) {
+               return `${Math.round(bytes / (1024 * 1024))} MB`;
+             },
+             onSubmit(event) {
+               if (this.attachmentError) {
+                 event.preventDefault();
+                 return;
+               }
                if (this.mode === 'source') {
                  this.$refs.editor.innerHTML = this.html;
                }
@@ -139,7 +172,7 @@
         </div>
 
         <form th:action="@{/emails}" method="post" enctype="multipart/form-data" class="p-6 space-y-5"
-              @submit="onSubmit()">
+              @submit="onSubmit($event)">
 
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -208,7 +241,19 @@
               <span x-text="attachmentNames.length ? attachmentNames.length + (attachmentNames.length === 1 ? ' file selected' : ' files selected') : 'Choose files'">Choose files</span>
             </label>
             <input type="file" id="attachments" name="attachments" multiple class="sr-only"
-                   @change="attachmentNames = Array.from($event.target.files).map(file => file.name)">
+                   x-ref="attachments"
+                   data-max-file-bytes="20971520"
+                   data-max-total-bytes="26214400"
+                   th:data-max-file-bytes="${maxAttachmentFileBytes}"
+                   th:data-max-total-bytes="${maxAttachmentTotalBytes}"
+                   aria-describedby="attachmentsHelp attachmentsError"
+                   :aria-invalid="attachmentError ? 'true' : 'false'"
+                   @change="validateAttachments($event)">
+            <p id="attachmentsHelp" class="mt-1.5 text-xs text-slate-400"
+               th:text="${attachmentLimitDescription}">Up to 20 MB per file, 25 MB total.</p>
+            <p id="attachmentsError" x-show="attachmentError" x-cloak x-text="attachmentError"
+               role="alert" aria-live="polite"
+               class="mt-2 text-xs font-medium text-red-700"></p>
             <ul x-show="attachmentNames.length" x-cloak class="mt-2 space-y-1">
               <template x-for="name in attachmentNames" :key="name">
                 <li class="flex items-center gap-2 text-xs text-slate-600">
