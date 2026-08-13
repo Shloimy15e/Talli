@@ -18,6 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
+import org.springframework.security.web.savedrequest.HttpSessionRequestCache;
 import org.springframework.web.cors.CorsConfiguration;
 
 import javax.sql.DataSource;
@@ -39,7 +40,7 @@ public class SecurityConfig {
      * Matches API and MCP paths before the web chain gets a chance.
      */
     @Bean
-    @Order(1)
+    @Order(2)
     SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher("/api/**", "/mcp", "/mcp/**")
@@ -82,7 +83,7 @@ public class SecurityConfig {
      * Sits between the API and web chains so /webhooks/** doesn't hit form login.
      */
     @Bean
-    @Order(2)
+    @Order(3)
     SecurityFilterChain webhookFilterChain(HttpSecurity http) throws Exception {
         http
             .securityMatcher("/webhooks/**")
@@ -93,7 +94,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(3)
+    @Order(4)
     SecurityFilterChain filterChain(HttpSecurity http, PersistentTokenRepository persistentTokenRepository) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
@@ -156,6 +157,13 @@ public class SecurityConfig {
             .formLogin(form -> form
                 .loginPage("/login")
                 .successHandler((request, response, authentication) -> {
+                    var requestCache = new HttpSessionRequestCache();
+                    var savedRequest = requestCache.getRequest(request, response);
+                    if (savedRequest != null) {
+                        requestCache.removeRequest(request, response);
+                        response.sendRedirect(savedRequest.getRedirectUrl());
+                        return;
+                    }
                     // Route client-role users to portal, everyone else to dashboard.
                     boolean isClientOnly = authentication.getAuthorities().stream()
                             .anyMatch(a -> a.getAuthority().equals("portal-access"))

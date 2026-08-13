@@ -6,13 +6,44 @@ Talli exposes a private, stateless Streamable HTTP MCP server at:
 https://<your-talli-host>/mcp
 ```
 
-Authenticate every request with a Talli personal access token:
+## Connect from ChatGPT
+
+Before deploying, set Railway's `APP_BASE_URL` variable to the exact public HTTPS origin of Talli, without `/mcp` or another path:
+
+```text
+APP_BASE_URL=https://your-talli-domain.up.railway.app
+```
+
+After the deployment and database migration complete:
+
+1. In ChatGPT, open **Settings > Security and login** and enable **Developer mode**.
+2. Open **Plugins**, select the plus button, and create a connection.
+3. Enter `https://<your-talli-host>/mcp` as the MCP server URL. No OAuth client ID or secret is needed.
+4. When ChatGPT opens Talli, sign in as the Talli user the agent should act as.
+
+Talli publishes the required OAuth discovery metadata, registers ChatGPT automatically, and uses the authorization-code flow with S256 PKCE. OAuth access tokens last one hour by default; refresh tokens last 30 days and rotate on use. Every request reloads the linked user's current roles, permissions, and enabled state, so disabling the user immediately blocks existing access tokens.
+
+The dynamic registration endpoint accepts only current or legacy `https://chatgpt.com` OAuth callback URLs. See OpenAI's [authentication](https://developers.openai.com/plugins/build/auth) and [connection](https://developers.openai.com/plugins/deploy/connect-chatgpt) guides for the corresponding ChatGPT flow.
+
+Optional Railway settings:
+
+```text
+OAUTH_DYNAMIC_CLIENT_LIMIT=25
+OAUTH_ACCESS_TOKEN_TTL=PT1H
+OAUTH_REFRESH_TOKEN_TTL=P30D
+```
+
+Durations use ISO-8601 syntax. Restart Talli after changing them.
+
+## Connect other MCP clients
+
+Clients that support custom request headers can continue to use a Talli personal access token:
 
 ```http
 Authorization: Bearer talli_<token>
 ```
 
-Create the token on Talli's **Profile** page. The token inherits its user's existing role permissions. Store it in the agent's secret/environment configuration, never in a repository or committed MCP config.
+Create the token on Talli's **Profile** page. The token inherits its user's current role permissions. Store it in the agent's secret/environment configuration, never in a repository or committed MCP config.
 
 Generic MCP client configuration:
 
