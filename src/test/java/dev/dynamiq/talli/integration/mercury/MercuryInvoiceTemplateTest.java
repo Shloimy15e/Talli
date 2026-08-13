@@ -41,6 +41,26 @@ class MercuryInvoiceTemplateTest {
                 .contains("Pay this invoice");
     }
 
+    @Test
+    void emailAndPdfHideMercuryPaymentLinkForWrittenOffInvoice() {
+        Invoice invoice = invoice();
+        invoice.setAmountWrittenOff(invoice.getAmount());
+        invoice.setStatus("written_off");
+        String paymentUrl = "https://app.mercury.com/pay/pay-123";
+
+        Context email = commonContext(invoice, paymentUrl);
+        email.setVariable("client", invoice.getClient());
+
+        Context pdf = commonContext(invoice, paymentUrl);
+        pdf.setVariable("items", List.of(invoiceItem(invoice)));
+        pdf.setVariable("balance", invoice.balance());
+
+        assertThat(templateEngine.process("emails/invoice", email))
+                .doesNotContain("href=\"" + paymentUrl + "\"");
+        assertThat(templateEngine.process("invoices/pdf", pdf))
+                .doesNotContain("href=\"" + paymentUrl + "\"");
+    }
+
     private Context commonContext(Invoice invoice, String paymentUrl) {
         Context context = new Context();
         context.setVariable("invoice", invoice);

@@ -58,11 +58,13 @@ class DashboardServiceTest {
         projectA = new Project();
         projectA.setId(1L);
         projectA.setName("Alpha");
+        projectA.setRateType("hourly");
         projectA.setCurrentRate(new BigDecimal("100"));
 
         projectB = new Project();
         projectB.setId(2L);
         projectB.setName("Bravo");
+        projectB.setRateType("hourly");
         projectB.setCurrentRate(new BigDecimal("150"));
 
         ExchangeRateService exchangeRateService = mock(ExchangeRateService.class);
@@ -73,7 +75,8 @@ class DashboardServiceTest {
         service = new DashboardService(
                 clientRepository, projectRepository, timeEntryRepository,
                 expenseRepository, subscriptionRepository,
-                invoiceRepository, paymentRepository, exchangeRateService, subscriptionService);
+                invoiceRepository, paymentRepository, exchangeRateService, subscriptionService,
+                new ClientService(exchangeRateService));
     }
 
     @Test
@@ -103,12 +106,17 @@ class DashboardServiceTest {
 
     @Test
     void unbilledMinutes_excludesNonBillableAndBilled() {
-        TimeEntry unbilled = entry(projectA, null, null, 60, true, false);
-        TimeEntry billed = entry(projectA, null, null, 45, true, true);
-        TimeEntry nonBillable = entry(projectA, null, null, 30, false, false);
-        TimeEntry runningUnbilled = entry(projectA, null, null, null, true, false);
+        LocalDateTime now = LocalDateTime.now();
+        TimeEntry unbilled = entry(projectA, now.minusHours(2), now.minusHours(1), 60, true, false);
+        TimeEntry billed = entry(projectA, now.minusHours(3), now.minusHours(2), 45, true, true);
+        TimeEntry nonBillable = entry(projectA, now.minusHours(4), now.minusHours(3), 30, false, false);
+        TimeEntry runningUnbilled = entry(projectA, now.minusMinutes(20), null, null, true, false);
+        Project fixedProject = new Project();
+        fixedProject.setRateType("fixed");
+        TimeEntry fixedTime = entry(fixedProject, now.minusHours(2), now.minusHours(1), 60, true, false);
 
-        when(timeEntryRepository.findAll()).thenReturn(List.of(unbilled, billed, nonBillable, runningUnbilled));
+        when(timeEntryRepository.findAll()).thenReturn(
+                List.of(unbilled, billed, nonBillable, runningUnbilled, fixedTime));
 
         assertThat(service.unbilledMinutes()).isEqualTo(60);
     }

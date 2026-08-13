@@ -73,7 +73,7 @@ public class ReminderService {
         // Find overdue invoices for this client
         List<Invoice> overdue = invoiceRepository.findByClientIdOrderByIssuedAtDescIdDesc(client.getId()).stream()
                 .filter(i -> "overdue".equals(i.getStatus()))
-                .filter(i -> i.balance().signum() > 0)
+                .filter(Invoice::isOutstanding)
                 .toList();
         if (overdue.isEmpty()) return false;
 
@@ -87,8 +87,7 @@ public class ReminderService {
             throw new IllegalStateException("Client " + client.getName() + " has no email address.");
         }
         List<Invoice> overdue = invoiceRepository.findByClientIdOrderByIssuedAtDescIdDesc(client.getId()).stream()
-                .filter(i -> "overdue".equals(i.getStatus()) || "unpaid".equals(i.getStatus()))
-                .filter(i -> i.balance().signum() > 0)
+                .filter(Invoice::isOutstanding)
                 .toList();
         if (overdue.isEmpty()) {
             throw new IllegalStateException("No unpaid invoices for this client.");
@@ -153,7 +152,7 @@ public class ReminderService {
             }
 
             boolean hasOverdue = invoiceRepository.findByClientIdOrderByIssuedAtDescIdDesc(client.getId()).stream()
-                    .anyMatch(i -> "overdue".equals(i.getStatus()) && i.balance().signum() > 0);
+                    .anyMatch(i -> "overdue".equals(i.getStatus()) && i.isOutstanding());
             if (hasOverdue) out.add(client);
         }
         return out;

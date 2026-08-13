@@ -58,7 +58,7 @@ public class DashboardController {
                 objectMapper.writeValueAsString(dashboardService.billableBreakdown()));
 
         model.addAttribute("totalReceivables", dashboardService.totalReceivables());
-        model.addAttribute("creditsHeld", clientCreditService.totalHeld());
+        model.addAttribute("creditsHeld", clientCreditService.totalHeldUsd());
 
         model.addAttribute("quarterlyRevenueJson",
                 objectMapper.writeValueAsString(reportService.quarterlyRevenue(12)));

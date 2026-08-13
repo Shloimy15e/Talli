@@ -13,9 +13,9 @@ import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import dev.dynamiq.talli.service.ClientCreditService;
 import dev.dynamiq.talli.service.ClientService;
-import dev.dynamiq.talli.service.ExchangeRateService;
 import dev.dynamiq.talli.service.PdfService;
 import dev.dynamiq.talli.service.ReminderService;
+import dev.dynamiq.talli.service.TimeEntryService;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -25,6 +25,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
@@ -41,7 +42,6 @@ public class ClientController {
     private final PdfService pdfService;
     private final ReminderService reminderService;
     private final ClientCreditService clientCreditService;
-    private final ExchangeRateService exchangeRateService;
     private final PaymentRepository paymentRepository;
 
     public ClientController(ClientRepository clientRepository,
@@ -53,7 +53,6 @@ public class ClientController {
                             PdfService pdfService,
                             ReminderService reminderService,
                             ClientCreditService clientCreditService,
-                            ExchangeRateService exchangeRateService,
                             PaymentRepository paymentRepository) {
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
@@ -64,7 +63,6 @@ public class ClientController {
         this.clientService = clientService;
         this.reminderService = reminderService;
         this.pdfService = pdfService;
-        this.exchangeRateService = exchangeRateService;
         this.paymentRepository = paymentRepository;
     }
 
@@ -74,31 +72,15 @@ public class ClientController {
         List<Client> clients = clientRepository.findAll();
         model.addAttribute("clients", clients);
 
-        // Aggregate KPIs across all clients — converted to USD to stay
-        // consistent with the dashboard:
-        //   billed      — invoice's stored (historic) exchange rate
-        //   collected   — each payment's stored rate (payment-date rate)
-        //   outstanding — current exchange rate, since it's what we'd collect today
         List<Invoice> allInvoices = invoiceRepository.findAllByOrderByIssuedAtDescIdDesc();
-        BigDecimal totalBilled = allInvoices.stream()
-                .filter(i -> !"void".equals(i.getStatus()))
-                .map(i -> exchangeRateService.toUsd(i.getAmount(), i.getCurrency(), i.getExchangeRate()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalCollected = paymentRepository.findAll().stream()
-                .filter(p -> p.getAmount() != null && p.getInvoice() != null)
-                .map(p -> exchangeRateService.toUsd(p.getAmount(), p.getInvoice().getCurrency(), p.getExchangeRate()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalOutstanding = allInvoices.stream()
-                .filter(i -> "unpaid".equals(i.getStatus()) || "overdue".equals(i.getStatus()))
-                .map(i -> exchangeRateService.toUsdCurrent(i.balance(), i.getCurrency()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        var financials = clientService.financialSummary(allInvoices, paymentRepository.findAll());
         long activeProjects = projectRepository.findAll().stream()
                 .filter(p -> "active".equals(p.getStatus()))
                 .count();
 
-        model.addAttribute("totalBilled", totalBilled);
-        model.addAttribute("totalCollected", totalCollected);
-        model.addAttribute("totalOutstanding", totalOutstanding);
+        model.addAttribute("totalBilled", financials.billedUsd());
+        model.addAttribute("totalCollected", financials.collectedUsd());
+        model.addAttribute("totalOutstanding", financials.outstandingUsd());
         model.addAttribute("activeProjects", activeProjects);
         return "clients/index";
     }
@@ -116,23 +98,13 @@ public class ClientController {
                 .sorted(Comparator.comparing(TimeEntry::getStartedAt).reversed())
                 .toList();
 
-        // Revenue totals: sum of invoice amounts (billed) and amountPaid (collected).
-        // Naive sum across currencies — fine while this client is single-currency in practice.
-        BigDecimal totalBilled = invoices.stream()
-                .map(Invoice::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalPaid = invoices.stream()
-                .map(Invoice::getAmountPaid)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal outstanding = totalBilled.subtract(totalPaid);
+        var financials = clientService.financialSummary(
+                invoices, paymentRepository.findByInvoiceClientId(id));
 
-        // Unbilled time: minutes of billable, ended, not-yet-billed entries across this client's projects
+        LocalDateTime now = LocalDateTime.now();
         long unbilledMinutes = timeEntries.stream()
-                .filter(t -> Boolean.TRUE.equals(t.getBillable())
-                        && Boolean.FALSE.equals(t.getBilled())
-                        && t.getEndedAt() != null
-                        && t.getDurationMinutes() != null)
-                .mapToLong(TimeEntry::getDurationMinutes)
+                .filter(TimeEntry::isUnbilled)
+                .mapToLong(t -> TimeEntryService.minutesFor(t, now))
                 .sum();
 
         long totalMinutes = timeEntries.stream()
@@ -153,13 +125,14 @@ public class ClientController {
         model.addAttribute("invoices", invoices);
         model.addAttribute("timeEntries", timeEntries);
         model.addAttribute("expenses", expenses);
-        model.addAttribute("totalBilled", totalBilled);
-        model.addAttribute("totalPaid", totalPaid);
-        model.addAttribute("outstanding", outstanding);
+        model.addAttribute("totalBilled", financials.billedUsd());
+        model.addAttribute("totalPaid", financials.collectedUsd());
+        model.addAttribute("outstanding", financials.outstandingUsd());
+        model.addAttribute("summaryCurrency", "USD");
         model.addAttribute("unbilledMinutes", unbilledMinutes);
         model.addAttribute("totalMinutes", totalMinutes);
         model.addAttribute("currency", currency);
-        model.addAttribute("aging", clientService.aging(invoices));
+        model.addAttribute("aging", clientService.agingUsd(invoices));
         var creditPairs = clientCreditService.listForClient(id).stream()
                 .map(c -> new CreditWithRemaining(c, clientCreditService.remainingBalance(c.getId())))
                 .toList();
@@ -216,13 +189,7 @@ public class ClientController {
     public ResponseEntity<byte[]> statement(@PathVariable Long id) {
         Client client = clientRepository.findById(id).orElseThrow();
         List<Invoice> invoices = invoiceRepository.findByClientIdOrderByIssuedAtDescIdDesc(id);
-        List<Project> projects = projectRepository.findByClientId(id);
-        String currency = projects.stream()
-                .map(Project::getCurrency)
-                .filter(c -> c != null && !c.isBlank())
-                .findFirst().orElse("USD");
-
-        byte[] pdf = pdfService.renderStatement(client, invoices, clientService.aging(invoices), currency);
+        byte[] pdf = pdfService.renderStatement(client, invoices, clientService.agingUsd(invoices), "USD");
         String filename = "Statement-" + client.getName().replaceAll("[^a-zA-Z0-9]", "-") + ".pdf";
 
         return ResponseEntity.ok()

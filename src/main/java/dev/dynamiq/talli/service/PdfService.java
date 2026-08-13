@@ -13,7 +13,6 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -42,13 +41,10 @@ public class PdfService {
     }
 
     public byte[] renderInvoice(Invoice invoice, List<InvoiceItem> items) {
-        BigDecimal balance = invoice.getAmount().subtract(
-                invoice.getAmountPaid() == null ? BigDecimal.ZERO : invoice.getAmountPaid());
-
         Context ctx = new Context();
         ctx.setVariable("invoice", invoice);
         ctx.setVariable("items", items);
-        ctx.setVariable("balance", balance);
+        ctx.setVariable("balance", invoice.balance());
         ctx.setVariable("mercuryPaymentUrl", invoice.getMercuryPaymentUrl());
         addBusinessIdentity(ctx);
 

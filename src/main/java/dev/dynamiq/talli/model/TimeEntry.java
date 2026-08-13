@@ -69,6 +69,15 @@ public class TimeEntry {
         return endedAt == null;
     }
 
+    /** Completed hourly work that can be included on an invoice. */
+    public boolean isUnbilled() {
+        return Boolean.TRUE.equals(billable)
+                && Boolean.FALSE.equals(billed)
+                && endedAt != null
+                && project != null
+                && project.isHourly();
+    }
+
     public Long getId() {
         return id;
     }

@@ -36,10 +36,4 @@ public interface ClientCreditRepository extends JpaRepository<ClientCredit, Long
     BigDecimal totalAvailableForClient(@Param("clientId") Long clientId,
                                        @Param("currency") String currency);
 
-    /** Global total across all clients, for the dashboard tile. */
-    @Query("SELECT COALESCE(SUM(c.amount - COALESCE(" +
-           "  (SELECT SUM(p.amount) FROM Payment p WHERE p.credit = c), 0" +
-           ")), 0) " +
-           "FROM ClientCredit c")
-    BigDecimal totalHeldOverall();
 }

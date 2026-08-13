@@ -12,6 +12,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     List<Payment> findByInvoiceIdOrderByPaidAtDescIdDesc(Long invoiceId);
 
+    List<Payment> findByInvoiceClientId(Long clientId);
+
     @Query("select coalesce(sum(p.amount), 0) from Payment p where p.invoice.id = :invoiceId")
     BigDecimal sumAmountByInvoiceId(@Param("invoiceId") Long invoiceId);
 

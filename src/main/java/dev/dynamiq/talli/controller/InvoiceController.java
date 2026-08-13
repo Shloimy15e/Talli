@@ -151,6 +151,30 @@ public class InvoiceController {
         return "redirect:/invoices/" + id;
     }
 
+    @PostMapping("/{id}/write-off")
+    public String writeOffBalance(@PathVariable Long id,
+                                  @RequestParam(value = "reason", required = false) String reason,
+                                  RedirectAttributes flash) {
+        try {
+            invoiceService.writeOffBalance(id, reason);
+            flash.addFlashAttribute("invoiceSuccess", "Remaining balance written off.");
+        } catch (IllegalStateException e) {
+            flash.addFlashAttribute("invoiceError", e.getMessage());
+        }
+        return "redirect:/invoices/" + id;
+    }
+
+    @PostMapping("/{id}/write-off/restore")
+    public String restoreWriteOff(@PathVariable Long id, RedirectAttributes flash) {
+        try {
+            invoiceService.restoreWriteOff(id);
+            flash.addFlashAttribute("invoiceSuccess", "Written-off balance restored.");
+        } catch (IllegalStateException e) {
+            flash.addFlashAttribute("invoiceError", e.getMessage());
+        }
+        return "redirect:/invoices/" + id;
+    }
+
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable("id") Long id, RedirectAttributes flash) {
         try {

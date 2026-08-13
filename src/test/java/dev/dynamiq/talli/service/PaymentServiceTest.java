@@ -158,4 +158,24 @@ class PaymentServiceTest {
 
         assertThat(invoice.getStatus()).isEqualTo("void"); // unchanged
     }
+
+    @Test
+    void delete_reopensBalanceWhenPriorWriteOffNoLongerCoversInvoice() {
+        invoice.setStatus("written_off");
+        invoice.setAmountPaid(new BigDecimal("400.00"));
+        invoice.setAmountWrittenOff(new BigDecimal("600.00"));
+        invoice.setDueAt(LocalDate.now().minusDays(5));
+
+        Payment payment = new Payment();
+        payment.setId(10L);
+        payment.setInvoice(invoice);
+        when(paymentRepository.findById(10L)).thenReturn(Optional.of(payment));
+        when(paymentRepository.sumAmountByInvoiceId(1L)).thenReturn(BigDecimal.ZERO);
+
+        service.delete(10L);
+
+        assertThat(invoice.getAmountWrittenOff()).isEqualByComparingTo("600.00");
+        assertThat(invoice.balance()).isEqualByComparingTo("400.00");
+        assertThat(invoice.getStatus()).isEqualTo("overdue");
+    }
 }

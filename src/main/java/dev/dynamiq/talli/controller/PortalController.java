@@ -5,6 +5,7 @@ import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.InvoiceRepository;
+import dev.dynamiq.talli.repository.PaymentRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.UserRepository;
 import dev.dynamiq.talli.service.ClientService;
@@ -19,7 +20,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -33,17 +33,20 @@ public class PortalController {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final InvoiceRepository invoiceRepository;
+    private final PaymentRepository paymentRepository;
     private final ClientService clientService;
     private final PdfService pdfService;
 
     public PortalController(UserRepository userRepository,
                             ProjectRepository projectRepository,
                             InvoiceRepository invoiceRepository,
+                            PaymentRepository paymentRepository,
                             ClientService clientService,
                             PdfService pdfService) {
         this.userRepository = userRepository;
         this.projectRepository = projectRepository;
         this.invoiceRepository = invoiceRepository;
+        this.paymentRepository = paymentRepository;
         this.clientService = clientService;
         this.pdfService = pdfService;
     }
@@ -59,28 +62,17 @@ public class PortalController {
         List<Project> projects = projectRepository.findByClientId(client.getId());
         List<Invoice> invoices = invoiceRepository.findByClientIdOrderByIssuedAtDescIdDesc(client.getId());
 
-        BigDecimal totalBilled = invoices.stream()
-                .filter(i -> !"void".equals(i.getStatus()))
-                .map(Invoice::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal totalPaid = invoices.stream()
-                .map(Invoice::getAmountPaid)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal outstanding = totalBilled.subtract(totalPaid);
-
-        String currency = projects.stream()
-                .map(Project::getCurrency)
-                .filter(c -> c != null && !c.isBlank())
-                .findFirst().orElse("USD");
+        var financials = clientService.financialSummary(
+                invoices, paymentRepository.findByInvoiceClientId(client.getId()));
 
         model.addAttribute("client", client);
         model.addAttribute("projects", projects);
         model.addAttribute("invoices", invoices);
-        model.addAttribute("totalBilled", totalBilled);
-        model.addAttribute("totalPaid", totalPaid);
-        model.addAttribute("outstanding", outstanding);
-        model.addAttribute("currency", currency);
-        model.addAttribute("aging", clientService.aging(invoices));
+        model.addAttribute("totalBilled", financials.billedUsd());
+        model.addAttribute("totalPaid", financials.collectedUsd());
+        model.addAttribute("outstanding", financials.outstandingUsd());
+        model.addAttribute("summaryCurrency", "USD");
+        model.addAttribute("aging", clientService.agingUsd(invoices));
         return "portal/dashboard";
     }
 
@@ -105,13 +97,7 @@ public class PortalController {
             return ResponseEntity.badRequest().build();
         }
         List<Invoice> invoices = invoiceRepository.findByClientIdOrderByIssuedAtDescIdDesc(client.getId());
-        List<Project> projects = projectRepository.findByClientId(client.getId());
-        String currency = projects.stream()
-                .map(Project::getCurrency)
-                .filter(c -> c != null && !c.isBlank())
-                .findFirst().orElse("USD");
-
-        byte[] pdf = pdfService.renderStatement(client, invoices, clientService.aging(invoices), currency);
+        byte[] pdf = pdfService.renderStatement(client, invoices, clientService.agingUsd(invoices), "USD");
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"Statement.pdf\"")
                 .contentType(MediaType.APPLICATION_PDF)

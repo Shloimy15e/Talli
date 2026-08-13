@@ -226,6 +226,7 @@
         <div th:switch="${invoice.status}">
             <span th:case="'paid'"    class="pill pill-paid">Paid</span>
             <span th:case="'overdue'" class="pill pill-overdue">Overdue</span>
+            <span th:case="'written_off'" class="pill pill-void">Written off</span>
             <span th:case="'void'"    class="pill pill-void">Void</span>
             <span th:case="*"         class="pill pill-unpaid">Unpaid</span>
         </div>
@@ -300,6 +301,10 @@
                 <td class="lbl">Paid</td>
                 <td class="val" th:text="'− ' + ${#numbers.formatDecimal(invoice.amountPaid, 1, 'COMMA', 2, 'POINT')}">− 0.00</td>
             </tr>
+            <tr class="paid" th:if="${invoice.amountWrittenOff != null and invoice.amountWrittenOff.signum() > 0}">
+                <td class="lbl">Written off</td>
+                <td class="val" th:text="'− ' + ${#numbers.formatDecimal(invoice.amountWrittenOff, 1, 'COMMA', 2, 'POINT')}">− 0.00</td>
+            </tr>
             <tr class="grand">
                 <td class="lbl" th:text="${balance.signum() > 0} ? 'Balance due' : 'Total'">Balance due</td>
                 <td class="val" th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(balance.signum() > 0 ? balance : invoice.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
@@ -310,7 +315,7 @@
 
 <!-- Primary payment option -->
 <div class="payment-block"
-     th:if="${mercuryPaymentUrl != null and invoice.status != 'paid' and invoice.status != 'void'}">
+     th:if="${mercuryPaymentUrl != null and invoice.outstanding}">
     <div class="block-label">Pay this invoice</div>
     <a th:href="${mercuryPaymentUrl}">Open the secure Mercury payment page</a>
     <div class="payment-url" th:text="${mercuryPaymentUrl}">https://app.mercury.com/pay/example</div>

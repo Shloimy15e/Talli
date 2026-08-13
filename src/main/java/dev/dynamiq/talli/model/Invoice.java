@@ -50,6 +50,15 @@ public class Invoice implements HasMedia {
     @Column(name = "amount_paid", nullable = false)
     private BigDecimal amountPaid = BigDecimal.ZERO;
 
+    @Column(name = "amount_written_off", nullable = false)
+    private BigDecimal amountWrittenOff = BigDecimal.ZERO;
+
+    @Column(name = "written_off_at")
+    private LocalDateTime writtenOffAt;
+
+    @Column(name = "write_off_reason", columnDefinition = "TEXT")
+    private String writeOffReason;
+
     @Column(nullable = false)
     private String currency = "USD";
 
@@ -132,9 +141,42 @@ public class Invoice implements HasMedia {
         this.amountPaid = amountPaid;
     }
 
-    /** Outstanding amount — amount minus what's been paid. */
+    /** Amount still expected from the client. */
     public BigDecimal balance() {
-        return amount.subtract(amountPaid);
+        return amount.subtract(amountPaid).subtract(amountWrittenOff);
+    }
+
+    public boolean isOutstanding() {
+        return ("unpaid".equals(status) || "overdue".equals(status))
+                && balance().signum() > 0;
+    }
+
+    public BigDecimal getAmountWrittenOff() {
+        return amountWrittenOff;
+    }
+
+    public void setAmountWrittenOff(BigDecimal amountWrittenOff) {
+        this.amountWrittenOff = amountWrittenOff;
+    }
+
+    public boolean hasWriteOff() {
+        return amountWrittenOff != null && amountWrittenOff.signum() > 0;
+    }
+
+    public LocalDateTime getWrittenOffAt() {
+        return writtenOffAt;
+    }
+
+    public void setWrittenOffAt(LocalDateTime writtenOffAt) {
+        this.writtenOffAt = writtenOffAt;
+    }
+
+    public String getWriteOffReason() {
+        return writeOffReason;
+    }
+
+    public void setWriteOffReason(String writeOffReason) {
+        this.writeOffReason = writeOffReason;
     }
 
     public String getCurrency() {

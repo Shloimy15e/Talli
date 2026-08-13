@@ -44,11 +44,6 @@ public class PaymentService {
     public Payment record(Long invoiceId, LocalDate paidAt, BigDecimal amount,
                           String method, String reference, String notes) {
         Invoice invoice = invoiceRepository.findById(invoiceId).orElseThrow();
-        BigDecimal balance = invoice.balance();
-        if (amount != null && amount.compareTo(balance) > 0) {
-            throw new IllegalStateException(
-                    "Payment (" + amount + ") exceeds outstanding balance (" + balance + ").");
-        }
         Payment payment = buildPayment(invoice, paidAt, amount, method, reference, notes);
         payment.setSource("direct");
         payment = paymentRepository.save(payment);
@@ -111,6 +106,10 @@ public class PaymentService {
         if (amount == null || amount.signum() <= 0) {
             throw new IllegalArgumentException("Payment amount must be positive.");
         }
+        if (amount.compareTo(invoice.balance()) > 0) {
+            throw new IllegalStateException(
+                    "Payment (" + amount + ") exceeds outstanding balance (" + invoice.balance() + ").");
+        }
         Payment payment = new Payment();
         payment.setInvoice(invoice);
         payment.setPaidAt(paidAt != null ? paidAt : LocalDate.now());
@@ -127,15 +126,21 @@ public class PaymentService {
         BigDecimal totalPaid = paymentRepository.sumAmountByInvoiceId(invoice.getId());
         invoice.setAmountPaid(totalPaid);
 
-        if (invoice.balance().signum() <= 0
-                && !"paid".equals(invoice.getStatus())
-                && !"void".equals(invoice.getStatus())) {
-            invoice.setStatus("paid");
-            invoice.setPaidInFullBy(LocalDateTime.now());
-        } else if (invoice.balance().signum() > 0 && "paid".equals(invoice.getStatus())) {
-            invoice.setPaidInFullBy(null);
-            boolean overdue = invoice.getDueAt() != null && invoice.getDueAt().isBefore(LocalDate.now());
-            invoice.setStatus(overdue ? "overdue" : "unpaid");
+        if ("void".equals(invoice.getStatus())) return;
+
+        if (invoice.balance().signum() <= 0) {
+            if (invoice.hasWriteOff()) {
+                invoice.setStatus("written_off");
+                invoice.setPaidInFullBy(null);
+            } else if (!"paid".equals(invoice.getStatus())) {
+                invoice.setStatus("paid");
+                invoice.setPaidInFullBy(LocalDateTime.now());
+            }
+            return;
         }
+
+        invoice.setPaidInFullBy(null);
+        boolean overdue = invoice.getDueAt() != null && invoice.getDueAt().isBefore(LocalDate.now());
+        invoice.setStatus(overdue ? "overdue" : "unpaid");
     }
 }

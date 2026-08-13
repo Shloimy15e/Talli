@@ -133,6 +133,46 @@ public class InvoiceService {
     }
 
     /**
+     * Stop collecting the invoice's remaining balance while retaining the
+     * original invoice and payment history.
+     */
+    @Transactional
+    public void writeOffBalance(Long id, String reason) {
+        Invoice invoice = invoiceRepository.findById(id).orElseThrow();
+        if (!"unpaid".equals(invoice.getStatus()) && !"overdue".equals(invoice.getStatus())) {
+            throw new IllegalStateException("Only unpaid or overdue invoices can be written off.");
+        }
+
+        BigDecimal balance = invoice.balance();
+        if (balance.signum() <= 0) {
+            throw new IllegalStateException("Invoice has no outstanding balance to write off.");
+        }
+
+        invoice.setAmountWrittenOff(invoice.getAmountWrittenOff().add(balance));
+        invoice.setWrittenOffAt(LocalDateTime.now());
+        invoice.setWriteOffReason(cleanNotes(reason));
+        invoice.setStatus("written_off");
+        invoice.setPaidInFullBy(null);
+    }
+
+    /** Restore a previously written-off amount to the collectible balance. */
+    @Transactional
+    public void restoreWriteOff(Long id) {
+        Invoice invoice = invoiceRepository.findById(id).orElseThrow();
+        if ("void".equals(invoice.getStatus())) {
+            throw new IllegalStateException("A void invoice cannot be restored.");
+        }
+        if (!invoice.hasWriteOff()) {
+            throw new IllegalStateException("Invoice has no write-off to restore.");
+        }
+
+        invoice.setAmountWrittenOff(BigDecimal.ZERO);
+        invoice.setWrittenOffAt(null);
+        invoice.setWriteOffReason(null);
+        invoice.setStatus(isPastDue(invoice) ? "overdue" : "unpaid");
+    }
+
+    /**
      * Hard-delete — only allowed on voided invoices. Time entries were already
      * un-marked during void, so no leak. Cascades delete invoice_items + payments
      * via DB FK constraints.
@@ -418,6 +458,10 @@ public class InvoiceService {
             throw new IllegalArgumentException("Payment URL must be an HTTPS Mercury link.");
         }
         return uri.toString();
+    }
+
+    private boolean isPastDue(Invoice invoice) {
+        return invoice.getDueAt() != null && invoice.getDueAt().isBefore(LocalDate.now());
     }
 
     private String withOptionalNotes(String defaultNotes, String notes) {

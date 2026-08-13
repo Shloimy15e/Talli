@@ -45,6 +45,7 @@ public class DashboardService {
     private final PaymentRepository paymentRepository;
     private final ExchangeRateService exchangeRateService;
     private final SubscriptionService subscriptionService;
+    private final ClientService clientService;
 
     public DashboardService(ClientRepository clientRepository,
                             ProjectRepository projectRepository,
@@ -54,7 +55,8 @@ public class DashboardService {
                             InvoiceRepository invoiceRepository,
                             PaymentRepository paymentRepository,
                             ExchangeRateService exchangeRateService,
-                            SubscriptionService subscriptionService) {
+                            SubscriptionService subscriptionService,
+                            ClientService clientService) {
         this.clientRepository = clientRepository;
         this.projectRepository = projectRepository;
         this.timeEntryRepository = timeEntryRepository;
@@ -64,6 +66,7 @@ public class DashboardService {
         this.paymentRepository = paymentRepository;
         this.exchangeRateService = exchangeRateService;
         this.subscriptionService = subscriptionService;
+        this.clientService = clientService;
     }
 
     public long countClients() {
@@ -93,11 +96,10 @@ public class DashboardService {
     }
 
     public int unbilledMinutes() {
+        LocalDateTime now = LocalDateTime.now();
         return timeEntryRepository.findAll().stream()
-                .filter(e -> Boolean.TRUE.equals(e.getBillable())
-                        && Boolean.FALSE.equals(e.getBilled())
-                        && e.getDurationMinutes() != null)
-                .mapToInt(TimeEntry::getDurationMinutes)
+                .filter(TimeEntry::isUnbilled)
+                .mapToInt(e -> minutesFor(e, now))
                 .sum();
     }
 
@@ -230,10 +232,7 @@ public class DashboardService {
 
     /** Total outstanding balance across all unpaid/overdue invoices, converted to USD at current rate. */
     public BigDecimal totalReceivables() {
-        return invoiceRepository.findAll().stream()
-                .filter(i -> "unpaid".equals(i.getStatus()) || "overdue".equals(i.getStatus()))
-                .map(i -> exchangeRateService.toUsdCurrent(i.balance(), i.getCurrency()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return clientService.totalOutstandingUsd(invoiceRepository.findAll());
     }
 
     public BillableBreakdown billableBreakdown() {

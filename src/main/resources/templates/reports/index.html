@@ -69,7 +69,7 @@
           <h2 class="text-sm font-semibold">Outstanding invoices</h2>
           <span class="text-xs text-slate-500" th:text="${#lists.size(outstandingInvoices)} + ' open'">0 open</span>
         </div>
-        <div th:if="${#lists.isEmpty(outstandingInvoices)}" class="px-6 py-6 text-sm text-slate-400 italic">All invoices are paid or void.</div>
+        <div th:if="${#lists.isEmpty(outstandingInvoices)}" class="px-6 py-6 text-sm text-slate-400 italic">No collectible invoice balances remain.</div>
         <table th:unless="${#lists.isEmpty(outstandingInvoices)}" class="w-full text-sm">
           <thead>
             <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
