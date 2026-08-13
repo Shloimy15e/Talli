@@ -56,7 +56,9 @@ class TalliMcpServerTest {
     void endpointRequiresBearerToken() throws Exception {
         mockMvc.perform(post("/mcp")
                         .contentType("application/json")
-                        .content("{}"))
+                        .content("""
+                                {"jsonrpc":"2.0","id":1,"method":"server/discover","params":{}}
+                                """))
                 .andExpect(status().isUnauthorized());
     }
 
