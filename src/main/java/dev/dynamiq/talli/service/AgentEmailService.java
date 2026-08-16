@@ -27,25 +27,32 @@ public class AgentEmailService {
     private final EmailRepository emails;
     private final EmailService emailService;
     private final EmailTemplateCatalog templates;
+    private final AgentEmailSenderCatalog senders;
     private final String auditCc;
 
     public AgentEmailService(ClientRepository clients, UserRepository users,
                              EmailRepository emails, EmailService emailService,
-                             EmailTemplateCatalog templates,
+                             EmailTemplateCatalog templates, AgentEmailSenderCatalog senders,
                              @Value("${app.mcp.email.cc:shloimy@dynamiq.dev}") String auditCc) {
         this.clients = clients;
         this.users = users;
         this.emails = emails;
         this.emailService = emailService;
         this.templates = templates;
+        this.senders = senders;
         this.auditCc = validEmail(auditCc, "app.mcp.email.cc");
+    }
+
+    public List<AgentEmailSenderCatalog.Option> availableSenders() {
+        return senders.options();
     }
 
     @Transactional
     public Preview preview(String actorEmail, Long clientId, String subject, String body,
-                           String templateId, boolean includeSignature) {
+                           String templateId, boolean includeSignature, String senderEmail) {
         Client client = clients.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found: " + clientId));
+        EmailSender sender = senders.resolve(senderEmail);
         String recipient = clientEmail(client);
         String emailSubject = required(subject, "subject");
         String emailBody = required(body, "body");
@@ -55,20 +62,22 @@ public class AgentEmailService {
         String selectedTemplate = templateId == null || templateId.isBlank()
                 ? null : templateId.trim().toLowerCase(Locale.ROOT);
         String html = composeHtml(emailBody, selectedTemplate, signature);
-        String token = previewToken(actorEmail, clientId, recipient, auditCc, emailSubject, emailBody,
-                html, selectedTemplate, includeSignature);
-        return new Preview(clientId, recipient, auditCc, emailSubject, emailBody, html,
+        String token = previewToken(actorEmail, clientId, sender, recipient, auditCc,
+                emailSubject, emailBody, html, selectedTemplate, includeSignature);
+        return new Preview(clientId, sender.address(), sender.name(), recipient, auditCc,
+                emailSubject, emailBody, html,
                 selectedTemplate, includeSignature, token);
     }
 
     @Transactional
     public SendResult send(String actorEmail, Long clientId, String subject, String body,
                            String templateId, boolean includeSignature,
-                           String previewToken, boolean confirmed) {
+                           String senderEmail, String previewToken, boolean confirmed) {
         if (!confirmed) {
             throw new IllegalStateException("Explicit approval is required before sending email.");
         }
-        Preview preview = preview(actorEmail, clientId, subject, body, templateId, includeSignature);
+        Preview preview = preview(actorEmail, clientId, subject, body, templateId,
+                includeSignature, senderEmail);
         if (previewToken == null || !preview.previewToken().equals(previewToken.trim())) {
             throw new IllegalStateException(
                     "preview_token does not match this email. Preview the exact email before sending.");
@@ -76,6 +85,7 @@ public class AgentEmailService {
 
         Email email = new Email();
         email.setClient(clients.findById(clientId).orElseThrow());
+        email.setFromAddress(preview.fromAddress());
         email.setToAddress(preview.toAddress());
         email.setCc(preview.ccAddress());
         email.setSubject(preview.subject());
@@ -84,11 +94,12 @@ public class AgentEmailService {
         email = emails.save(email);
 
         try {
+            EmailSender sender = new EmailSender(preview.fromAddress(), preview.fromName());
             EmailService.Result result = preview.bodyHtml() == null
-                    ? emailService.sendPlain(preview.toAddress(), List.of(preview.ccAddress()), List.of(),
-                            preview.subject(), preview.body())
-                    : emailService.sendHtml(preview.toAddress(), List.of(preview.ccAddress()), List.of(),
-                            preview.subject(), preview.body(), preview.bodyHtml());
+                    ? emailService.sendPlain(sender, preview.toAddress(), List.of(preview.ccAddress()),
+                            List.of(), preview.subject(), preview.body())
+                    : emailService.sendHtml(sender, preview.toAddress(), List.of(preview.ccAddress()),
+                            List.of(), preview.subject(), preview.body(), preview.bodyHtml());
             email.setResendId(result.resendId());
             email.setStatus("sent");
             email.setSentAt(LocalDateTime.now());
@@ -97,7 +108,8 @@ public class AgentEmailService {
             email.setErrorMessage(exception.getMessage());
         }
 
-        return new SendResult(emails.save(email), preview.templateId(), preview.signatureIncluded());
+        return new SendResult(emails.save(email), preview.fromName(), preview.templateId(),
+                preview.signatureIncluded());
     }
 
     private String composeHtml(String body, String templateId, String signature) {
@@ -137,11 +149,12 @@ public class AgentEmailService {
         return value.trim();
     }
 
-    private static String previewToken(String actorEmail, Long clientId, String recipient, String cc,
+    private static String previewToken(String actorEmail, Long clientId, EmailSender sender,
+                                       String recipient, String cc,
                                        String subject, String body, String bodyHtml, String templateId,
                                        boolean includeSignature) {
         String value = String.join("\u001f", required(actorEmail, "authenticated user"),
-                clientId.toString(), recipient, cc, subject, body,
+                clientId.toString(), sender.address(), sender.name(), recipient, cc, subject, body,
                 bodyHtml == null ? "" : bodyHtml,
                 templateId == null ? "" : templateId, Boolean.toString(includeSignature));
         try {
@@ -153,10 +166,12 @@ public class AgentEmailService {
         }
     }
 
-    public record Preview(Long clientId, String toAddress, String ccAddress,
+    public record Preview(Long clientId, String fromAddress, String fromName,
+                          String toAddress, String ccAddress,
                           String subject, String body, String bodyHtml,
                           String templateId, boolean signatureIncluded,
                           String previewToken) {}
 
-    public record SendResult(Email email, String templateId, boolean signatureIncluded) {}
+    public record SendResult(Email email, String fromName, String templateId,
+                             boolean signatureIncluded) {}
 }

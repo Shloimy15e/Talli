@@ -369,31 +369,51 @@ class TalliMcpWriteToolsTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("finance@dynamiq.dev", null));
         when(agentEmailService.preview("finance@dynamiq.dev", 7L, "Invoice update",
-                "Hello", "branded", true))
-                .thenReturn(new AgentEmailService.Preview(7L, "billing@acme.test",
+                "Hello", "branded", true, "billing@dynamiq.dev"))
+                .thenReturn(new AgentEmailService.Preview(7L, "billing@dynamiq.dev", "Dynamiq",
+                        "billing@acme.test",
                         "shloimy@dynamiq.dev", "Invoice update", "Hello", "<html>Preview</html>",
                         "branded", true, "preview-token"));
         Email email = new Email();
         email.setId(12L);
+        email.setFromAddress("billing@dynamiq.dev");
         email.setToAddress("billing@acme.test");
         email.setCc("shloimy@dynamiq.dev");
         email.setSubject("Invoice update");
         email.setStatus("sent");
         when(agentEmailService.send("finance@dynamiq.dev", 7L, "Invoice update",
-                "Hello", "branded", true, "preview-token", true))
-                .thenReturn(new AgentEmailService.SendResult(email, "branded", true));
+                "Hello", "branded", true, "billing@dynamiq.dev", "preview-token", true))
+                .thenReturn(new AgentEmailService.SendResult(email, "Dynamiq", "branded", true));
 
-        var preview = tools.previewClientEmail(7L, "Invoice update", "Hello", "branded", null);
+        var preview = tools.previewClientEmail(7L, "Invoice update", "Hello",
+                "billing@dynamiq.dev", "branded", null);
         var result = tools.sendClientEmail(7L, "Invoice update", "Hello",
-                "branded", null, preview.previewToken(), true);
+                "billing@dynamiq.dev", "branded", null, preview.previewToken(), true);
 
+        assertThat(preview.fromAddress()).isEqualTo("billing@dynamiq.dev");
         assertThat(preview.ccAddress()).isEqualTo("shloimy@dynamiq.dev");
         assertThat(result.emailId()).isEqualTo(12L);
+        assertThat(result.fromAddress()).isEqualTo("billing@dynamiq.dev");
         assertThat(result.toAddress()).isEqualTo("billing@acme.test");
         assertThat(result.ccAddress()).isEqualTo("shloimy@dynamiq.dev");
         assertThat(result.signatureIncluded()).isTrue();
         verify(agentEmailService).send("finance@dynamiq.dev", 7L, "Invoice update",
-                "Hello", "branded", true, "preview-token", true);
+                "Hello", "branded", true, "billing@dynamiq.dev", "preview-token", true);
+    }
+
+    @Test
+    void listsApprovedEmailSenders() {
+        when(agentEmailService.availableSenders()).thenReturn(List.of(
+                new dev.dynamiq.talli.service.AgentEmailSenderCatalog.Option(
+                        "info@dynamiq.dev", "Dynamiq", true),
+                new dev.dynamiq.talli.service.AgentEmailSenderCatalog.Option(
+                        "billing@dynamiq.dev", "Dynamiq", false)));
+
+        var result = tools.listEmailSenders();
+
+        assertThat(result).extracting(TalliMcpWriteTools.EmailSenderOption::address)
+                .containsExactly("info@dynamiq.dev", "billing@dynamiq.dev");
+        assertThat(result.getFirst().defaultSender()).isTrue();
     }
 
     private static Client client(Long id, String name) {

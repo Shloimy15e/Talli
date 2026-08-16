@@ -72,7 +72,8 @@ Read tools:
 - `find_expenses`, `find_subscriptions`
 - `find_invoices`, `get_invoice`
 - `run_report` for financial trends, client P&L, time utilization, receivables aging, project revenue, expense categories, payment history, and outstanding invoices
-- `preview_client_email` to render the exact recipient, visible CC, body, template, and signature before sending
+- `list_email_senders` to list the approved team From addresses available to the agent
+- `preview_client_email` to render the exact sender, recipient, visible CC, body, template, and signature before sending
 
 List tools return up to 100 records per call. Use `offset` to continue through all matching records.
 
@@ -94,10 +95,13 @@ There are no delete, invoice-generation, payment-deletion, or money-movement too
 
 Email is a two-step workflow:
 
-1. Call `preview_client_email`. It sends nothing and returns both the plain and rendered HTML bodies plus a `preview_token` bound to the exact recipient, CC, subject, body, template, and signature choice.
-2. After a human approves that preview, call `send_client_email` with the same inputs, its token, and `confirm_send=true`. Changed or unpreviewed content is rejected.
+1. Optionally call `list_email_senders`, then choose one of its approved addresses as `sender_email`. If omitted, Talli uses `MAIL_FROM`.
+2. Call `preview_client_email`. It sends nothing and returns both the plain and rendered HTML bodies plus a `preview_token` bound to the exact sender, recipient, CC, subject, body, template, and signature choice.
+3. After a human approves that preview, call `send_client_email` with the same inputs, its token, and `confirm_send=true`. Changed or unpreviewed content is rejected.
 
 The client must already exist in Talli and have one valid saved email address. The client is the primary **To** recipient. Every agent email visibly CCs `${MCP_EMAIL_CC}`, which defaults to `shloimy@dynamiq.dev`, and Talli stores that CC in the email audit record.
+
+Set `MCP_EMAIL_SENDERS` to a comma-separated allow-list such as `billing@dynamiq.dev,finance@dynamiq.dev`. `MAIL_FROM` is always included as the default. Every address must belong to a domain verified for sending in Resend. The configured `MAIL_FROM_NAME` is used as the display name for all team addresses.
 
 The body is plain text and is safely escaped when HTML is required. `template_id` may be omitted or set to `branded`, `branded-notice`, `formal`, or `minimal`. `include_signature` defaults to true; set it to false for an unsigned email. Signed email uses the HTML signature configured on the Talli user that owns the MCP token and fails closed if that signature is missing.
 

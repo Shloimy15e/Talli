@@ -120,7 +120,13 @@ public class EmailService {
 
     public Result sendPlain(String to, List<String> cc, List<String> bcc,
                             String subject, String body, List<Attachment> attachments) {
-        String id = send(to, cc, bcc, subject, null, body, attachments);
+        String id = send(defaultSender(), to, cc, bcc, subject, null, body, attachments);
+        return new Result("", id);
+    }
+
+    Result sendPlain(EmailSender sender, String to, List<String> cc, List<String> bcc,
+                     String subject, String body) {
+        String id = send(sender, to, cc, bcc, subject, null, body, List.of());
         return new Result("", id);
     }
 
@@ -145,7 +151,13 @@ public class EmailService {
     public Result sendHtml(String to, List<String> cc, List<String> bcc,
                            String subject, String text, String html,
                            List<Attachment> attachments) {
-        String id = send(to, cc, bcc, subject, html, text, attachments);
+        String id = send(defaultSender(), to, cc, bcc, subject, html, text, attachments);
+        return new Result(html, id);
+    }
+
+    Result sendHtml(EmailSender sender, String to, List<String> cc, List<String> bcc,
+                    String subject, String text, String html) {
+        String id = send(sender, to, cc, bcc, subject, html, text, List.of());
         return new Result(html, id);
     }
 
@@ -183,7 +195,7 @@ public class EmailService {
                                String subject, String templateName,
                                Map<String, Object> variables, List<Attachment> attachments) {
         String html = render(templateName, variables);
-        String id = send(to, cc, bcc, subject, html, null, attachments);
+        String id = send(defaultSender(), to, cc, bcc, subject, html, null, attachments);
         return new Result(html, id);
     }
 
@@ -224,7 +236,11 @@ public class EmailService {
         return templateEngine.process("emails/" + templateName, context);
     }
 
-    private String send(String to, List<String> cc, List<String> bcc, String subject,
+    private EmailSender defaultSender() {
+        return new EmailSender(fromAddress, fromName);
+    }
+
+    private String send(EmailSender sender, String to, List<String> cc, List<String> bcc, String subject,
                         String html, String text,
                         List<Attachment> attachments) {
         if (apiKey == null || apiKey.isBlank()) {
@@ -232,7 +248,7 @@ public class EmailService {
         }
 
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("from", fromName + " <" + fromAddress + ">");
+        payload.put("from", sender.formatted());
         payload.put("to", List.of(to));
         payload.put("subject", subject);
         if (html != null) payload.put("html", html);

@@ -31,7 +31,7 @@ public class Email implements HasMedia {
     @Column(nullable = false)
     private String direction = "out";
 
-    /** For inbound emails, the sender's address. Null for outbound (we're the sender). */
+    /** The inbound sender or the selected outbound sender used for delivery and auditing. */
     @Column(name = "from_address")
     private String fromAddress;
 
