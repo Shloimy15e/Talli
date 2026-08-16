@@ -93,6 +93,20 @@ class TimeEntryServiceTest {
     }
 
     @Test
+    void update_clearsCachedDurationWhenRestartingTimer() {
+        TimeEntry existing = new TimeEntry();
+        existing.setId(7L);
+        existing.setDurationMinutes(60);
+        when(timeEntryRepository.findById(7L)).thenReturn(Optional.of(existing));
+
+        TimeEntry updated = service.update(7L, 1L,
+                LocalDateTime.of(2026, 4, 14, 9, 0), null, "resumed", true);
+
+        assertThat(updated.getEndedAt()).isNull();
+        assertThat(updated.getDurationMinutes()).isNull();
+    }
+
+    @Test
     void endTimer_setsEndedAtOnRunningEntry() {
         TimeEntry running = new TimeEntry();
         running.setId(3L);

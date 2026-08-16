@@ -10,6 +10,7 @@ import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
+import dev.dynamiq.talli.repository.PaymentRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import dev.dynamiq.talli.service.AgentEmailService;
@@ -49,6 +50,7 @@ class TalliMcpWriteToolsTest {
     private ExpenseService expenseService;
     private ProjectService projectService;
     private InvoiceRepository invoices;
+    private PaymentRepository payments;
     private PaymentService paymentService;
     private InvoiceService invoiceService;
     private AgentEmailService agentEmailService;
@@ -64,12 +66,13 @@ class TalliMcpWriteToolsTest {
         expenseService = mock(ExpenseService.class);
         projectService = mock(ProjectService.class);
         invoices = mock(InvoiceRepository.class);
+        payments = mock(PaymentRepository.class);
         paymentService = mock(PaymentService.class);
         invoiceService = mock(InvoiceService.class);
         agentEmailService = mock(AgentEmailService.class);
         tools = new TalliMcpWriteTools(clients, projects, timeEntries, expenses,
                 timeEntryService, expenseService, projectService,
-                invoices, paymentService, invoiceService, agentEmailService);
+                invoices, payments, paymentService, invoiceService, agentEmailService);
     }
 
     @AfterEach
@@ -101,6 +104,72 @@ class TalliMcpWriteToolsTest {
         verify(timeEntryService).create(2L,
                 LocalDateTime.of(2020, 1, 2, 9, 15),
                 LocalDateTime.of(2020, 1, 2, 10, 45), "Planning", true);
+    }
+
+    @Test
+    void updateTimeEntryChangesSelectedFieldsFromDuration() {
+        Client client = client(1L, "Acme");
+        Project project = project(2L, "Website", client);
+        TimeEntry existing = timeEntry(3L, project,
+                LocalDateTime.of(2026, 8, 12, 9, 0),
+                LocalDateTime.of(2026, 8, 12, 10, 0));
+        TimeEntry updated = timeEntry(3L, project,
+                LocalDateTime.of(2026, 8, 12, 9, 15),
+                LocalDateTime.of(2026, 8, 12, 10, 45));
+        updated.setDescription("Revised work");
+        updated.setBillable(false);
+        when(timeEntries.findById(3L)).thenReturn(Optional.of(existing));
+        when(timeEntryService.update(3L, 2L,
+                LocalDateTime.of(2026, 8, 12, 9, 15),
+                LocalDateTime.of(2026, 8, 12, 10, 45),
+                "Revised work", false)).thenReturn(updated);
+
+        var result = tools.updateTimeEntry(3L, null, "2026-08-12T09:15:00",
+                null, 90, "Revised work", false);
+
+        assertThat(result.durationMinutes()).isEqualTo(90);
+        assertThat(result.description()).isEqualTo("Revised work");
+        assertThat(result.billable()).isFalse();
+        verify(timeEntryService).update(3L, 2L,
+                LocalDateTime.of(2026, 8, 12, 9, 15),
+                LocalDateTime.of(2026, 8, 12, 10, 45),
+                "Revised work", false);
+    }
+
+    @Test
+    void updateAndDeleteTimeEntryRejectBilledEntries() {
+        TimeEntry billed = timeEntry(3L, project(2L, "Website", client(1L, "Acme")),
+                LocalDateTime.of(2026, 8, 12, 9, 0),
+                LocalDateTime.of(2026, 8, 12, 10, 0));
+        billed.setBilled(true);
+        when(timeEntries.findById(3L)).thenReturn(Optional.of(billed));
+
+        assertThatThrownBy(() -> tools.updateTimeEntry(3L, null, null,
+                null, 90, null, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Billed time entries cannot be updated; void the invoice first");
+        assertThatThrownBy(() -> tools.deleteTimeEntry(3L, true))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Billed time entries cannot be deleted; void the invoice first");
+        verify(timeEntryService, never()).update(any(), any(), any(), any(), any(), any());
+        verify(timeEntryService, never()).delete(any());
+    }
+
+    @Test
+    void deleteTimeEntryRequiresConfirmationThenUsesService() {
+        TimeEntry entry = timeEntry(3L, project(2L, "Website", client(1L, "Acme")),
+                LocalDateTime.of(2026, 8, 12, 9, 0),
+                LocalDateTime.of(2026, 8, 12, 10, 0));
+        when(timeEntries.findById(3L)).thenReturn(Optional.of(entry));
+
+        assertThatThrownBy(() -> tools.deleteTimeEntry(3L, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("confirmed must be true");
+        var result = tools.deleteTimeEntry(3L, true);
+
+        assertThat(result.entity()).isEqualTo("time_entry");
+        assertThat(result.deleted()).isTrue();
+        verify(timeEntryService).delete(3L);
     }
 
     @Test
@@ -268,6 +337,21 @@ class TalliMcpWriteToolsTest {
     }
 
     @Test
+    void deletePaymentRequiresConfirmationAndRecomputesThroughService() {
+        when(payments.existsById(8L)).thenReturn(true);
+
+        assertThatThrownBy(() -> tools.deletePayment(8L, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("confirmed must be true");
+        var result = tools.deletePayment(8L, true);
+
+        assertThat(result.entity()).isEqualTo("payment");
+        assertThat(result.id()).isEqualTo(8L);
+        assertThat(result.deleted()).isTrue();
+        verify(paymentService).delete(8L);
+    }
+
+    @Test
     void setInvoiceAchLinkUsesValidatedInvoiceService() {
         Invoice invoice = invoice(7L, "INV-7", "USD");
         invoice.setMercuryPaymentUrl("https://app.mercury.com/pay/example");
@@ -354,5 +438,17 @@ class TalliMcpWriteToolsTest {
         expense.setBillable(false);
         expense.setBilled(false);
         return expense;
+    }
+
+    private static TimeEntry timeEntry(Long id, Project project,
+                                       LocalDateTime startedAt, LocalDateTime endedAt) {
+        TimeEntry entry = new TimeEntry();
+        entry.setId(id);
+        entry.setProject(project);
+        entry.setStartedAt(startedAt);
+        entry.setEndedAt(endedAt);
+        entry.setBillable(true);
+        entry.setBilled(false);
+        return entry;
     }
 }

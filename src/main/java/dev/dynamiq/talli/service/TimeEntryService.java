@@ -85,6 +85,8 @@ public class TimeEntryService {
         entry.setProject(project);
         entry.setStartedAt(startedAt);
         entry.setEndedAt(endedAt);
+        entry.setDurationMinutes(endedAt == null ? null
+                : (int) ChronoUnit.MINUTES.between(startedAt, endedAt));
         entry.setDescription(description);
         // A non-billable project forces all its time entries non-billable,
         // regardless of what the form sent.
