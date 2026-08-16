@@ -79,6 +79,16 @@ class EmailServiceTest {
     }
 
     @Test
+    void sendPlain_usesExplicitSenderIdentity() throws Exception {
+        service.sendPlain(new EmailSender("billing@dynamiq.dev", "Dynamiq Billing"),
+                "to@example.com", List.of(), List.of(), "Hello", "body text");
+
+        JsonNode payload = new ObjectMapper().readTree(readBody(captureRequest()));
+        assertThat(payload.path("from").asText())
+                .isEqualTo("Dynamiq Billing <billing@dynamiq.dev>");
+    }
+
+    @Test
     void sendHtml_encodesAttachmentsInResendPayload() throws Exception {
         List<EmailService.Attachment> attachments = List.of(
                 new EmailService.Attachment("report.txt", "hello".getBytes(StandardCharsets.UTF_8), "text/plain"),

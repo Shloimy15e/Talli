@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -609,8 +610,19 @@ public class TalliMcpWriteTools {
                 invoice.getMercuryPaymentUrl(), invoice.getMercuryPaymentUrl() == null ? null : "Pay with ACH");
     }
 
+    @McpTool(name = "list_email_senders", title = "List email senders",
+            description = "List the approved From addresses available for agent email. Use one of these addresses as sender_email when previewing and sending; omitting it uses the default sender.",
+            annotations = @McpTool.McpAnnotations(title = "List email senders", readOnlyHint = true,
+                    destructiveHint = false, idempotentHint = true, openWorldHint = false))
+    @PreAuthorize("hasAuthority('send-emails')")
+    public List<EmailSenderOption> listEmailSenders() {
+        return agentEmailService.availableSenders().stream()
+                .map(sender -> new EmailSenderOption(sender.address(), sender.name(), sender.defaultSender()))
+                .toList();
+    }
+
     @McpTool(name = "preview_client_email", title = "Preview a client email",
-            description = "Render a no-send preview addressed to an existing Talli client's saved email. Returns the fixed CC, plain and HTML bodies, and a token binding the exact recipient, content, template, and signature choice for send_client_email.",
+            description = "Render a no-send preview addressed to an existing Talli client's saved email. Returns the approved From address, fixed CC, plain and HTML bodies, and a token binding the exact sender, recipient, content, template, and signature choice for send_client_email.",
             annotations = @McpTool.McpAnnotations(title = "Preview a client email", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('send-emails')")
@@ -618,13 +630,15 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Existing client ID; preview uses that client's saved email address", required = true) Long clientId,
             @McpToolParam(description = "Email subject", required = true) String subject,
             @McpToolParam(description = "Plain-text email body", required = true) String body,
+            @McpToolParam(description = "Optional approved From address from list_email_senders; defaults to MAIL_FROM", required = false) String senderEmail,
             @McpToolParam(description = "Optional template: branded, branded-notice, formal, or minimal", required = false) String templateId,
             @McpToolParam(description = "Include the authenticated agent user's configured signature; defaults to true", required = false) Boolean includeSignature) {
         if (clientId == null) throw new IllegalArgumentException("client_id is required");
         AgentEmailService.Preview preview = agentEmailService.preview(
                 authenticatedEmail(), clientId, subject, body, templateId,
-                includeSignature == null || includeSignature);
-        return new EmailPreview(preview.clientId(), preview.toAddress(), preview.ccAddress(),
+                includeSignature == null || includeSignature, senderEmail);
+        return new EmailPreview(preview.clientId(), preview.fromAddress(), preview.fromName(),
+                preview.toAddress(), preview.ccAddress(),
                 preview.subject(), preview.body(), preview.bodyHtml(), preview.templateId(),
                 preview.signatureIncluded(), preview.previewToken());
     }
@@ -638,6 +652,7 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Existing client ID; email is sent only to that client's saved email address", required = true) Long clientId,
             @McpToolParam(description = "Approved email subject", required = true) String subject,
             @McpToolParam(description = "Approved plain-text email body", required = true) String body,
+            @McpToolParam(description = "Approved From address used in preview_client_email; omit only when the default sender was previewed", required = false) String senderEmail,
             @McpToolParam(description = "Optional template: branded, branded-notice, formal, or minimal", required = false) String templateId,
             @McpToolParam(description = "Include the authenticated agent user's configured signature; defaults to true", required = false) Boolean includeSignature,
             @McpToolParam(description = "Token returned by preview_client_email for these exact inputs", required = true) String previewToken,
@@ -646,10 +661,11 @@ public class TalliMcpWriteTools {
 
         AgentEmailService.SendResult result = agentEmailService.send(
                 authenticatedEmail(), clientId, subject, body, templateId,
-                includeSignature == null || includeSignature, previewToken,
+                includeSignature == null || includeSignature, senderEmail, previewToken,
                 Boolean.TRUE.equals(confirmSend));
         var email = result.email();
-        return new SentEmail(email.getId(), clientId, email.getToAddress(), email.getCc(),
+        return new SentEmail(email.getId(), clientId, email.getFromAddress(), result.fromName(),
+                email.getToAddress(), email.getCc(),
                 email.getSubject(), email.getStatus(), email.getSentAt(), result.templateId(),
                 result.signatureIncluded(), email.getErrorMessage());
     }
@@ -720,12 +736,16 @@ public class TalliMcpWriteTools {
     public record InvoicePaymentLink(Long invoiceId, String invoiceReference,
                                      String paymentUrl, String buttonLabel) {}
 
-    public record EmailPreview(Long clientId, String toAddress, String ccAddress,
+    public record EmailSenderOption(String address, String name, boolean defaultSender) {}
+
+    public record EmailPreview(Long clientId, String fromAddress, String fromName,
+                               String toAddress, String ccAddress,
                                String subject, String body, String bodyHtml,
                                String templateId, boolean signatureIncluded,
                                String previewToken) {}
 
-    public record SentEmail(Long emailId, Long clientId, String toAddress, String ccAddress,
+    public record SentEmail(Long emailId, Long clientId, String fromAddress, String fromName,
+                            String toAddress, String ccAddress,
                             String subject, String status, LocalDateTime sentAt, String templateId,
                             boolean signatureIncluded, String errorMessage) {}
 }

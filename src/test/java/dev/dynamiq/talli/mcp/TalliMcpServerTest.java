@@ -54,7 +54,7 @@ class TalliMcpServerTest {
                         "cancel_subscription", "reactivate_subscription", "record_subscription_charge",
                         "link_expense_to_subscription", "unlink_expense_from_subscription",
                         "record_payment", "delete_payment", "set_invoice_ach_link",
-                        "preview_client_email", "send_client_email");
+                        "list_email_senders", "preview_client_email", "send_client_email");
     }
 
     @Test
