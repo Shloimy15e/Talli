@@ -36,8 +36,7 @@ class AgentEmailServiceTest {
         emailService = mock(EmailService.class);
         service = new AgentEmailService(clients, emails, emailService,
                 new EmailTemplateCatalog("Talli Finance", "finance@dynamiq.dev"),
-                new AgentEmailSenderCatalog("info@dynamiq.dev", "Dynamiq",
-                        "billing@dynamiq.dev,finance@dynamiq.dev"),
+                new AgentEmailSenderCatalog(),
                 "shloimy@dynamiq.dev");
 
         Client client = new Client();
@@ -69,7 +68,7 @@ class AgentEmailServiceTest {
                 "Invoice update", "Amount < $100", "branded", true,
                 "billing@dynamiq.dev", preview.previewToken(), true);
 
-        verify(emailService).sendHtml(eq(new EmailSender("billing@dynamiq.dev", "Dynamiq")),
+        verify(emailService).sendHtml(eq(new EmailSender("billing@dynamiq.dev", "Dynamiq Billing")),
                 eq("billing@acme.test"),
                 eq(List.of("shloimy@dynamiq.dev")), eq(List.of()),
                 eq("Invoice update"), eq("Amount < $100"), html.capture());
@@ -80,7 +79,7 @@ class AgentEmailServiceTest {
         assertThat(result.templateId()).isEqualTo("branded");
         assertThat(result.signatureIncluded()).isTrue();
         assertThat(result.email().getFromAddress()).isEqualTo("billing@dynamiq.dev");
-        assertThat(preview.fromName()).isEqualTo("Dynamiq");
+        assertThat(preview.fromName()).isEqualTo("Dynamiq Billing");
         assertThat(preview.ccAddress()).isEqualTo("shloimy@dynamiq.dev");
     }
 
@@ -91,7 +90,7 @@ class AgentEmailServiceTest {
         AgentEmailService.SendResult result = service.send("finance@dynamiq.dev", 7L,
                 "Quick note", "Hello", null, false, null, preview.previewToken(), true);
 
-        verify(emailService).sendPlain(new EmailSender("info@dynamiq.dev", "Dynamiq"),
+        verify(emailService).sendPlain(new EmailSender("info@dynamiq.dev", "Dynamiq Solutions"),
                 "billing@acme.test", List.of("shloimy@dynamiq.dev"), List.of(),
                 "Quick note", "Hello");
         assertThat(result.email().getBodyHtml()).isNull();
@@ -109,7 +108,7 @@ class AgentEmailServiceTest {
         service.send("finance@dynamiq.dev", 7L, "Notice", "Hello",
                 "minimal", false, null, preview.previewToken(), true);
 
-        verify(emailService).sendHtml(eq(new EmailSender("info@dynamiq.dev", "Dynamiq")),
+        verify(emailService).sendHtml(eq(new EmailSender("info@dynamiq.dev", "Dynamiq Solutions")),
                 eq("billing@acme.test"),
                 eq(List.of("shloimy@dynamiq.dev")), eq(List.of()),
                 eq("Notice"), eq("Hello"), html.capture());
@@ -126,7 +125,7 @@ class AgentEmailServiceTest {
         service.send("finance@dynamiq.dev", 7L, "Signed note", "Hello",
                 null, true, null, preview.previewToken(), true);
 
-        verify(emailService).sendHtml(eq(new EmailSender("info@dynamiq.dev", "Dynamiq")),
+        verify(emailService).sendHtml(eq(new EmailSender("info@dynamiq.dev", "Dynamiq Solutions")),
                 eq("billing@acme.test"),
                 eq(List.of("shloimy@dynamiq.dev")), eq(List.of()),
                 eq("Signed note"), eq("Hello"), html.capture());
@@ -156,7 +155,7 @@ class AgentEmailServiceTest {
                 "Signed", "Hello", null, true, "finance@dynamiq.dev",
                 preview.previewToken(), true);
 
-        verify(emailService).sendHtml(eq(new EmailSender("finance@dynamiq.dev", "Dynamiq")),
+        verify(emailService).sendHtml(eq(new EmailSender("finance@dynamiq.dev", "Dynamiq Finance")),
                 eq("billing@acme.test"), eq(List.of("shloimy@dynamiq.dev")), eq(List.of()),
                 eq("Signed"), eq("Hello"), html.capture());
         assertThat(html.getValue())

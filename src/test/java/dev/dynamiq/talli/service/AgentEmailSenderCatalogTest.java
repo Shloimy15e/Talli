@@ -8,13 +8,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class AgentEmailSenderCatalogTest {
 
     @Test
-    void listsDefaultAndConfiguredSendersWithoutDuplicates() {
-        var catalog = new AgentEmailSenderCatalog("info@dynamiq.dev", "Dynamiq",
-                "billing@dynamiq.dev, info@dynamiq.dev,finance@dynamiq.dev");
+    void listsTheFixedDynamiqSendersWithInfoAsDefault() {
+        var catalog = new AgentEmailSenderCatalog();
 
         assertThat(catalog.options())
                 .extracting(AgentEmailSenderCatalog.Option::address)
-                .containsExactly("info@dynamiq.dev", "billing@dynamiq.dev", "finance@dynamiq.dev");
+                .containsExactly("info@dynamiq.dev", "billing@dynamiq.dev",
+                        "finance@dynamiq.dev", "support@dynamiq.dev", "sales@dynamiq.dev");
         assertThat(catalog.options()).first()
                 .extracting(AgentEmailSenderCatalog.Option::defaultSender)
                 .isEqualTo(true);
@@ -25,19 +25,17 @@ class AgentEmailSenderCatalogTest {
 
     @Test
     void resolvesConfiguredSenderCaseInsensitivelyAndDefaultsWhenOmitted() {
-        var catalog = new AgentEmailSenderCatalog("info@dynamiq.dev", "Dynamiq",
-                "billing@dynamiq.dev");
+        var catalog = new AgentEmailSenderCatalog();
 
         assertThat(catalog.resolve("BILLING@DYNAMIQ.DEV"))
-                .isEqualTo(new EmailSender("billing@dynamiq.dev", "Dynamiq"));
+                .isEqualTo(new EmailSender("billing@dynamiq.dev", "Dynamiq Billing"));
         assertThat(catalog.resolve(null))
-                .isEqualTo(new EmailSender("info@dynamiq.dev", "Dynamiq"));
+                .isEqualTo(new EmailSender("info@dynamiq.dev", "Dynamiq Solutions"));
     }
 
     @Test
     void rejectsSenderOutsideAllowList() {
-        var catalog = new AgentEmailSenderCatalog("info@dynamiq.dev", "Dynamiq",
-                "billing@dynamiq.dev");
+        var catalog = new AgentEmailSenderCatalog();
 
         assertThatThrownBy(() -> catalog.resolve("attacker@example.com"))
                 .isInstanceOf(IllegalArgumentException.class)
