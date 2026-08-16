@@ -370,7 +370,7 @@ class TalliMcpWriteToolsTest {
                 new UsernamePasswordAuthenticationToken("finance@dynamiq.dev", null));
         when(agentEmailService.preview("finance@dynamiq.dev", 7L, "Invoice update",
                 "Hello", "branded", true, "billing@dynamiq.dev"))
-                .thenReturn(new AgentEmailService.Preview(7L, "billing@dynamiq.dev", "Dynamiq",
+                .thenReturn(new AgentEmailService.Preview(7L, "billing@dynamiq.dev", "Dynamiq Billing",
                         "billing@acme.test",
                         "shloimy@dynamiq.dev", "Invoice update", "Hello", "<html>Preview</html>",
                         "branded", true, "preview-token"));
@@ -383,7 +383,7 @@ class TalliMcpWriteToolsTest {
         email.setStatus("sent");
         when(agentEmailService.send("finance@dynamiq.dev", 7L, "Invoice update",
                 "Hello", "branded", true, "billing@dynamiq.dev", "preview-token", true))
-                .thenReturn(new AgentEmailService.SendResult(email, "Dynamiq", "branded", true));
+                .thenReturn(new AgentEmailService.SendResult(email, "Dynamiq Billing", "branded", true));
 
         var preview = tools.previewClientEmail(7L, "Invoice update", "Hello",
                 "billing@dynamiq.dev", "branded", null);
@@ -405,15 +405,28 @@ class TalliMcpWriteToolsTest {
     void listsApprovedEmailSenders() {
         when(agentEmailService.availableSenders()).thenReturn(List.of(
                 new dev.dynamiq.talli.service.AgentEmailSenderCatalog.Option(
-                        "info@dynamiq.dev", "Dynamiq", true),
+                        "info@dynamiq.dev", "Dynamiq Solutions", true,
+                        "<strong>Dynamiq Solutions</strong>"),
                 new dev.dynamiq.talli.service.AgentEmailSenderCatalog.Option(
-                        "billing@dynamiq.dev", "Dynamiq", false)));
+                        "billing@dynamiq.dev", "Dynamiq Billing", false,
+                        "<strong>Dynamiq Billing</strong>"),
+                new dev.dynamiq.talli.service.AgentEmailSenderCatalog.Option(
+                        "finance@dynamiq.dev", "Dynamiq Finance", false,
+                        "<strong>Dynamiq Finance</strong>"),
+                new dev.dynamiq.talli.service.AgentEmailSenderCatalog.Option(
+                        "support@dynamiq.dev", "Dynamiq Support", false,
+                        "<strong>Dynamiq Support</strong>"),
+                new dev.dynamiq.talli.service.AgentEmailSenderCatalog.Option(
+                        "sales@dynamiq.dev", "Dynamiq Sales", false,
+                        "<strong>Dynamiq Sales</strong>")));
 
         var result = tools.listEmailSenders();
 
         assertThat(result).extracting(TalliMcpWriteTools.EmailSenderOption::address)
-                .containsExactly("info@dynamiq.dev", "billing@dynamiq.dev");
+                .containsExactly("info@dynamiq.dev", "billing@dynamiq.dev",
+                        "finance@dynamiq.dev", "support@dynamiq.dev", "sales@dynamiq.dev");
         assertThat(result.getFirst().defaultSender()).isTrue();
+        assertThat(result).allSatisfy(sender -> assertThat(sender.defaultSignatureHtml()).isNotBlank());
     }
 
     private static Client client(Long id, String name) {

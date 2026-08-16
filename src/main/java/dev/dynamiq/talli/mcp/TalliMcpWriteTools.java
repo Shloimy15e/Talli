@@ -611,13 +611,14 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "list_email_senders", title = "List email senders",
-            description = "List the approved From addresses available for agent email. Use one of these addresses as sender_email when previewing and sending; omitting it uses the default sender.",
+            description = "List the approved Dynamiq From addresses and matching signatures available for agent email. Use one as sender_email when previewing and sending; omitting it uses info@dynamiq.dev.",
             annotations = @McpTool.McpAnnotations(title = "List email senders", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('send-emails')")
     public List<EmailSenderOption> listEmailSenders() {
         return agentEmailService.availableSenders().stream()
-                .map(sender -> new EmailSenderOption(sender.address(), sender.name(), sender.defaultSender()))
+                .map(sender -> new EmailSenderOption(sender.address(), sender.name(), sender.defaultSender(),
+                        sender.defaultSignatureHtml()))
                 .toList();
     }
 
@@ -630,7 +631,7 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Existing client ID; preview uses that client's saved email address", required = true) Long clientId,
             @McpToolParam(description = "Email subject", required = true) String subject,
             @McpToolParam(description = "Plain-text email body", required = true) String body,
-            @McpToolParam(description = "Optional approved From address from list_email_senders; defaults to MAIL_FROM", required = false) String senderEmail,
+            @McpToolParam(description = "Optional approved From address from list_email_senders; defaults to info@dynamiq.dev", required = false) String senderEmail,
             @McpToolParam(description = "Optional template: branded, branded-notice, formal, or minimal", required = false) String templateId,
             @McpToolParam(description = "Include the authenticated agent user's configured signature; defaults to true", required = false) Boolean includeSignature) {
         if (clientId == null) throw new IllegalArgumentException("client_id is required");
@@ -736,7 +737,8 @@ public class TalliMcpWriteTools {
     public record InvoicePaymentLink(Long invoiceId, String invoiceReference,
                                      String paymentUrl, String buttonLabel) {}
 
-    public record EmailSenderOption(String address, String name, boolean defaultSender) {}
+    public record EmailSenderOption(String address, String name, boolean defaultSender,
+                                    String defaultSignatureHtml) {}
 
     public record EmailPreview(Long clientId, String fromAddress, String fromName,
                                String toAddress, String ccAddress,
