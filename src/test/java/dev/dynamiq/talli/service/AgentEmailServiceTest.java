@@ -159,7 +159,8 @@ class AgentEmailServiceTest {
                 eq("billing@acme.test"), eq(List.of("shloimy@dynamiq.dev")), eq(List.of()),
                 eq("Signed"), eq("Hello"), html.capture());
         assertThat(html.getValue())
-                .contains("<strong>Dynamiq</strong>", "finance@dynamiq.dev", "data-signature=\"1\"");
+                .contains("<strong>Dynamiq Finance</strong>", "finance@dynamiq.dev",
+                        "data-signature=\"1\"");
     }
 
     @Test
