@@ -50,6 +50,9 @@ class TalliMcpServerTest {
                         "log_time", "start_timer", "stop_timer", "update_time_entry", "delete_time_entry",
                         "log_expense",
                         "update_expense", "delete_expense",
+                        "create_subscription", "update_subscription", "delete_subscription",
+                        "cancel_subscription", "reactivate_subscription", "record_subscription_charge",
+                        "link_expense_to_subscription", "unlink_expense_from_subscription",
                         "record_payment", "delete_payment", "set_invoice_ach_link",
                         "preview_client_email", "send_client_email");
     }

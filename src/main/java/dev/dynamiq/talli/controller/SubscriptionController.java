@@ -87,7 +87,8 @@ public class SubscriptionController {
 
     @PostMapping("/{id}/delete")
     public String delete(@PathVariable("id") Long id) {
-        subscriptionRepository.deleteById(id);
+        Subscription subscription = subscriptionRepository.findById(id).orElseThrow();
+        subscriptionService.delete(subscription);
         return "redirect:/subscriptions";
     }
 
@@ -113,11 +114,7 @@ public class SubscriptionController {
     @PostMapping("/{id}/reactivate")
     public String reactivate(@PathVariable("id") Long id) {
         Subscription s = subscriptionRepository.findById(id).orElseThrow();
-        s.setCancelledOn(null);
-        if (s.getNextDueOn() == null) {
-            s.setNextDueOn(LocalDate.now());
-        }
-        subscriptionRepository.save(s);
+        subscriptionService.reactivate(s, s.getNextDueOn());
         return "redirect:/subscriptions";
     }
 

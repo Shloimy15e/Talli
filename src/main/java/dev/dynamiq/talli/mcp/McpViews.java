@@ -55,6 +55,8 @@ public final class McpViews {
                 expense.getClient() != null ? expense.getClient().getName() : null,
                 expense.getProject() != null ? expense.getProject().getId() : null,
                 expense.getProject() != null ? expense.getProject().getName() : null,
+                expense.getSubscription() != null ? expense.getSubscription().getId() : null,
+                expense.getSubscription() != null ? expense.getSubscription().getVendor() : null,
                 expense.getIncurredOn(), expense.getAmount(), expense.getCurrency(),
                 expense.getExchangeRate(), expense.getCategory(), expense.getVendor(),
                 expense.getDescription(), expense.getPaymentMethod(), expense.getReceiptUrl(),
@@ -98,7 +100,8 @@ public final class McpViews {
                 subscription.getVendor(), subscription.getDescription(), subscription.getCategory(),
                 subscription.getAmount(), subscription.getCurrency(), subscription.getCycle(),
                 subscription.getStartedOn(), subscription.getCancelledOn(), subscription.getNextDueOn(),
-                subscription.getPaymentMethod(), subscription.isActive());
+                subscription.getPaymentMethod(), subscription.getManageUrl(), subscription.getCancelUrl(),
+                subscription.isActive());
     }
 
     public record ClientView(Long id, String name, String email, String phone,
@@ -117,7 +120,9 @@ public final class McpViews {
                                 Boolean billable, Boolean billed, Long invoiceId) {}
 
     public record ExpenseView(Long id, Long clientId, String clientName,
-                              Long projectId, String projectName, LocalDate incurredOn,
+                              Long projectId, String projectName,
+                              Long subscriptionId, String subscriptionVendor,
+                              LocalDate incurredOn,
                               BigDecimal amount, String currency, BigDecimal exchangeRate,
                               String category, String vendor, String description,
                               String paymentMethod, String receiptUrl, Boolean billable,
@@ -146,5 +151,6 @@ public final class McpViews {
                                    String description, String category, BigDecimal amount,
                                    String currency, String cycle, LocalDate startedOn,
                                    LocalDate cancelledOn, LocalDate nextDueOn,
-                                   String paymentMethod, boolean active) {}
+                                   String paymentMethod, String manageUrl, String cancelUrl,
+                                   boolean active) {}
 }

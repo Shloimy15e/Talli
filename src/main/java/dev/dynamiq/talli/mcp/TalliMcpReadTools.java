@@ -136,13 +136,15 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "find_expenses", title = "Find expenses",
-            description = "Query expenses by client, project, date range, category, billable state, and billed state. Dates are inclusive ISO dates.",
+            description = "Query expenses by client, project, subscription linkage, date range, category, billable state, and billed state. Dates are inclusive ISO dates.",
             annotations = @McpTool.McpAnnotations(title = "Find expenses", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('view-expenses')")
     public List<McpViews.ExpenseView> findExpenses(
             @McpToolParam(description = "Optional client ID", required = false) Long clientId,
             @McpToolParam(description = "Optional project ID", required = false) Long projectId,
+            @McpToolParam(description = "Optional subscription ID", required = false) Long subscriptionId,
+            @McpToolParam(description = "Optional filter for expenses linked or not linked to any subscription", required = false) Boolean linkedToSubscription,
             @McpToolParam(description = "Optional inclusive start date, YYYY-MM-DD", required = false) String from,
             @McpToolParam(description = "Optional inclusive end date, YYYY-MM-DD", required = false) String to,
             @McpToolParam(description = "Optional category", required = false) String category,
@@ -155,6 +157,10 @@ public class TalliMcpReadTools {
         return expenses.findAllByOrderByIncurredOnDesc().stream()
                 .filter(e -> clientId == null || e.getClient() != null && e.getClient().getId().equals(clientId))
                 .filter(e -> projectId == null || e.getProject() != null && e.getProject().getId().equals(projectId))
+                .filter(e -> subscriptionId == null || e.getSubscription() != null
+                        && e.getSubscription().getId().equals(subscriptionId))
+                .filter(e -> linkedToSubscription == null
+                        || linkedToSubscription == (e.getSubscription() != null))
                 .filter(e -> inRange(e.getIncurredOn(), range))
                 .filter(e -> wantedCategory == null || wantedCategory.equalsIgnoreCase(e.getCategory()))
                 .filter(e -> billable == null || billable.equals(e.getBillable()))
