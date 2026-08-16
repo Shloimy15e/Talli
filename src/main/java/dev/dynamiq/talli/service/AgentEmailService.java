@@ -57,7 +57,7 @@ public class AgentEmailService {
         String signature = includeSignature ? sender.defaultSignatureHtml() : null;
         String selectedTemplate = templateId == null || templateId.isBlank()
                 ? null : templateId.trim().toLowerCase(Locale.ROOT);
-        String html = composeHtml(emailBody, selectedTemplate, signature);
+        String html = composeHtml(emailBody, selectedTemplate, signature, sender);
         String token = previewToken(actorEmail, clientId, sender, recipient, auditCc,
                 emailSubject, emailBody, html, selectedTemplate, includeSignature);
         return new Preview(clientId, sender.address(), sender.name(), recipient, auditCc,
@@ -108,14 +108,15 @@ public class AgentEmailService {
                 preview.signatureIncluded());
     }
 
-    private String composeHtml(String body, String templateId, String signature) {
+    private String composeHtml(String body, String templateId, String signature,
+                               EmailSender sender) {
         if (templateId == null && signature == null) return null;
 
         String content = "<div>" + EmailService.plainToHtml(body) + "</div>";
         if (signature != null) {
             content += "<br><div data-signature=\"1\">" + signature + "</div>";
         }
-        return templateId == null ? content : templates.wrap(templateId, content);
+        return templateId == null ? content : templates.wrap(templateId, content, sender);
     }
 
     private static String clientEmail(Client client) {

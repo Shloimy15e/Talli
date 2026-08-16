@@ -633,7 +633,7 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Plain-text email body", required = true) String body,
             @McpToolParam(description = "Optional approved From address from list_email_senders; defaults to info@dynamiq.dev", required = false) String senderEmail,
             @McpToolParam(description = "Optional template: branded, branded-notice, formal, or minimal", required = false) String templateId,
-            @McpToolParam(description = "Include the authenticated agent user's configured signature; defaults to true", required = false) Boolean includeSignature) {
+            @McpToolParam(description = "Include the selected sender's matching signature; defaults to true", required = false) Boolean includeSignature) {
         if (clientId == null) throw new IllegalArgumentException("client_id is required");
         AgentEmailService.Preview preview = agentEmailService.preview(
                 authenticatedEmail(), clientId, subject, body, templateId,
@@ -655,7 +655,7 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Approved plain-text email body", required = true) String body,
             @McpToolParam(description = "Approved From address used in preview_client_email; omit only when the default sender was previewed", required = false) String senderEmail,
             @McpToolParam(description = "Optional template: branded, branded-notice, formal, or minimal", required = false) String templateId,
-            @McpToolParam(description = "Include the authenticated agent user's configured signature; defaults to true", required = false) Boolean includeSignature,
+            @McpToolParam(description = "Include the selected sender's matching signature; defaults to true", required = false) Boolean includeSignature,
             @McpToolParam(description = "Token returned by preview_client_email for these exact inputs", required = true) String previewToken,
             @McpToolParam(description = "Must be true only after a human approves this exact recipient, subject, and body", required = true) Boolean confirmSend) {
         if (clientId == null) throw new IllegalArgumentException("client_id is required");

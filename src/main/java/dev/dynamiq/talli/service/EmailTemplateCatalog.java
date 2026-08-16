@@ -21,24 +21,38 @@ public class EmailTemplateCatalog {
 
     /** Templates retain the body marker because the browser composer replaces it client-side. */
     public List<Template> all() {
-        return TEMPLATES.stream().map(this::withSender).toList();
+        return TEMPLATES.stream()
+                .map(template -> withSender(template, fromName, fromAddress))
+                .toList();
     }
 
     /** Wrap escaped, composed body HTML in one of the known templates. */
     public String wrap(String templateId, String bodyHtml) {
+        return wrap(templateId, bodyHtml, fromName, fromAddress);
+    }
+
+    /** Wrap body HTML using the sender selected for this specific email. */
+    String wrap(String templateId, String bodyHtml, EmailSender sender) {
+        return wrap(templateId, bodyHtml, sender.name(), sender.address());
+    }
+
+    private String wrap(String templateId, String bodyHtml,
+                        String senderName, String senderAddress) {
         String id = templateId == null ? "" : templateId.trim().toLowerCase(Locale.ROOT);
-        Template template = all().stream()
+        Template template = TEMPLATES.stream()
                 .filter(candidate -> candidate.id().equals(id))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Unknown email template. Use branded, branded-notice, formal, or minimal."));
-        return template.html().replace("{{body}}", bodyHtml);
+        return withSender(template, senderName, senderAddress).html()
+                .replace("{{body}}", bodyHtml);
     }
 
-    private Template withSender(Template template) {
+    private static Template withSender(Template template, String senderName,
+                                       String senderAddress) {
         return new Template(template.id(), template.name(), template.html()
-                .replace("{{fromName}}", fromName == null ? "" : fromName)
-                .replace("{{fromAddress}}", fromAddress == null ? "" : fromAddress));
+                .replace("{{fromName}}", senderName == null ? "" : senderName)
+                .replace("{{fromAddress}}", senderAddress == null ? "" : senderAddress));
     }
 
     /** A full email-safe HTML document with a literal {@code {{body}}} insertion point. */

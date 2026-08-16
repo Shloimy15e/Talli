@@ -73,7 +73,8 @@ class AgentEmailServiceTest {
                 eq(List.of("shloimy@dynamiq.dev")), eq(List.of()),
                 eq("Invoice update"), eq("Amount < $100"), html.capture());
         assertThat(html.getValue())
-                .contains("billing@dynamiq.dev", "Amount &lt; $100")
+                .contains("Dynamiq Billing", "billing@dynamiq.dev", "Amount &lt; $100")
+                .doesNotContain("Talli Finance")
                 .contains("data-signature=\"1\"");
         assertThat(result.email().getStatus()).isEqualTo("sent");
         assertThat(result.templateId()).isEqualTo("branded");
@@ -112,7 +113,8 @@ class AgentEmailServiceTest {
                 eq("billing@acme.test"),
                 eq(List.of("shloimy@dynamiq.dev")), eq(List.of()),
                 eq("Notice"), eq("Hello"), html.capture());
-        assertThat(html.getValue()).contains("Talli Finance", "Hello")
+        assertThat(html.getValue()).contains("Dynamiq Solutions", "info@dynamiq.dev", "Hello")
+                .doesNotContain("Talli Finance")
                 .doesNotContain("data-signature", "Automated finance assistant");
     }
 
