@@ -124,6 +124,36 @@ class ExpenseServiceTest {
         assertThat(total).isEqualByComparingTo("150.00");
     }
 
+    @Test
+    void listFiltered_normalizesFilterValuesBeforeQuerying() {
+        ExpenseFilter filter = new ExpenseFilter(
+                "  GitHub  ", 0L, 3L, "SOFTWARE", "unknown", "UNBILLED",
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 31));
+        when(expenseRepository.findFiltered(any(), any(), any(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(org.springframework.data.domain.Page.empty());
+
+        service.listFiltered(filter, 0, 25);
+
+        verify(expenseRepository).findFiltered(
+                eq("GitHub"), eq(null), eq(3L), eq("software"), eq(""), eq("unbilled"),
+                eq(LocalDate.of(2026, 8, 1)), eq(LocalDate.of(2026, 8, 31)), any());
+        assertThat(filter.active()).isTrue();
+    }
+
+    @Test
+    void listFiltered_returnsNoResultsForReversedDateRange() {
+        ExpenseFilter filter = new ExpenseFilter(
+                null, null, null, null, null, null,
+                LocalDate.of(2026, 8, 31), LocalDate.of(2026, 8, 1));
+
+        var result = service.listFiltered(filter, 0, 25);
+
+        assertThat(result).isEmpty();
+        assertThat(filter.hasInvalidDateRange()).isTrue();
+        verify(expenseRepository, never()).findFiltered(
+                any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
     // --- helpers ---
 
     private Expense expense(String currency, LocalDate incurredOn) {

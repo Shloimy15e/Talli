@@ -20,6 +20,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     List<Project> findByStatusOrderByNameAsc(String status);
 
+    List<Project> findAllByOrderByNameAsc();
+
     /** Active projects ordered by most recent time entry (projects with no entries last). */
     @Query("SELECT p FROM Project p LEFT JOIN TimeEntry t ON t.project = p " +
            "WHERE p.status = 'active' " +
