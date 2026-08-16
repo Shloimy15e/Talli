@@ -8,6 +8,7 @@ import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
+import dev.dynamiq.talli.repository.PaymentRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import dev.dynamiq.talli.service.AgentEmailService;
@@ -44,6 +45,7 @@ public class TalliMcpWriteTools {
     private final ExpenseService expenseService;
     private final ProjectService projectService;
     private final InvoiceRepository invoices;
+    private final PaymentRepository payments;
     private final PaymentService paymentService;
     private final InvoiceService invoiceService;
     private final AgentEmailService agentEmailService;
@@ -52,7 +54,8 @@ public class TalliMcpWriteTools {
                               TimeEntryRepository timeEntries, ExpenseRepository expenses,
                               TimeEntryService timeEntryService, ExpenseService expenseService,
                               ProjectService projectService,
-                              InvoiceRepository invoices, PaymentService paymentService,
+                              InvoiceRepository invoices, PaymentRepository payments,
+                              PaymentService paymentService,
                               InvoiceService invoiceService, AgentEmailService agentEmailService) {
         this.clients = clients;
         this.projects = projects;
@@ -62,6 +65,7 @@ public class TalliMcpWriteTools {
         this.expenseService = expenseService;
         this.projectService = projectService;
         this.invoices = invoices;
+        this.payments = payments;
         this.paymentService = paymentService;
         this.invoiceService = invoiceService;
         this.agentEmailService = agentEmailService;
@@ -296,6 +300,87 @@ public class TalliMcpWriteTools {
         return McpViews.timeEntry(timeEntryService.endTimer(id));
     }
 
+    @McpTool(name = "update_time_entry", title = "Update a time entry",
+            description = "Update selected fields on an unbilled time entry. Use either ended_at or duration_minutes, not both. A blank ended_at restarts the timer and blank description clears it.",
+            annotations = @McpTool.McpAnnotations(title = "Update a time entry", readOnlyHint = false,
+                    destructiveHint = false, idempotentHint = true, openWorldHint = false))
+    @PreAuthorize("hasAuthority('manage-time')")
+    @Transactional
+    public McpViews.TimeEntryView updateTimeEntry(
+            @McpToolParam(description = "Existing time entry ID", required = true) Long timeEntryId,
+            @McpToolParam(description = "Optional existing project ID", required = false) Long projectId,
+            @McpToolParam(description = "Optional ISO local start date-time", required = false) String startedAt,
+            @McpToolParam(description = "Optional ISO local end date-time; blank makes the entry a running timer", required = false) String endedAt,
+            @McpToolParam(description = "Optional completed duration in minutes, 1-10080; cannot be combined with ended_at", required = false) Integer durationMinutes,
+            @McpToolParam(description = "Optional description; blank clears it", required = false) String description,
+            @McpToolParam(description = "Optional billable state", required = false) Boolean billable) {
+        if (timeEntryId == null) throw new IllegalArgumentException("time_entry_id is required");
+        if (projectId == null && startedAt == null && endedAt == null && durationMinutes == null
+                && description == null && billable == null) {
+            throw new IllegalArgumentException("At least one field must be supplied to update a time entry");
+        }
+        if (endedAt != null && durationMinutes != null) {
+            throw new IllegalArgumentException("ended_at and duration_minutes cannot be used together");
+        }
+        if (durationMinutes != null && (durationMinutes < 1 || durationMinutes > 10_080)) {
+            throw new IllegalArgumentException("duration_minutes must be between 1 and 10080");
+        }
+
+        TimeEntry entry = timeEntries.findById(timeEntryId)
+                .orElseThrow(() -> new IllegalArgumentException("Time entry not found: " + timeEntryId));
+        ensureUnbilledTimeEntry(entry, "updated");
+
+        Long targetProjectId = projectId == null ? entry.getProject().getId() : projectId;
+        LocalDateTime targetStart = startedAt == null
+                ? entry.getStartedAt() : parseDateTime(startedAt, "started_at");
+        LocalDateTime targetEnd;
+        if (durationMinutes != null) {
+            targetEnd = targetStart.plusMinutes(durationMinutes);
+        } else if (endedAt != null) {
+            targetEnd = endedAt.isBlank() ? null : parseDateTime(endedAt, "ended_at");
+        } else {
+            targetEnd = entry.getEndedAt();
+        }
+        if (targetEnd != null && !targetEnd.isAfter(targetStart)) {
+            throw new IllegalArgumentException("ended_at must be after started_at");
+        }
+        if (targetEnd != null && targetEnd.isAfter(LocalDateTime.now().plusMinutes(1))) {
+            throw new IllegalArgumentException("Time entry cannot end in the future");
+        }
+        if (targetEnd == null) {
+            timeEntries.findFirstByEndedAtIsNullOrderByStartedAtDesc()
+                    .filter(running -> !running.getId().equals(timeEntryId))
+                    .ifPresent(running -> {
+                        throw new IllegalStateException("Timer " + running.getId() + " is already running");
+                    });
+        }
+
+        String targetDescription = description == null ? entry.getDescription() : emptyToNull(description);
+        Boolean targetBillable = billable == null ? entry.getBillable() : billable;
+        return McpViews.timeEntry(timeEntryService.update(timeEntryId, targetProjectId,
+                targetStart, targetEnd, targetDescription, targetBillable));
+    }
+
+    @McpTool(name = "delete_time_entry", title = "Delete a time entry",
+            description = "Permanently delete an unbilled time entry. Set confirmed=true only after the user has explicitly requested deletion.",
+            annotations = @McpTool.McpAnnotations(title = "Delete a time entry", readOnlyHint = false,
+                    destructiveHint = true, idempotentHint = false, openWorldHint = false))
+    @PreAuthorize("hasAuthority('manage-time')")
+    @Transactional
+    public McpViews.DeleteResult deleteTimeEntry(
+            @McpToolParam(description = "Existing time entry ID", required = true) Long timeEntryId,
+            @McpToolParam(description = "Must be true after explicit user confirmation", required = true) Boolean confirmed) {
+        if (timeEntryId == null) throw new IllegalArgumentException("time_entry_id is required");
+        if (!Boolean.TRUE.equals(confirmed)) {
+            throw new IllegalArgumentException("confirmed must be true to permanently delete a time entry");
+        }
+        TimeEntry entry = timeEntries.findById(timeEntryId)
+                .orElseThrow(() -> new IllegalArgumentException("Time entry not found: " + timeEntryId));
+        ensureUnbilledTimeEntry(entry, "deleted");
+        timeEntryService.delete(timeEntryId);
+        return new McpViews.DeleteResult("time_entry", timeEntryId, true);
+    }
+
     @McpTool(name = "log_expense", title = "Log an expense",
             description = "Log an expense in Talli. If a project is supplied, its client is used and any supplied client_id must match.",
             annotations = @McpTool.McpAnnotations(title = "Log an expense", readOnlyHint = false,
@@ -490,6 +575,26 @@ public class TalliMcpWriteTools {
                 emptyToNull(notes), paymentProvider, externalId));
     }
 
+    @McpTool(name = "delete_payment", title = "Delete a payment",
+            description = "Permanently delete an incorrectly recorded payment and recompute the invoice balance and status. Credit-sourced payments restore the available client credit. Re-record the payment to correct it.",
+            annotations = @McpTool.McpAnnotations(title = "Delete a payment", readOnlyHint = false,
+                    destructiveHint = true, idempotentHint = false, openWorldHint = false))
+    @PreAuthorize("hasAuthority('manage-payments')")
+    @Transactional
+    public McpViews.DeleteResult deletePayment(
+            @McpToolParam(description = "Existing payment ID", required = true) Long paymentId,
+            @McpToolParam(description = "Must be true after explicit user confirmation", required = true) Boolean confirmed) {
+        if (paymentId == null) throw new IllegalArgumentException("payment_id is required");
+        if (!Boolean.TRUE.equals(confirmed)) {
+            throw new IllegalArgumentException("confirmed must be true to permanently delete a payment");
+        }
+        if (!payments.existsById(paymentId)) {
+            throw new IllegalArgumentException("Payment not found: " + paymentId);
+        }
+        paymentService.delete(paymentId);
+        return new McpViews.DeleteResult("payment", paymentId, true);
+    }
+
     @McpTool(name = "set_invoice_ach_link", title = "Set an invoice ACH link",
             description = "Add or replace the validated Mercury payment link rendered as the Pay with ACH action on an outstanding invoice. Pass a blank URL to remove it.",
             annotations = @McpTool.McpAnnotations(title = "Set an invoice ACH link", readOnlyHint = false,
@@ -584,6 +689,14 @@ public class TalliMcpWriteTools {
         }
     }
 
+    private static void ensureUnbilledTimeEntry(TimeEntry entry, String action) {
+        if (Boolean.TRUE.equals(entry.getBilled()) || entry.getInvoice() != null
+                || entry.getInvoiceItem() != null) {
+            throw new IllegalStateException("Billed time entries cannot be " + action
+                    + "; void the invoice first");
+        }
+    }
+
     private static LocalDate parseDate(String value, String name) {
         try {
             return LocalDate.parse(value);
@@ -593,10 +706,14 @@ public class TalliMcpWriteTools {
     }
 
     private static LocalDateTime parseDateTime(String value) {
+        return parseDateTime(value, "started_at");
+    }
+
+    private static LocalDateTime parseDateTime(String value, String name) {
         try {
             return LocalDateTime.parse(value);
         } catch (RuntimeException exception) {
-            throw new IllegalArgumentException("started_at must be an ISO local date-time");
+            throw new IllegalArgumentException(name + " must be an ISO local date-time");
         }
     }
 
