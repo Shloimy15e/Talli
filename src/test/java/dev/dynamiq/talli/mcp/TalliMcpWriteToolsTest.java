@@ -8,6 +8,7 @@ import dev.dynamiq.talli.model.Payment;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
+import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
@@ -43,6 +44,7 @@ class TalliMcpWriteToolsTest {
     private ClientRepository clients;
     private ProjectRepository projects;
     private TimeEntryRepository timeEntries;
+    private ExpenseRepository expenses;
     private TimeEntryService timeEntryService;
     private ExpenseService expenseService;
     private ProjectService projectService;
@@ -57,6 +59,7 @@ class TalliMcpWriteToolsTest {
         clients = mock(ClientRepository.class);
         projects = mock(ProjectRepository.class);
         timeEntries = mock(TimeEntryRepository.class);
+        expenses = mock(ExpenseRepository.class);
         timeEntryService = mock(TimeEntryService.class);
         expenseService = mock(ExpenseService.class);
         projectService = mock(ProjectService.class);
@@ -64,7 +67,7 @@ class TalliMcpWriteToolsTest {
         paymentService = mock(PaymentService.class);
         invoiceService = mock(InvoiceService.class);
         agentEmailService = mock(AgentEmailService.class);
-        tools = new TalliMcpWriteTools(clients, projects, timeEntries,
+        tools = new TalliMcpWriteTools(clients, projects, timeEntries, expenses,
                 timeEntryService, expenseService, projectService,
                 invoices, paymentService, invoiceService, agentEmailService);
     }
@@ -134,6 +137,73 @@ class TalliMcpWriteToolsTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("project_id does not belong to client_id");
         verify(expenseService, never()).create(any());
+    }
+
+    @Test
+    void updateExpenseChangesSelectedFieldsAndRelocksRate() {
+        Client client = client(1L, "Acme");
+        Project project = project(2L, "Website", client);
+        Expense expense = expense(3L, client, null);
+        when(expenses.findById(3L)).thenReturn(Optional.of(expense));
+        when(projects.findById(2L)).thenReturn(Optional.of(project));
+        when(expenseService.update(expense, "USD", LocalDate.of(2026, 8, 1)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = tools.updateExpense(3L, new BigDecimal("75.00"), "travel",
+                "2026-08-14", "eur", null, 2L, "Airline", " ", null, null, true);
+
+        assertThat(result.amount()).isEqualByComparingTo("75.00");
+        assertThat(result.category()).isEqualTo("travel");
+        assertThat(result.incurredOn()).isEqualTo(LocalDate.of(2026, 8, 14));
+        assertThat(result.currency()).isEqualTo("EUR");
+        assertThat(result.clientId()).isEqualTo(1L);
+        assertThat(result.projectId()).isEqualTo(2L);
+        assertThat(result.vendor()).isEqualTo("Airline");
+        assertThat(result.description()).isNull();
+        assertThat(result.billable()).isTrue();
+        verify(expenseService).update(expense, "USD", LocalDate.of(2026, 8, 1));
+    }
+
+    @Test
+    void updateExpenseRejectsBilledExpense() {
+        Expense expense = expense(3L, client(1L, "Acme"), null);
+        expense.setBilled(true);
+        when(expenses.findById(3L)).thenReturn(Optional.of(expense));
+
+        assertThatThrownBy(() -> tools.updateExpense(3L, new BigDecimal("75.00"),
+                null, null, null, null, null, null, null, null, null, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Billed expenses cannot be updated; void the invoice first");
+        verify(expenseService, never()).update(any(), any(), any());
+    }
+
+    @Test
+    void deleteExpenseRequiresConfirmationAndRejectsBilledExpense() {
+        Expense unbilled = expense(3L, client(1L, "Acme"), null);
+        Expense billed = expense(4L, client(1L, "Acme"), null);
+        billed.setBilled(true);
+        when(expenses.findById(4L)).thenReturn(Optional.of(billed));
+
+        assertThatThrownBy(() -> tools.deleteExpense(3L, false))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("confirmed must be true");
+        assertThatThrownBy(() -> tools.deleteExpense(4L, true))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Billed expenses cannot be deleted; void the invoice first");
+        verify(expenses, never()).delete(any());
+    }
+
+    @Test
+    void deleteExpenseReturnsDeletedRecord() {
+        Expense expense = expense(3L, client(1L, "Acme"), null);
+        when(expenses.findById(3L)).thenReturn(Optional.of(expense));
+
+        var result = tools.deleteExpense(3L, true);
+
+        assertThat(result.entity()).isEqualTo("expense");
+        assertThat(result.id()).isEqualTo(3L);
+        assertThat(result.deleted()).isTrue();
+        verify(expenses).delete(expense);
     }
 
     @Test
@@ -269,5 +339,20 @@ class TalliMcpWriteToolsTest {
         invoice.setAmountPaid(BigDecimal.ZERO);
         invoice.setStatus("unpaid");
         return invoice;
+    }
+
+    private static Expense expense(Long id, Client client, Project project) {
+        Expense expense = new Expense();
+        expense.setId(id);
+        expense.setClient(client);
+        expense.setProject(project);
+        expense.setIncurredOn(LocalDate.of(2026, 8, 1));
+        expense.setAmount(new BigDecimal("50.00"));
+        expense.setCurrency("USD");
+        expense.setExchangeRate(BigDecimal.ONE);
+        expense.setCategory("software");
+        expense.setBillable(false);
+        expense.setBilled(false);
+        return expense;
     }
 }

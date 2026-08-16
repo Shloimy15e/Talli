@@ -48,6 +48,7 @@ class TalliMcpServerTest {
                         "current_timer", "find_invoices", "get_invoice", "find_subscriptions", "run_report",
                         "create_client", "update_client", "create_project", "update_project",
                         "log_time", "start_timer", "stop_timer", "log_expense",
+                        "update_expense", "delete_expense",
                         "record_payment", "set_invoice_ach_link",
                         "preview_client_email", "send_client_email");
     }
