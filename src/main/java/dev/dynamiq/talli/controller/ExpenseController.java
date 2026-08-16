@@ -4,11 +4,11 @@ import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
+import dev.dynamiq.talli.service.ExpenseFilter;
 import dev.dynamiq.talli.service.ExpenseService;
 import dev.dynamiq.talli.service.MediaService;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -40,13 +40,30 @@ public class ExpenseController {
     }
 
     @GetMapping
-    public String index(@RequestParam(defaultValue = "0") int page, Model model) {
+    public String index(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long clientId,
+            @RequestParam(required = false) Long projectId,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String source,
+            @RequestParam(required = false) String billing,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            Model model) {
         LocalDate today = LocalDate.now();
         LocalDate monthStart = today.withDayOfMonth(1);
+        ExpenseFilter filter = new ExpenseFilter(
+                search, clientId, projectId, category, source, billing, from, to);
 
-        Page<Expense> expensePage = expenseRepository.findAllByOrderByIncurredOnDesc(PageRequest.of(page, 25));
+        var expensePage = expenseService.listFiltered(filter, page, 25);
         model.addAttribute("expenses", expensePage.getContent());
         model.addAttribute("page", expensePage);
+        model.addAttribute("clients", clientRepository.findAllByOrderByNameAsc());
+        model.addAttribute("projects", projectRepository.findAllByOrderByNameAsc());
+        model.addAttribute("filter", filter);
+        model.addAttribute("filterError", filter.hasInvalidDateRange()
+                ? "The start date must be on or before the end date." : null);
         model.addAttribute("monthTotal", expenseService.sumInUsdBetween(monthStart, today));
         model.addAttribute("monthLabel", monthStart);
         return "expenses/index";

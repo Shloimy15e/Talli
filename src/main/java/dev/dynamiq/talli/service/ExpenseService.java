@@ -2,6 +2,8 @@ package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Expense;
 import dev.dynamiq.talli.repository.ExpenseRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,16 @@ public class ExpenseService {
     public Expense create(Expense e) {
         applyHistoricRate(e);
         return expenseRepository.save(e);
+    }
+
+    public Page<Expense> listFiltered(ExpenseFilter filter, int page, int size) {
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), size);
+        if (filter.hasInvalidDateRange()) {
+            return Page.empty(pageable);
+        }
+        return expenseRepository.findFiltered(
+                filter.search(), filter.clientId(), filter.projectId(), filter.category(),
+                filter.source(), filter.billing(), filter.from(), filter.to(), pageable);
     }
 
     /**

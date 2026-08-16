@@ -3,6 +3,7 @@ package dev.dynamiq.talli.repository;
 import dev.dynamiq.talli.model.Client;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 // That's it. This interface becomes a fully-implemented repository at runtime.
@@ -15,6 +16,8 @@ import java.util.Optional;
 //   - existsById(Long id)
 // ...and about 15 more methods. You never implement them.
 public interface ClientRepository extends JpaRepository<Client, Long> {
+    List<Client> findAllByOrderByNameAsc();
+
     Optional<Client> findByNameIgnoreCase(String name);
     Optional<Client> findByEmailIgnoreCase(String email);
 

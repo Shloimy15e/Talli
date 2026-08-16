@@ -22,21 +22,130 @@
         </button>
       </div>
 
-      <!-- Empty state -->
-      <div th:if="${#lists.isEmpty(expenses)}" class="bg-white rounded-xl border border-slate-200 p-12 text-center">
+      <!-- Filters -->
+      <form method="get" th:action="@{/expenses}" class="mb-5 space-y-3" aria-label="Expense filters">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div class="relative sm:col-span-2">
+            <label for="expense-search" class="sr-only">Search expenses</label>
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+            <input id="expense-search" type="search" name="search" th:value="${filter.search}"
+                   placeholder="Search vendor, description, client, project..."
+                   class="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/20 focus:border-[#ea7c28] placeholder-slate-400">
+          </div>
+
+          <div>
+            <label for="expense-client" class="sr-only">Client</label>
+            <select id="expense-client" name="clientId"
+                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/20 focus:border-[#ea7c28]">
+              <option value="">All clients</option>
+              <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}"
+                      th:selected="${filter.clientId == c.id}">Client</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="expense-project" class="sr-only">Project</label>
+            <select id="expense-project" name="projectId"
+                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/20 focus:border-[#ea7c28]">
+              <option value="">All projects</option>
+              <option th:each="p : ${projects}" th:value="${p.id}"
+                      th:text="${p.name + (p.client != null ? ' · ' + p.client.name : '')}"
+                      th:selected="${filter.projectId == p.id}">Project</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="expense-category" class="sr-only">Category</label>
+            <select id="expense-category" name="category"
+                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm capitalize focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/20 focus:border-[#ea7c28]">
+              <option value="">All categories</option>
+              <option th:each="c : ${expenseCategories}" th:value="${c}" th:text="${c}"
+                      th:selected="${filter.category == c}">Category</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="expense-billing" class="sr-only">Billing status</label>
+            <select id="expense-billing" name="billing"
+                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/20 focus:border-[#ea7c28]">
+              <option value="">All billing states</option>
+              <option value="unbilled" th:selected="${filter.billing == 'unbilled'}">Unbilled</option>
+              <option value="billed" th:selected="${filter.billing == 'billed'}">Billed</option>
+              <option value="nonbillable" th:selected="${filter.billing == 'nonbillable'}">Non-billable</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="expense-source" class="sr-only">Source</label>
+            <select id="expense-source" name="source"
+                    class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/20 focus:border-[#ea7c28]">
+              <option value="">All sources</option>
+              <option value="manual" th:selected="${filter.source == 'manual'}">Manual</option>
+              <option value="mercury" th:selected="${filter.source == 'mercury'}">Mercury</option>
+              <option value="subscription" th:selected="${filter.source == 'subscription'}">Subscription-linked</option>
+            </select>
+          </div>
+
+          <label for="expense-from" class="flex items-center gap-2 px-3 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-500 focus-within:ring-2 focus-within:ring-[#ea7c28]/20 focus-within:border-[#ea7c28]">
+            From
+            <input id="expense-from" type="date" name="from" th:value="${filter.from}"
+                   class="min-w-0 flex-1 py-2 bg-transparent text-sm text-slate-700 focus:outline-none">
+          </label>
+
+          <label for="expense-to" class="flex items-center gap-2 px-3 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-500 focus-within:ring-2 focus-within:ring-[#ea7c28]/20 focus-within:border-[#ea7c28]">
+            To
+            <input id="expense-to" type="date" name="to" th:value="${filter.to}"
+                   class="min-w-0 flex-1 py-2 bg-transparent text-sm text-slate-700 focus:outline-none">
+          </label>
+
+          <button type="submit"
+                  class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium transition focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2">
+            <i data-lucide="list-filter" class="w-4 h-4"></i>
+            Apply
+          </button>
+        </div>
+
+        <div th:if="${filter.active()}" class="flex items-center justify-between gap-3">
+          <p th:if="${filterError == null}" class="text-xs text-slate-400"
+             th:text="${page.totalElements} + ' result' + (${page.totalElements} == 1 ? '' : 's')">0 results</p>
+          <p th:if="${filterError != null}" class="text-xs text-red-600" th:text="${filterError}">Invalid date range.</p>
+          <a th:href="@{/expenses}"
+             class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition">
+            <i data-lucide="x" class="w-3 h-3"></i>
+            Clear filters
+          </a>
+        </div>
+      </form>
+
+      <!-- Empty states -->
+      <div th:if="${#lists.isEmpty(expenses) and filter.active()}"
+           class="bg-white rounded-xl border border-slate-200 p-12 text-center">
+        <i data-lucide="search-x" class="w-8 h-8 text-slate-300 mx-auto mb-3"></i>
+        <p class="font-medium text-slate-700">No expenses match these filters.</p>
+        <p class="text-sm text-slate-500 mt-1">Try a broader search or clear the filters.</p>
+        <a th:href="@{/expenses}" class="inline-flex items-center gap-1 text-sm text-[#ea7c28] hover:underline mt-3">
+          Clear filters
+        </a>
+      </div>
+
+      <div th:if="${#lists.isEmpty(expenses) and !filter.active()}" class="bg-white rounded-xl border border-slate-200 p-12 text-center">
         <p class="text-slate-500">No expenses logged yet.</p>
-        <button hx-get="/expenses/new" hx-target="#modal" class="text-[#ea7c28] hover:underline mt-2">Log your first expense</button>
+        <button sec:authorize="hasAuthority('manage-expenses')"
+                hx-get="/expenses/new" hx-target="#modal" class="text-[#ea7c28] hover:underline mt-2">Log your first expense</button>
       </div>
 
       <!-- List -->
       <div th:unless="${#lists.isEmpty(expenses)}" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <table class="w-full">
+        <div class="overflow-x-auto">
+        <table class="w-full min-w-[1040px]">
           <thead>
             <tr class="border-b border-slate-200">
               <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Date</th>
               <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Vendor</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Client / Project</th>
               <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Category</th>
-              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Amount</th>
+              <th class="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Amount</th>
+              <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Billing</th>
               <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-6 py-3">Source</th>
               <th class="px-6 py-3 w-20"></th>
             </tr>
@@ -50,19 +159,42 @@
                 <div class="font-medium" th:text="${e.vendor} ?: '—'">Vendor</div>
                 <div th:if="${e.description}" class="text-xs text-slate-500" th:text="${e.description}">description</div>
               </td>
+              <td class="px-6 py-4 text-sm">
+                <a th:if="${e.client != null}" th:href="@{/clients/{id}(id=${e.client.id})}"
+                   class="font-medium hover:text-[#ea7c28] hover:underline" th:text="${e.client.name}">Client</a>
+                <span th:if="${e.client == null}" class="text-slate-400">—</span>
+                <div th:if="${e.project != null}" class="text-xs text-slate-500 mt-0.5">
+                  <a th:href="@{/projects/{id}(id=${e.project.id})}"
+                     class="hover:text-[#ea7c28] hover:underline" th:text="${e.project.name}">Project</a>
+                </div>
+              </td>
               <td class="px-6 py-4 text-sm text-slate-600 capitalize" th:text="${e.category}">software</td>
-              <td class="px-6 py-4 font-mono text-sm tabular-nums"
+              <td class="px-6 py-4 font-mono text-sm tabular-nums text-right"
                   th:text="${csym.apply(e.currency)} + ${#numbers.formatDecimal(e.amount, 1, 'COMMA', 2, 'POINT')}">$0.00</td>
               <td class="px-6 py-4 text-xs">
-                <span th:if="${e.subscription != null}"
-                      class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#ea7c28]/10 text-[#ea7c28]">
-                  Subscription
-                </span>
-                <span th:if="${e.subscription == null}" class="text-slate-400">Manual</span>
+                <span th:if="${e.billed}"
+                      class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Billed</span>
+                <span th:if="${!e.billed and e.billable}"
+                      class="inline-flex items-center px-2 py-0.5 rounded-full bg-[#ea7c28]/10 text-[#ea7c28]">Unbilled</span>
+                <span th:if="${!e.billable}"
+                      class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-50 text-slate-500">Non-billable</span>
+              </td>
+              <td class="px-6 py-4 text-xs">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span th:if="${e.mercuryTransactionId != null}"
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-700">
+                    Mercury
+                  </span>
+                  <span th:if="${e.subscription != null}"
+                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#ea7c28]/10 text-[#ea7c28]">
+                    Subscription
+                  </span>
+                  <span th:if="${e.subscription == null and e.mercuryTransactionId == null}" class="text-slate-400">Manual</span>
+                </div>
               </td>
               <td class="px-6 py-4 text-right">
                 <div sec:authorize="hasAuthority('manage-expenses')"
-                     class="opacity-0 group-hover:opacity-100 transition flex items-center gap-2 justify-end">
+                     class="opacity-100 xl:opacity-0 xl:group-hover:opacity-100 xl:group-focus-within:opacity-100 transition flex items-center gap-2 justify-end">
                   <button th:hx-get="@{/expenses/{id}/edit(id=${e.id})}" hx-target="#modal"
                           class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900">
                     <i data-lucide="pencil" class="w-3 h-3"></i> Edit</button>
@@ -76,6 +208,7 @@
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
       <!-- Pagination -->
@@ -87,14 +220,14 @@
         </p>
         <div class="flex items-center gap-1">
           <a th:if="${page.number > 0}"
-             th:href="@{/expenses(page=${page.number - 1})}"
+             th:href="@{/expenses(page=${page.number - 1}, search=${filter.search}, clientId=${filter.clientId}, projectId=${filter.projectId}, category=${filter.category}, source=${filter.source}, billing=${filter.billing}, from=${filter.from}, to=${filter.to})}"
              class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">Prev</a>
           <span th:if="${page.number == 0}"
                 class="px-3 py-1.5 rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">Prev</span>
 
           <th:block th:each="p : ${#numbers.sequence(0, page.totalPages - 1)}">
             <a th:if="${p != page.number}"
-               th:href="@{/expenses(page=${p})}"
+               th:href="@{/expenses(page=${p}, search=${filter.search}, clientId=${filter.clientId}, projectId=${filter.projectId}, category=${filter.category}, source=${filter.source}, billing=${filter.billing}, from=${filter.from}, to=${filter.to})}"
                th:text="${p + 1}"
                class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">1</a>
             <span th:if="${p == page.number}"
@@ -103,7 +236,7 @@
           </th:block>
 
           <a th:if="${page.number < page.totalPages - 1}"
-             th:href="@{/expenses(page=${page.number + 1})}"
+             th:href="@{/expenses(page=${page.number + 1}, search=${filter.search}, clientId=${filter.clientId}, projectId=${filter.projectId}, category=${filter.category}, source=${filter.source}, billing=${filter.billing}, from=${filter.from}, to=${filter.to})}"
              class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">Next</a>
           <span th:if="${page.number >= page.totalPages - 1}"
                 class="px-3 py-1.5 rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">Next</span>
