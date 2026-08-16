@@ -2,10 +2,8 @@ package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Email;
-import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
-import dev.dynamiq.talli.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,19 +21,17 @@ import java.util.Locale;
 public class AgentEmailService {
 
     private final ClientRepository clients;
-    private final UserRepository users;
     private final EmailRepository emails;
     private final EmailService emailService;
     private final EmailTemplateCatalog templates;
     private final AgentEmailSenderCatalog senders;
     private final String auditCc;
 
-    public AgentEmailService(ClientRepository clients, UserRepository users,
-                             EmailRepository emails, EmailService emailService,
+    public AgentEmailService(ClientRepository clients, EmailRepository emails,
+                             EmailService emailService,
                              EmailTemplateCatalog templates, AgentEmailSenderCatalog senders,
                              @Value("${app.mcp.email.cc:shloimy@dynamiq.dev}") String auditCc) {
         this.clients = clients;
-        this.users = users;
         this.emails = emails;
         this.emailService = emailService;
         this.templates = templates;
@@ -58,7 +54,7 @@ public class AgentEmailService {
         String emailBody = required(body, "body");
         if (emailSubject.length() > 255) throw new IllegalArgumentException("subject is too long");
 
-        String signature = includeSignature ? signature(actorEmail) : null;
+        String signature = includeSignature ? sender.defaultSignatureHtml() : null;
         String selectedTemplate = templateId == null || templateId.isBlank()
                 ? null : templateId.trim().toLowerCase(Locale.ROOT);
         String html = composeHtml(emailBody, selectedTemplate, signature);
@@ -120,16 +116,6 @@ public class AgentEmailService {
             content += "<br><div data-signature=\"1\">" + signature + "</div>";
         }
         return templateId == null ? content : templates.wrap(templateId, content);
-    }
-
-    private String signature(String actorEmail) {
-        User actor = users.findByEmail(required(actorEmail, "authenticated user"))
-                .orElseThrow(() -> new IllegalStateException("Authenticated MCP user was not found."));
-        if (actor.getSignature() == null || actor.getSignature().isBlank()) {
-            throw new IllegalStateException(
-                    "The authenticated MCP user's email signature is not configured.");
-        }
-        return actor.getSignature();
     }
 
     private static String clientEmail(Client client) {

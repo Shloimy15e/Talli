@@ -611,13 +611,14 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "list_email_senders", title = "List email senders",
-            description = "List the approved From addresses available for agent email. Use one of these addresses as sender_email when previewing and sending; omitting it uses the default sender.",
+            description = "List the approved From addresses and built-in signatures available for agent email. Use one of these addresses as sender_email when previewing and sending; omitting it uses the default sender.",
             annotations = @McpTool.McpAnnotations(title = "List email senders", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('send-emails')")
     public List<EmailSenderOption> listEmailSenders() {
         return agentEmailService.availableSenders().stream()
-                .map(sender -> new EmailSenderOption(sender.address(), sender.name(), sender.defaultSender()))
+                .map(sender -> new EmailSenderOption(sender.address(), sender.name(), sender.defaultSender(),
+                        sender.defaultSignatureHtml()))
                 .toList();
     }
 
@@ -736,7 +737,8 @@ public class TalliMcpWriteTools {
     public record InvoicePaymentLink(Long invoiceId, String invoiceReference,
                                      String paymentUrl, String buttonLabel) {}
 
-    public record EmailSenderOption(String address, String name, boolean defaultSender) {}
+    public record EmailSenderOption(String address, String name, boolean defaultSender,
+                                    String defaultSignatureHtml) {}
 
     public record EmailPreview(Long clientId, String fromAddress, String fromName,
                                String toAddress, String ccAddress,

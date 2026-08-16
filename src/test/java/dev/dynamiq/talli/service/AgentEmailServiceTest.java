@@ -2,10 +2,8 @@ package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Email;
-import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
-import dev.dynamiq.talli.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -27,7 +25,6 @@ import static org.mockito.Mockito.when;
 class AgentEmailServiceTest {
 
     private ClientRepository clients;
-    private UserRepository users;
     private EmailRepository emails;
     private EmailService emailService;
     private AgentEmailService service;
@@ -35,10 +32,9 @@ class AgentEmailServiceTest {
     @BeforeEach
     void setUp() {
         clients = mock(ClientRepository.class);
-        users = mock(UserRepository.class);
         emails = mock(EmailRepository.class);
         emailService = mock(EmailService.class);
-        service = new AgentEmailService(clients, users, emails, emailService,
+        service = new AgentEmailService(clients, emails, emailService,
                 new EmailTemplateCatalog("Talli Finance", "finance@dynamiq.dev"),
                 new AgentEmailSenderCatalog("info@dynamiq.dev", "Dynamiq",
                         "billing@dynamiq.dev,finance@dynamiq.dev"),
@@ -63,8 +59,7 @@ class AgentEmailServiceTest {
     }
 
     @Test
-    void sendsTemplatedEmailWithAgentSignature() {
-        configuredSignature();
+    void sendsTemplatedEmailWithSelectedSenderSignature() {
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         var preview = service.preview("finance@dynamiq.dev", 7L,
                 "Invoice update", "Amount < $100", "branded", true,
@@ -79,7 +74,7 @@ class AgentEmailServiceTest {
                 eq(List.of("shloimy@dynamiq.dev")), eq(List.of()),
                 eq("Invoice update"), eq("Amount < $100"), html.capture());
         assertThat(html.getValue())
-                .contains("Talli Finance", "Amount &lt; $100", "Automated finance assistant")
+                .contains("billing@dynamiq.dev", "Amount &lt; $100")
                 .contains("data-signature=\"1\"");
         assertThat(result.email().getStatus()).isEqualTo("sent");
         assertThat(result.templateId()).isEqualTo("branded");
@@ -99,7 +94,6 @@ class AgentEmailServiceTest {
         verify(emailService).sendPlain(new EmailSender("info@dynamiq.dev", "Dynamiq"),
                 "billing@acme.test", List.of("shloimy@dynamiq.dev"), List.of(),
                 "Quick note", "Hello");
-        verify(users, never()).findByEmail(any());
         assertThat(result.email().getBodyHtml()).isNull();
         assertThat(result.templateId()).isNull();
         assertThat(result.signatureIncluded()).isFalse();
@@ -125,7 +119,6 @@ class AgentEmailServiceTest {
 
     @Test
     void sendsSignedEmailWithoutTemplate() {
-        configuredSignature();
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         var preview = service.preview("finance@dynamiq.dev", 7L,
                 "Signed note", "Hello", null, true, null);
@@ -137,7 +130,7 @@ class AgentEmailServiceTest {
                 eq("billing@acme.test"),
                 eq(List.of("shloimy@dynamiq.dev")), eq(List.of()),
                 eq("Signed note"), eq("Hello"), html.capture());
-        assertThat(html.getValue()).contains("Hello", "Automated finance assistant")
+        assertThat(html.getValue()).contains("Hello", "info@dynamiq.dev")
                 .doesNotContain("<!doctype html>");
     }
 
@@ -154,18 +147,20 @@ class AgentEmailServiceTest {
     }
 
     @Test
-    void refusesSignedEmailWhenAgentSignatureIsNotConfigured() {
-        User agent = new User();
-        agent.setEmail("finance@dynamiq.dev");
-        when(users.findByEmail("finance@dynamiq.dev")).thenReturn(Optional.of(agent));
+    void usesSignatureMatchingSelectedSender() {
+        ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
 
-        assertThatThrownBy(() -> service.send("finance@dynamiq.dev", 7L,
-                "Signed", "Hello", null, true, null, "preview", true))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("signature is not configured");
+        var preview = service.preview("finance@dynamiq.dev", 7L,
+                "Signed", "Hello", null, true, "finance@dynamiq.dev");
+        service.send("finance@dynamiq.dev", 7L,
+                "Signed", "Hello", null, true, "finance@dynamiq.dev",
+                preview.previewToken(), true);
 
-        verify(emailService, never()).sendHtml(any(EmailSender.class), anyString(), anyList(), anyList(),
-                anyString(), anyString(), anyString());
+        verify(emailService).sendHtml(eq(new EmailSender("finance@dynamiq.dev", "Dynamiq")),
+                eq("billing@acme.test"), eq(List.of("shloimy@dynamiq.dev")), eq(List.of()),
+                eq("Signed"), eq("Hello"), html.capture());
+        assertThat(html.getValue())
+                .contains("<strong>Dynamiq</strong>", "finance@dynamiq.dev", "data-signature=\"1\"");
     }
 
     @Test
@@ -199,10 +194,4 @@ class AgentEmailServiceTest {
                 anyString(), anyString());
     }
 
-    private void configuredSignature() {
-        User agent = new User();
-        agent.setEmail("finance@dynamiq.dev");
-        agent.setSignature("<strong>Talli Finance</strong><br>Automated finance assistant by Dynamiq");
-        when(users.findByEmail("finance@dynamiq.dev")).thenReturn(Optional.of(agent));
-    }
 }

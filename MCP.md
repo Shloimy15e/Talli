@@ -103,15 +103,7 @@ The client must already exist in Talli and have one valid saved email address. T
 
 Set `MCP_EMAIL_SENDERS` to a comma-separated allow-list such as `billing@dynamiq.dev,finance@dynamiq.dev`. `MAIL_FROM` is always included as the default. Every address must belong to a domain verified for sending in Resend. The configured `MAIL_FROM_NAME` is used as the display name for all team addresses.
 
-The body is plain text and is safely escaped when HTML is required. `template_id` may be omitted or set to `branded`, `branded-notice`, `formal`, or `minimal`. `include_signature` defaults to true; set it to false for an unsigned email. Signed email uses the HTML signature configured on the Talli user that owns the MCP token and fails closed if that signature is missing.
-
-Recommended **Talli Finance** user signature:
-
-```html
-<strong>Talli Finance</strong><br>
-Automated finance assistant by Dynamiq<br>
-Overseen by the Dynamiq team.
-```
+The body is plain text and is safely escaped when HTML is required. `template_id` may be omitted or set to `branded`, `branded-notice`, `formal`, or `minimal`. `include_signature` defaults to true; set it to false for an unsigned email. Every approved sender has a built-in signature using `MAIL_FROM_NAME` and its own email address, so the signature always matches the selected From identity.
 
 ## Agent examples
 

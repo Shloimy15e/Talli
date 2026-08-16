@@ -405,15 +405,16 @@ class TalliMcpWriteToolsTest {
     void listsApprovedEmailSenders() {
         when(agentEmailService.availableSenders()).thenReturn(List.of(
                 new dev.dynamiq.talli.service.AgentEmailSenderCatalog.Option(
-                        "info@dynamiq.dev", "Dynamiq", true),
+                        "info@dynamiq.dev", "Dynamiq", true, "<strong>Dynamiq</strong>"),
                 new dev.dynamiq.talli.service.AgentEmailSenderCatalog.Option(
-                        "billing@dynamiq.dev", "Dynamiq", false)));
+                        "billing@dynamiq.dev", "Dynamiq", false, "<strong>Dynamiq</strong>")));
 
         var result = tools.listEmailSenders();
 
         assertThat(result).extracting(TalliMcpWriteTools.EmailSenderOption::address)
                 .containsExactly("info@dynamiq.dev", "billing@dynamiq.dev");
         assertThat(result.getFirst().defaultSender()).isTrue();
+        assertThat(result).allSatisfy(sender -> assertThat(sender.defaultSignatureHtml()).isNotBlank());
     }
 
     private static Client client(Long id, String name) {

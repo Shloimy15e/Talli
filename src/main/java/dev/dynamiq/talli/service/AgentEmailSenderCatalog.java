@@ -40,7 +40,8 @@ public class AgentEmailSenderCatalog {
     public List<Option> options() {
         return sendersByAddress.values().stream()
                 .map(sender -> new Option(sender.address(), sender.name(),
-                        sender.address().equalsIgnoreCase(defaultSender.address())))
+                        sender.address().equalsIgnoreCase(defaultSender.address()),
+                        sender.defaultSignatureHtml()))
                 .toList();
     }
 
@@ -82,5 +83,6 @@ public class AgentEmailSenderCatalog {
         return name;
     }
 
-    public record Option(String address, String name, boolean defaultSender) {}
+    public record Option(String address, String name, boolean defaultSender,
+                         String defaultSignatureHtml) {}
 }

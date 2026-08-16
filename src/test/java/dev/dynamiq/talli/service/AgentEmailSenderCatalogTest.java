@@ -18,6 +18,9 @@ class AgentEmailSenderCatalogTest {
         assertThat(catalog.options()).first()
                 .extracting(AgentEmailSenderCatalog.Option::defaultSender)
                 .isEqualTo(true);
+        assertThat(catalog.options())
+                .allSatisfy(option -> assertThat(option.defaultSignatureHtml())
+                        .contains("Dynamiq", option.address()));
     }
 
     @Test
