@@ -6,6 +6,7 @@ import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
+import dev.dynamiq.talli.repository.ExpenseRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
@@ -38,6 +39,7 @@ public class TalliMcpWriteTools {
     private final ClientRepository clients;
     private final ProjectRepository projects;
     private final TimeEntryRepository timeEntries;
+    private final ExpenseRepository expenses;
     private final TimeEntryService timeEntryService;
     private final ExpenseService expenseService;
     private final ProjectService projectService;
@@ -47,13 +49,15 @@ public class TalliMcpWriteTools {
     private final AgentEmailService agentEmailService;
 
     public TalliMcpWriteTools(ClientRepository clients, ProjectRepository projects,
-                              TimeEntryRepository timeEntries, TimeEntryService timeEntryService,
-                              ExpenseService expenseService, ProjectService projectService,
+                              TimeEntryRepository timeEntries, ExpenseRepository expenses,
+                              TimeEntryService timeEntryService, ExpenseService expenseService,
+                              ProjectService projectService,
                               InvoiceRepository invoices, PaymentService paymentService,
                               InvoiceService invoiceService, AgentEmailService agentEmailService) {
         this.clients = clients;
         this.projects = projects;
         this.timeEntries = timeEntries;
+        this.expenses = expenses;
         this.timeEntryService = timeEntryService;
         this.expenseService = expenseService;
         this.projectService = projectService;
@@ -345,6 +349,100 @@ public class TalliMcpWriteTools {
         return McpViews.expense(expenseService.create(expense));
     }
 
+    @McpTool(name = "update_expense", title = "Update an expense",
+            description = "Update selected fields on an unbilled expense. Blank optional text clears it; client_id or project_id 0 clears that association. A project's client always wins.",
+            annotations = @McpTool.McpAnnotations(title = "Update an expense", readOnlyHint = false,
+                    destructiveHint = false, idempotentHint = true, openWorldHint = false))
+    @PreAuthorize("hasAuthority('manage-expenses')")
+    @Transactional
+    public McpViews.ExpenseView updateExpense(
+            @McpToolParam(description = "Existing expense ID", required = true) Long expenseId,
+            @McpToolParam(description = "Optional positive amount", required = false) BigDecimal amount,
+            @McpToolParam(description = "Optional category: software, hardware, travel, meals, contractors, office, marketing, taxes, or other", required = false) String category,
+            @McpToolParam(description = "Optional incurred date, YYYY-MM-DD", required = false) String incurredOn,
+            @McpToolParam(description = "Optional three-letter currency code", required = false) String currency,
+            @McpToolParam(description = "Optional client ID; 0 clears it. Must match the project when one remains assigned", required = false) Long clientId,
+            @McpToolParam(description = "Optional project ID; 0 clears it and keeps the current client", required = false) Long projectId,
+            @McpToolParam(description = "Optional vendor; blank clears it", required = false) String vendor,
+            @McpToolParam(description = "Optional description; blank clears it", required = false) String description,
+            @McpToolParam(description = "Optional payment method; blank clears it", required = false) String paymentMethod,
+            @McpToolParam(description = "Optional receipt URL; blank clears it", required = false) String receiptUrl,
+            @McpToolParam(description = "Optional billable state", required = false) Boolean billable) {
+        if (expenseId == null) throw new IllegalArgumentException("expense_id is required");
+        if (amount == null && category == null && incurredOn == null && currency == null
+                && clientId == null && projectId == null && vendor == null && description == null
+                && paymentMethod == null && receiptUrl == null && billable == null) {
+            throw new IllegalArgumentException("At least one expense field is required");
+        }
+
+        Expense expense = expenses.findById(expenseId)
+                .orElseThrow(() -> new IllegalArgumentException("Expense not found: " + expenseId));
+        ensureUnbilledExpense(expense, "updated");
+        String priorCurrency = expense.getCurrency();
+        LocalDate priorIncurredOn = expense.getIncurredOn();
+
+        if (amount != null) {
+            if (amount.signum() <= 0) throw new IllegalArgumentException("amount must be greater than zero");
+            expense.setAmount(amount);
+        }
+        if (category != null) {
+            String expenseCategory = normalizedCode(category, "category");
+            if (!Expense.CATEGORIES.contains(expenseCategory)) {
+                throw new IllegalArgumentException("Unknown category: " + category);
+            }
+            expense.setCategory(expenseCategory);
+        }
+        if (incurredOn != null) expense.setIncurredOn(parseDate(incurredOn, "incurred_on"));
+        if (currency != null) expense.setCurrency(currency(currency));
+
+        Project project = expense.getProject();
+        Client client = expense.getClient();
+        if (projectId != null) {
+            project = projectId == 0 ? null : projects.findById(projectId)
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found: " + projectId));
+        }
+        if (clientId != null) {
+            client = clientId == 0 ? null : clients.findById(clientId)
+                    .orElseThrow(() -> new IllegalArgumentException("Client not found: " + clientId));
+        }
+        if (project != null) {
+            if (client != null && !project.getClient().getId().equals(client.getId())) {
+                throw new IllegalArgumentException("project_id does not belong to client_id");
+            }
+            client = project.getClient();
+        }
+        expense.setClient(client);
+        expense.setProject(project);
+
+        if (vendor != null) expense.setVendor(emptyToNull(vendor));
+        if (description != null) expense.setDescription(emptyToNull(description));
+        if (paymentMethod != null) expense.setPaymentMethod(emptyToNull(paymentMethod));
+        if (receiptUrl != null) expense.setReceiptUrl(emptyToNull(receiptUrl));
+        if (billable != null) expense.setBillable(billable);
+
+        return McpViews.expense(expenseService.update(expense, priorCurrency, priorIncurredOn));
+    }
+
+    @McpTool(name = "delete_expense", title = "Delete an expense",
+            description = "Permanently delete an unbilled expense. Set confirmed=true only after the user has explicitly requested deletion.",
+            annotations = @McpTool.McpAnnotations(title = "Delete an expense", readOnlyHint = false,
+                    destructiveHint = true, idempotentHint = false, openWorldHint = false))
+    @PreAuthorize("hasAuthority('manage-expenses')")
+    @Transactional
+    public McpViews.DeleteResult deleteExpense(
+            @McpToolParam(description = "Existing expense ID", required = true) Long expenseId,
+            @McpToolParam(description = "Must be true after explicit user confirmation", required = true) Boolean confirmed) {
+        if (expenseId == null) throw new IllegalArgumentException("expense_id is required");
+        if (!Boolean.TRUE.equals(confirmed)) {
+            throw new IllegalArgumentException("confirmed must be true to permanently delete an expense");
+        }
+        Expense expense = expenses.findById(expenseId)
+                .orElseThrow(() -> new IllegalArgumentException("Expense not found: " + expenseId));
+        ensureUnbilledExpense(expense, "deleted");
+        expenses.delete(expense);
+        return new McpViews.DeleteResult("expense", expenseId, true);
+    }
+
     @McpTool(name = "record_payment", title = "Record an invoice payment",
             description = "Record a settled payment from any bank or payment provider. provider plus transaction_id is the idempotency key, so repeat calls do not duplicate a payment.",
             annotations = @McpTool.McpAnnotations(title = "Record an invoice payment", readOnlyHint = false,
@@ -478,6 +576,12 @@ public class TalliMcpWriteTools {
 
     private static String emptyToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static void ensureUnbilledExpense(Expense expense, String action) {
+        if (Boolean.TRUE.equals(expense.getBilled()) || expense.getInvoice() != null) {
+            throw new IllegalStateException("Billed expenses cannot be " + action + "; void the invoice first");
+        }
     }
 
     private static LocalDate parseDate(String value, String name) {

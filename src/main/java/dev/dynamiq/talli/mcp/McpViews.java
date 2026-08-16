@@ -123,6 +123,8 @@ public final class McpViews {
                               String paymentMethod, String receiptUrl, Boolean billable,
                               Boolean billed, Long invoiceId) {}
 
+    public record DeleteResult(String entity, Long id, boolean deleted) {}
+
     public record InvoiceView(Long id, String reference, Long clientId, String clientName,
                               BigDecimal amount, BigDecimal amountPaid, BigDecimal balance,
                               String currency, BigDecimal exchangeRate, String status, String notes,
