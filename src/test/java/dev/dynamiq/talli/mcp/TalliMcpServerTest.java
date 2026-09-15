@@ -41,10 +41,11 @@ class TalliMcpServerTest {
 
     @Test
     void publishesTheExpectedToolSurface() {
-        assertThat(server.listTools())
+        var tools = server.listTools();
+        assertThat(tools)
                 .extracting(tool -> tool.name())
                 .containsExactlyInAnyOrder(
-                        "find_clients", "find_projects", "find_time_entries", "find_expenses",
+                        "find_clients", "find_client_emails", "get_email_conversation", "find_projects", "find_time_entries", "find_expenses",
                         "current_timer", "find_invoices", "get_invoice", "find_subscriptions", "run_report",
                         "create_client", "update_client", "create_project", "update_project",
                         "log_time", "start_timer", "stop_timer", "update_time_entry", "delete_time_entry",
@@ -55,6 +56,21 @@ class TalliMcpServerTest {
                         "link_expense_to_subscription", "unlink_expense_from_subscription",
                         "record_payment", "delete_payment", "set_invoice_ach_link",
                         "list_email_senders", "preview_client_email", "send_client_email");
+
+        for (String toolName : Set.of("preview_client_email", "send_client_email")) {
+            var schema = tools.stream()
+                    .filter(tool -> toolName.equals(tool.name()))
+                    .findFirst()
+                    .orElseThrow()
+                    .inputSchema();
+            Object oversightParameter = schema.properties().get("includeOversightCc");
+            assertThat(oversightParameter)
+                    .as(toolName + " includeOversightCc schema")
+                    .isInstanceOf(java.util.Map.class);
+            assertThat(((java.util.Map<?, ?>) oversightParameter).get("type"))
+                    .isEqualTo("boolean");
+            assertThat(schema.required()).doesNotContain("includeOversightCc");
+        }
     }
 
     @Test
@@ -101,6 +117,23 @@ class TalliMcpServerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"find_clients","arguments":{"limit":1}}}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .contains("isError", "true", "Access Denied"));
+    }
+
+    @Test
+    void emailConversationReadRequiresAdminRole() throws Exception {
+        String token = tokenForRole("mcp-send-only");
+
+        mockMvc.perform(post("/mcp")
+                        .header("Authorization", "Bearer " + token)
+                        .header("MCP-Protocol-Version", "2025-06-18")
+                        .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_email_conversation","arguments":{"emailId":1}}}
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(result -> assertThat(result.getResponse().getContentAsString())

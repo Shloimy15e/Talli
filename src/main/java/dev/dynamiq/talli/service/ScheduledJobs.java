@@ -27,15 +27,25 @@ public class ScheduledJobs {
 
     /**
      * Sabbath quiet window: Friday 11:00 → Sunday 06:00, evaluated in NY local time.
-     * No scheduled job runs while this window is open.
+     * Billing jobs pause while this window is open.
      */
     private static final ZoneId SABBATH_ZONE = ZoneId.of("America/New_York");
 
     private final InvoiceService invoiceService;
     private final ReminderService reminderService;
-    public ScheduledJobs(InvoiceService invoiceService, ReminderService reminderService) {
+    private final UnreadMailNotificationService unreadMailNotifications;
+
+    public ScheduledJobs(InvoiceService invoiceService, ReminderService reminderService,
+                         UnreadMailNotificationService unreadMailNotifications) {
         this.invoiceService = invoiceService;
         this.reminderService = reminderService;
+        this.unreadMailNotifications = unreadMailNotifications;
+    }
+
+    /** Daily inbox notification at the requested UTC time, independent of server timezone. */
+    @Scheduled(cron = "0 0 5 * * *", zone = "UTC")
+    public void notifyUnreadMail() {
+        unreadMailNotifications.notifyUnreadAdmins();
     }
 
     /**

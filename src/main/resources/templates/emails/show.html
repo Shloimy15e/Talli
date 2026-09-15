@@ -1,338 +1,53 @@
 <!doctype html>
 <html xmlns:th="http://www.thymeleaf.org">
-  <head th:replace="~{layout :: head(${email.subject})}"></head>
-  <body th:replace="~{layout :: page('emails', ~{::section})}">
-    <section>
-      <div class="mb-6 flex items-center justify-between">
-        <a
-          th:href="@{/emails}"
-          class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-900"
-        >
-          <i data-lucide="arrow-left" class="w-4 h-4"></i>
-          Emails
-        </a>
+<body>
+  <th:block th:fragment="reader">
+    <header class="mail-reader-toolbar">
+      <a th:href="@{/emails(folder=${folder},search=${search},page=${mailRows.number})}" class="mail-icon-button" aria-label="Back to conversations" title="Back to conversations"><i data-lucide="arrow-left"></i></a>
+      <div class="mail-toolbar-actions">
+        <form th:action="@{/emails/{id}/mailbox(id=${selectedEmail.id})}" method="post" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML">
+          <input type="hidden" name="action" th:value="${selectedArchived ? 'unarchive' : 'archive'}"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/>
+          <button type="submit" class="mail-icon-button" th:title="${selectedArchived ? 'Move to inbox' : 'Archive conversation'}" th:attr="aria-label=${selectedArchived ? 'Move to inbox' : 'Archive conversation'}"><i th:attr="data-lucide=${selectedArchived ? 'archive-restore' : 'archive'}"></i></button>
+        </form>
+        <form th:action="@{/emails/{id}/mailbox(id=${selectedEmail.id})}" method="post" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML">
+          <input type="hidden" name="action" value="unread"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/>
+          <button type="submit" class="mail-icon-button" aria-label="Mark as unread" title="Mark as unread"><i data-lucide="mail"></i></button>
+        </form>
+        <form th:action="@{/emails/{id}/mailbox(id=${selectedEmail.id})}" method="post" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML">
+          <input type="hidden" name="action" th:value="${selectedStarred ? 'unstar' : 'star'}"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/><input type="hidden" name="returnToConversation" value="true"/>
+          <button type="submit" class="mail-icon-button mail-star" th:classappend="${selectedStarred} ? 'is-starred' : ''" th:attr="aria-label=${selectedStarred ? 'Unstar conversation' : 'Star conversation'},aria-pressed=${selectedStarred}" title="Star conversation"><i data-lucide="star"></i></button>
+        </form>
       </div>
-
-      <!-- Header -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-        <div class="px-8 py-6 flex items-start justify-between gap-6">
-          <div class="min-w-0 flex-1">
-            <h1
-              class="text-2xl font-semibold tracking-tight break-words"
-              th:text="${email.subject}"
-            >
-              Subject
-            </h1>
-            <div class="flex items-center gap-2 mt-3 flex-wrap">
-              <span
-                th:if="${email.direction == 'in'}"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700"
-              >
-                <i data-lucide="arrow-down-left" class="w-3 h-3"></i>
-                Received
-              </span>
-              <span
-                th:if="${email.status == 'sent'}"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700"
-              >
-                <i data-lucide="check" class="w-3 h-3"></i>
-                Sent
-              </span>
-              <span
-                th:if="${email.status == 'failed'}"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700"
-              >
-                <i data-lucide="x" class="w-3 h-3"></i>
-                Failed
-              </span>
-              <span
-                th:if="${email.status == 'pending'}"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600"
-              >
-                <i data-lucide="clock" class="w-3 h-3"></i>
-                Pending
-              </span>
-
-              <span
-                th:if="${email.deliveredAt != null}"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700"
-              >
-                <i data-lucide="mail-check" class="w-3 h-3"></i>
-                Delivered
-              </span>
-              <span
-                th:if="${email.openedAt != null}"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700"
-              >
-                <i data-lucide="eye" class="w-3 h-3"></i>
-                Opened
-              </span>
-              <span
-                th:if="${email.clickedAt != null}"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700"
-              >
-                <i data-lucide="mouse-pointer-click" class="w-3 h-3"></i>
-                Clicked
-              </span>
-              <span
-                th:if="${email.bouncedAt != null}"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700"
-              >
-                <i data-lucide="alert-triangle" class="w-3 h-3"></i>
-                Bounced
-              </span>
-              <span
-                th:if="${email.complainedAt != null}"
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700"
-              >
-                <i data-lucide="flag" class="w-3 h-3"></i>
-                Complained
-              </span>
-            </div>
-          </div>
-          <div class="text-right text-sm shrink-0">
-            <p class="text-xs text-slate-400">Created</p>
-            <p class="tabular-nums">
-              <span th:replace="~{fragments/_time :: timeago(${email.createdAt})}"></span>
-            </p>
-            <p th:if="${email.receivedAt != null}" class="text-xs text-slate-400 mt-2">Received</p>
-            <p th:if="${email.receivedAt != null}" class="tabular-nums">
-              <span th:replace="~{fragments/_time :: timeago(${email.receivedAt})}"></span>
-            </p>
-            <p th:if="${email.sentAt != null}" class="text-xs text-slate-400 mt-2">Sent</p>
-            <p th:if="${email.sentAt != null}" class="tabular-nums">
-              <span th:replace="~{fragments/_time :: timeago(${email.sentAt})}"></span>
-            </p>
-          </div>
-        </div>
-
-        <!-- Metadata row -->
-        <div class="px-8 py-4 border-t border-slate-200 bg-slate-50 grid grid-cols-2 gap-6 text-sm">
-          <div th:if="${email.fromAddress != null}">
-            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">From</p>
-            <p class="text-slate-700 font-mono break-all" th:text="${email.fromAddress}">
-              from@example.com
-            </p>
-          </div>
-          <div>
-            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">To</p>
-            <p class="text-slate-700 font-mono break-all" th:text="${email.toAddress}">
-              to@example.com
-            </p>
-          </div>
-          <div th:if="${email.cc != null and !email.cc.isEmpty()}">
-            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">CC</p>
-            <p class="text-slate-700 font-mono break-all text-xs" th:text="${email.cc}">
-              cc@example.com
-            </p>
-          </div>
-          <div th:if="${email.bcc != null and !email.bcc.isEmpty()}">
-            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">BCC</p>
-            <p class="text-slate-700 font-mono break-all text-xs" th:text="${email.bcc}">
-              bcc@example.com
-            </p>
-          </div>
-          <div th:if="${email.client != null}">
-            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Client</p>
-            <a
-              th:href="@{/clients/{id}(id=${email.client.id})}"
-              class="text-[#ea7c28] hover:underline"
-              th:text="${email.client.name}"
-              >Client</a
-            >
-          </div>
-          <div th:if="${email.invoice != null}">
-            <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Invoice</p>
-            <a
-              th:href="@{/invoices/{id}(id=${email.invoice.id})}"
-              class="text-[#ea7c28] hover:underline font-mono"
-              th:text="${email.invoice.reference}"
-              >INV-0001</a
-            >
-          </div>
-        </div>
+      <button th:if="${replyId != null}" type="button" class="mail-icon-button mail-toolbar-reply" th:attr="hx-get=@{/emails/new(replyToEmailId=${replyId})}" hx-target="#reply-composer" hx-swap="innerHTML" aria-label="Reply to conversation" title="Reply"><i data-lucide="reply"></i></button>
+    </header>
+    <div class="mail-reader-scroll">
+      <div class="mail-conversation-heading">
+        <h2 th:text="${selectedEmail.subject.isBlank() ? '(No subject)' : selectedEmail.subject}">Subject</h2>
+        <div class="mail-conversation-context"><span th:text="${#lists.size(conversation) + ' message' + (#lists.size(conversation) == 1 ? '' : 's')}">3 messages</span><a th:if="${selectedEmail.client != null}" th:href="@{/clients/{id}(id=${selectedEmail.client.id})}" th:text="${selectedEmail.client.name}">Client</a><a th:if="${selectedEmail.invoice != null}" th:href="@{/invoices/{id}(id=${selectedEmail.invoice.id})}">View invoice<i data-lucide="arrow-up-right"></i></a><button type="button" class="mail-expand-all" data-expand-messages>Expand all</button></div>
       </div>
-
-      <!-- Attachments -->
-      <div
-        th:if="${attachments != null and !#lists.isEmpty(attachments)}"
-        class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6"
-      >
-        <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
-          <h2 class="text-sm font-semibold">Attachments</h2>
-          <span class="text-xs text-slate-400" th:text="${#lists.size(attachments)} + (${#lists.size(attachments)} == 1 ? ' file' : ' files')">1 file</span>
-        </div>
-        <ul class="divide-y divide-slate-100">
-          <li th:each="attachment : ${attachments}" class="px-6 py-3">
-            <a th:href="@{/media/{id}(id=${attachment.id})}" target="_blank"
-               class="flex items-center gap-3 text-sm group">
-              <span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0 group-hover:bg-[#ea7c28]/10 group-hover:text-[#ea7c28] transition">
-                <i data-lucide="paperclip" class="w-4 h-4"></i>
-              </span>
-              <span class="min-w-0 flex-1">
-                <span class="block text-slate-700 truncate group-hover:text-[#ea7c28]" th:text="${attachment.filename}">file.pdf</span>
-                <span class="block text-xs text-slate-400"
-                      th:text="${#numbers.formatDecimal(attachment.sizeBytes / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB'}">12.0 KB</span>
-              </span>
-              <i data-lucide="external-link" class="w-4 h-4 text-slate-300 group-hover:text-[#ea7c28]"></i>
-            </a>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Error message (if failed) -->
-      <div
-        th:if="${email.status == 'failed' and email.errorMessage != null}"
-        class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6"
-      >
-        <div class="flex items-start gap-2">
-          <i data-lucide="alert-circle" class="w-4 h-4 text-red-600 mt-0.5 shrink-0"></i>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-red-700 mb-1">Send failed</p>
-            <p class="text-sm text-red-600 font-mono break-words" th:text="${email.errorMessage}">
-              error
-            </p>
+      <div class="mail-messages" aria-label="Conversation">
+        <details th:each="message, loop : ${conversation}" class="mail-message" th:open="${loop.last or message.id == selectedEmail.id}" th:attr="data-message-id=${message.id}">
+          <summary class="mail-message-summary">
+            <span class="mail-avatar" th:classappend="${message.direction == 'out'} ? 'is-team' : ''"><i th:attr="data-lucide=${message.direction == 'out' ? 'building-2' : 'user-round'}"></i></span>
+            <span class="mail-message-heading"><span class="mail-message-sender" th:text="${message.fromAddress != null ? message.fromAddress : 'Your team'}">Sender</span><span class="mail-message-preview" th:text="${message.body}">Message</span><span class="mail-message-to" th:text="'to ' + ${message.toAddress}">to you</span></span>
+            <span class="mail-message-time"><span th:replace="~{fragments/_time :: datetime(${message.sentAt != null ? message.sentAt : message.createdAt}, 'short')}"></span><i data-lucide="chevron-down"></i></span>
+          </summary>
+          <div class="mail-message-content">
+            <details class="mail-message-details"><summary>Message details<i data-lucide="chevron-down"></i></summary><dl><dt>From</dt><dd th:text="${message.fromAddress ?: 'Not recorded'}"></dd><dt>To</dt><dd th:text="${message.toAddress}"></dd><th:block th:if="${message.cc != null}"><dt>Cc</dt><dd th:text="${message.cc}"></dd></th:block><th:block th:if="${message.bcc != null}"><dt>Bcc</dt><dd th:text="${message.bcc}"></dd></th:block><dt>Subject</dt><dd th:text="${message.subject}"></dd><dt>Status</dt><dd th:text="${message.status}"></dd><th:block th:if="${message.deliveredAt != null}"><dt>Delivered</dt><dd><span th:replace="~{fragments/_time :: datetime(${message.deliveredAt}, 'short')}"></span></dd></th:block><th:block th:if="${message.openedAt != null}"><dt>Opened</dt><dd><span th:replace="~{fragments/_time :: datetime(${message.openedAt}, 'short')}"></span></dd></th:block><th:block th:if="${message.resendId != null}"><dt>Provider reference</dt><dd th:text="${message.resendId}"></dd></th:block></dl></details>
+            <div th:if="${message.status == 'failed'}" class="mail-delivery-warning"><i data-lucide="circle-alert"></i><div><strong>This message wasn’t sent.</strong><p th:text="${message.errorMessage ?: 'Please check the message and try again.'}"></p></div></div>
+            <div th:if="${message.bounceReason != null}" class="mail-delivery-warning"><i data-lucide="circle-alert"></i><div><strong>This message couldn’t be delivered.</strong><p th:text="${message.bounceReason}"></p></div></div>
+            <iframe th:if="${message.bodyHtml != null}" class="mail-message-frame" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" th:attr="srcdoc=${message.bodyHtml},title='Message from ' + ${message.fromAddress ?: 'your team'}"></iframe>
+            <div th:if="${message.bodyHtml == null}" class="mail-message-plain" th:text="${message.body}"></div>
+            <div class="mail-attachments" th:if="${attachmentsByEmailId != null and attachmentsByEmailId[message.id] != null and !#lists.isEmpty(attachmentsByEmailId[message.id])}"><a th:each="attachment : ${attachmentsByEmailId[message.id]}" th:href="@{/media/{id}(id=${attachment.id})}" target="_blank" rel="noopener" class="mail-attachment"><i data-lucide="paperclip"></i><span><strong th:text="${attachment.filename}"></strong><small th:text="${#numbers.formatDecimal(attachment.sizeBytes / 1024.0, 1, 'COMMA', 1, 'POINT')} + ' KB'"></small></span><i data-lucide="arrow-down-to-line"></i></a></div>
           </div>
-        </div>
+        </details>
       </div>
-
-      <!-- Bounce reason -->
-      <div
-        th:if="${email.bounceReason != null}"
-        class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6"
-      >
-        <div class="flex items-start gap-2">
-          <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600 mt-0.5 shrink-0"></i>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-semibold text-red-700 mb-1">Bounce reason</p>
-            <p class="text-sm text-red-600 break-words" th:text="${email.bounceReason}">reason</p>
-          </div>
-        </div>
+      <div class="mail-reply-area">
+        <div id="reply-composer"></div>
+        <button th:if="${replyId != null}" type="button" class="mail-reply-prompt" th:attr="hx-get=@{/emails/new(replyToEmailId=${replyId})}" hx-target="#reply-composer" hx-swap="innerHTML"><i data-lucide="reply"></i><span>Reply to this conversation</span><kbd>R</kbd></button>
+        <div th:if="${replyId == null}" class="mail-legacy-reply"><p th:text="${replyUnavailableReason}">This saved conversation does not have a valid reply recipient.</p><button type="button" class="mail-secondary-button" hx-get="/emails/new" hx-target="#modal" hx-swap="innerHTML"><i data-lucide="square-pen"></i>Write a new message</button></div>
       </div>
-
-      <!-- Body -->
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
-        <div class="px-6 py-3 border-b border-slate-200 flex items-center justify-between">
-          <h2 class="text-sm font-semibold">Message</h2>
-          <span
-            th:if="${email.bodyHtml != null}"
-            class="inline-flex items-center gap-1 text-xs text-slate-500"
-          >
-            <i data-lucide="code-2" class="w-3 h-3"></i>
-            HTML
-          </span>
-        </div>
-
-        <!-- HTML body: render in a sandboxed iframe so email CSS/scripts
-             cannot affect or inspect the surrounding page. -->
-        <div th:if="${email.bodyHtml != null}" class="p-2">
-          <iframe
-            sandbox=""
-            class="w-full bg-white rounded-lg border border-slate-100"
-            style="min-height: 320px"
-            th:attr="srcdoc=${email.bodyHtml}"
-            onload="this.style.height = (this.contentWindow.document.documentElement.scrollHeight + 24) + 'px'"
-          ></iframe>
-        </div>
-
-        <!-- Plain-text body -->
-        <div th:if="${email.bodyHtml == null}" class="px-8 py-6">
-          <pre
-            class="text-sm text-slate-700 whitespace-pre-wrap font-sans leading-relaxed break-words"
-            th:text="${email.body}"
-          >body</pre>
-        </div>
-      </div>
-
-      <!-- Delivery timeline -->
-      <div
-        th:if="${email.deliveredAt != null or email.openedAt != null or email.clickedAt != null or email.bouncedAt != null or email.complainedAt != null}"
-        class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6"
-      >
-        <div class="px-6 py-3 border-b border-slate-200">
-          <h2 class="text-sm font-semibold">Delivery timeline</h2>
-        </div>
-        <ul class="divide-y divide-slate-100 text-sm">
-          <li th:if="${email.sentAt != null}" class="px-6 py-3 flex items-center justify-between">
-            <span class="inline-flex items-center gap-2 text-slate-700">
-              <i data-lucide="send" class="w-4 h-4 text-slate-500"></i>
-              Sent
-            </span>
-            <span class="text-slate-500 tabular-nums">
-              <span th:replace="~{fragments/_time :: timeago(${email.sentAt})}"></span>
-            </span>
-          </li>
-          <li
-            th:if="${email.deliveredAt != null}"
-            class="px-6 py-3 flex items-center justify-between"
-          >
-            <span class="inline-flex items-center gap-2 text-slate-700">
-              <i data-lucide="mail-check" class="w-4 h-4 text-emerald-600"></i>
-              Delivered
-            </span>
-            <span class="text-slate-500 tabular-nums">
-              <span th:replace="~{fragments/_time :: timeago(${email.deliveredAt})}"></span>
-            </span>
-          </li>
-          <li
-            th:if="${email.openedAt != null}"
-            class="px-6 py-3 flex items-center justify-between"
-          >
-            <span class="inline-flex items-center gap-2 text-slate-700">
-              <i data-lucide="eye" class="w-4 h-4 text-blue-600"></i>
-              Opened
-            </span>
-            <span class="text-slate-500 tabular-nums">
-              <span th:replace="~{fragments/_time :: timeago(${email.openedAt})}"></span>
-            </span>
-          </li>
-          <li
-            th:if="${email.clickedAt != null}"
-            class="px-6 py-3 flex items-center justify-between"
-          >
-            <span class="inline-flex items-center gap-2 text-slate-700">
-              <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-indigo-600"></i>
-              Clicked link
-            </span>
-            <span class="text-slate-500 tabular-nums">
-              <span th:replace="~{fragments/_time :: timeago(${email.clickedAt})}"></span>
-            </span>
-          </li>
-          <li
-            th:if="${email.bouncedAt != null}"
-            class="px-6 py-3 flex items-center justify-between"
-          >
-            <span class="inline-flex items-center gap-2 text-red-700">
-              <i data-lucide="alert-triangle" class="w-4 h-4 text-red-600"></i>
-              Bounced
-            </span>
-            <span class="text-slate-500 tabular-nums">
-              <span th:replace="~{fragments/_time :: timeago(${email.bouncedAt})}"></span>
-            </span>
-          </li>
-          <li
-            th:if="${email.complainedAt != null}"
-            class="px-6 py-3 flex items-center justify-between"
-          >
-            <span class="inline-flex items-center gap-2 text-amber-700">
-              <i data-lucide="flag" class="w-4 h-4 text-amber-600"></i>
-              Marked as spam
-            </span>
-            <span class="text-slate-500 tabular-nums">
-              <span th:replace="~{fragments/_time :: timeago(${email.complainedAt})}"></span>
-            </span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Resend ID footer -->
-      <p
-        th:if="${email.resendId != null}"
-        class="text-xs text-slate-400 font-mono"
-        th:text="'Resend ID: ' + ${email.resendId}"
-      >
-        Resend ID: —
-      </p>
-    </section>
-  </body>
+    </div>
+  </th:block>
+</body>
 </html>

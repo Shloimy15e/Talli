@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Shloimy Elbaum email signatures</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #202936; background: #f5f6f8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 32px; }
+    main { width: min(1100px, 100%); margin: 0 auto; }
+    .top { display: flex; align-items: flex-end; gap: 24px; margin-bottom: 25px; }
+    .top-copy { flex: 1; }
+    h1 { margin: 0; font-size: 26px; line-height: 1.25; letter-spacing: -.55px; }
+    .intro { max-width: 66ch; margin: 7px 0 0; color: #637083; font-size: 14px; line-height: 1.55; }
+    .context-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+    section { min-width: 0; }
+    h2 { margin: 0 0 9px; color: #637083; font-size: 11px; line-height: 1.4; font-weight: 650; letter-spacing: .06em; text-transform: uppercase; }
+    .mail-pane { overflow: hidden; border: 1px solid #e5e9ee; background: #fff; }
+    .mail-bar { height: 44px; border-bottom: 1px solid #e5e9ee; background: #f7f8fa; }
+    iframe { display: block; width: 100%; height: 350px; border: 0; background: #fff; }
+    .phone-shell { width: 320px; max-width: 100%; margin: 0 auto; }
+    .phone-shell iframe { height: 430px; }
+    .section-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    button { min-height: 36px; padding: 0 13px; border: 1px solid #cfd5dc; border-radius: 8px; background: #fff; color: #202936; font: 650 12px/1 Inter, system-ui, sans-serif; cursor: pointer; }
+    button:hover { border-color: #ea7c28; color: #9e4510; }
+    button:focus-visible { outline: 2px solid #ea7c28; outline-offset: 3px; }
+    .alternative { width: min(660px, 100%); margin-top: 26px; }
+    .alternative iframe { height: 310px; }
+    .note { margin: 17px 0 0; color: #637083; font-size: 12px; line-height: 1.5; }
+    @media (max-width: 780px) { body { padding: 18px; } .top { align-items: flex-start; flex-direction: column; } .context-grid { grid-template-columns: 1fr; } .phone-shell { margin: 0; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top">
+      <div class="top-copy">
+        <h1>Logo-led signature</h1>
+        <p class="intro">The primary design uses the supplied logo as a compact brand anchor while the name and contact details carry the hierarchy.</p>
+      </div>
+      <button type="button" data-copy="logo">Copy logo version</button>
+    </div>
+    <div class="context-grid">
+      <section>
+        <h2>Primary · desktop message closing</h2>
+        <div class="mail-pane"><div class="mail-bar" aria-hidden="true"></div><iframe title="Logo signature in a desktop message" data-preview="logo" data-padding="34px" sandbox="allow-popups allow-popups-to-escape-sandbox"></iframe></div>
+      </section>
+      <section>
+        <h2>Primary · narrow 320px mail pane</h2>
+        <div class="mail-pane phone-shell"><div class="mail-bar" aria-hidden="true"></div><iframe title="Logo signature in a narrow message" data-preview="logo" data-padding="20px" sandbox="allow-popups allow-popups-to-escape-sandbox"></iframe></div>
+      </section>
+    </div>
+    <section class="alternative">
+      <div class="section-actions"><h2>Alternative · image-free</h2><button type="button" data-copy="text">Copy text version</button></div>
+      <div class="mail-pane"><div class="mail-bar" aria-hidden="true"></div><iframe title="Image-free signature in a message" data-preview="text" data-padding="28px" sandbox="allow-popups allow-popups-to-escape-sandbox"></iframe></div>
+    </section>
+    <p class="note">The surrounding sentence appears only in this preview. The logo version depends on the original externally hosted image; the image-free alternative has no external assets.</p>
+  </main>
+
+  <template id="logo-source">
+<!-- Primary Dynamiq personal signature: compact logo-led layout with email-safe inline styles. -->
+<style>
+  @media only screen and (max-width:480px) {
+    .dynamiq-email-signature .dynamiq-email-signature__logo { display:block !important; width:100% !important; max-width:100% !important; height:44px !important; overflow:hidden !important; }
+    .dynamiq-email-signature .dynamiq-email-signature__logo img { margin-top:-36px !important; }
+    .dynamiq-email-signature .dynamiq-email-signature__spacer { display:none !important; width:0 !important; height:0 !important; }
+    .dynamiq-email-signature .dynamiq-email-signature__contact { display:inline-block !important; width:auto !important; max-width:100% !important; margin:14px 0 0 10px !important; padding:13px 0 0 !important; border-left:0 !important; border-top:1px solid #ea7c28 !important; }
+  }
+</style>
+<!-- installable-signature:start -->
+<table class="dynamiq-email-signature" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:460px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#141c34;">
+  <tr>
+    <td style="padding:0 0 12px;font-size:13px;line-height:19px;font-weight:400;color:#637083;">All the best,</td>
+  </tr>
+  <tr>
+    <td class="dynamiq-email-signature__layout" style="padding:0;font-size:0;line-height:0;text-align:left;">
+      <div class="dynamiq-email-signature__logo" style="display:inline-block;box-sizing:border-box;width:170px;max-width:100%;padding:0 10px 0 0;vertical-align:middle;">
+        <a href="https://dynamiq.dev" target="_blank" style="text-decoration:none;">
+          <img src="https://lh3.googleusercontent.com/d/1lfKgLhKID6PZSIddPdfC6R_p7XwnE8Qu" width="160" alt="Dynamiq Solutions" style="display:block;width:160px;max-width:100%;height:auto;border:0;outline:none;text-decoration:none;">
+        </a>
+      </div><span class="dynamiq-email-signature__spacer" style="display:inline-block;width:14px;height:1px;font-size:1px;line-height:1px;vertical-align:middle;">&nbsp;</span><div class="dynamiq-email-signature__contact" style="display:inline-block;box-sizing:border-box;width:245px;max-width:100%;padding-left:14px;border-left:1px solid #ea7c28;vertical-align:middle;text-align:left;font-size:12px;line-height:19px;">
+        <div style="margin:0;font-size:19px;line-height:23px;font-weight:700;letter-spacing:-0.25px;color:#141c34;">Shloimy Elbaum</div>
+        <div style="margin:2px 0 10px;font-size:13px;line-height:18px;font-weight:400;color:#637083;">Founder &amp; CEO</div>
+        <div style="font-size:12px;line-height:19px;color:#3f4b5e;"><a href="mailto:shloimy@dynamiq.dev" style="display:inline-block;max-width:100%;color:#3f4b5e;text-decoration:none;white-space:nowrap;">shloimy@dynamiq.dev</a></div>
+        <div style="font-size:12px;line-height:19px;color:#3f4b5e;">
+          <span style="display:inline-block;white-space:nowrap;"><a href="tel:+19299934115" style="color:#3f4b5e;text-decoration:none;">+1 929 993 4115</a></span>
+          <span style="color:#a3aab5;">&nbsp;·&nbsp;</span>
+          <span style="display:inline-block;white-space:nowrap;"><a href="tel:+972553319614" style="color:#3f4b5e;text-decoration:none;">055 331 9614</a></span>
+        </div>
+        <div style="font-size:12px;line-height:19px;font-weight:600;"><a href="https://dynamiq.dev" target="_blank" style="display:inline-block;color:#ea7c28;text-decoration:none;white-space:nowrap;">dynamiq.dev</a></div>
+      </div>
+    </td>
+  </tr>
+</table>
+<!-- installable-signature:end -->
+  </template>
+  <template id="text-source">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:380px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#141c34;"><tr><td style="padding:0 0 11px 0;font-size:13px;line-height:19px;font-weight:400;color:#637083;">All the best,</td></tr><tr><td style="padding:0;font-size:19px;line-height:23px;font-weight:700;letter-spacing:-0.25px;color:#141c34;">Shloimy Elbaum</td></tr><tr><td style="padding:3px 0 0 0;font-size:13px;line-height:19px;font-weight:400;color:#637083;">Founder &amp; CEO</td></tr><tr><td style="padding:0;font-size:13px;line-height:19px;font-weight:600;color:#141c34;">Dynamiq Solutions</td></tr><tr><td style="padding:11px 0 9px 0;"><div style="width:30px;height:2px;background:#ea7c28;font-size:1px;line-height:1px;">&nbsp;</div></td></tr><tr><td style="padding:0;font-size:12px;line-height:19px;color:#3f4b5e;"><a href="mailto:shloimy@dynamiq.dev" style="color:#3f4b5e;text-decoration:none;">shloimy@dynamiq.dev</a></td></tr><tr><td style="padding:0;font-size:12px;line-height:19px;color:#3f4b5e;"><a href="tel:+19299934115" style="color:#3f4b5e;text-decoration:none;white-space:nowrap;">+1 929 993 4115</a><span style="color:#a3aab5;">&nbsp;&nbsp;·&nbsp;&nbsp;</span><a href="tel:+972553319614" style="color:#3f4b5e;text-decoration:none;white-space:nowrap;">055 331 9614</a></td></tr><tr><td style="padding:2px 0 0 0;font-size:12px;line-height:19px;font-weight:600;"><a href="https://dynamiq.dev" target="_blank" style="color:#ea7c28;text-decoration:none;">dynamiq.dev</a></td></tr></table>
+  </template>
+  <script>
+    const message = '<p style="margin:0 0 26px;color:#344256;font:14px/1.7 Arial,Helvetica,sans-serif;">Thanks for sending this through. I’ll review the final details and get back to you tomorrow.</p>';
+    const source = name => document.getElementById(`${name}-source`).innerHTML.trim();
+    const documentFor = (fragment, padding) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;padding:${padding};background:#fff;">${message}${fragment}</body></html>`;
+    document.querySelectorAll('[data-preview]').forEach(frame => { frame.srcdoc = documentFor(source(frame.dataset.preview), frame.dataset.padding); });
+    async function copyText(value) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(value);
+      const field = document.createElement('textarea'); field.value = value; field.setAttribute('readonly', ''); field.style.position = 'fixed'; field.style.opacity = '0'; document.body.append(field); field.select(); document.execCommand('copy'); field.remove();
+    }
+    document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
+      await copyText(source(button.dataset.copy)); const label = button.textContent; button.textContent = 'Copied'; window.setTimeout(() => { button.textContent = label; }, 1400);
+    }));
+  </script>
+</body>
+</html>

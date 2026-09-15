@@ -123,6 +123,8 @@ public class ReminderService {
             EmailService.Result result = emailService.sendTemplate(client.getEmail(), bcc, subject, "reminder", vars);
             logEntry.setBodyHtml(result.html());
             logEntry.setResendId(result.resendId());
+            logEntry.setMessageId(result.messageId());
+            logEntry.setFromAddress(result.fromAddress());
             logEntry.setStatus("sent");
             logEntry.setSentAt(LocalDateTime.now());
             client.setLastReminderAt(LocalDateTime.now());

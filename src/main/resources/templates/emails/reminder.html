@@ -1,90 +1,92 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Payment reminder</title>
+  <style th:replace="~{emails/_signature-responsive :: styles}">
+    @media only screen and (max-width:480px) {
+      .dynamiq-email-signature .dynamiq-email-signature__logo { display:block !important; width:100% !important; max-width:100% !important; height:44px !important; overflow:hidden !important; }
+      .dynamiq-email-signature .dynamiq-email-signature__logo img { margin-top:-36px !important; }
+      .dynamiq-email-signature .dynamiq-email-signature__spacer { display:none !important; width:0 !important; height:0 !important; }
+      .dynamiq-email-signature .dynamiq-email-signature__contact { display:inline-block !important; width:auto !important; max-width:100% !important; margin:14px 0 0 10px !important; padding:13px 0 0 !important; border-left:0 !important; border-top:1px solid #ea7c28 !important; }
+    }
+  </style>
 </head>
-<body style="margin:0; padding:0; background:#f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color:#1a1a1a;">
-
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f1f5f9;">
+<body style="margin:0; padding:0; background:#f5f6f8; font-family:Arial, Helvetica, sans-serif; color:#202936;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background:#f5f6f8;">
     <tr>
-      <td align="center" style="padding:32px 16px;">
-
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; width:100%; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-
+      <td align="center" style="padding:40px 12px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; max-width:600px; background:#ffffff; border:1px solid #cfd5dc; border-radius:10px; overflow:hidden;">
           <tr>
-            <td style="background:#161f30; padding:20px 32px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                <tr>
-                  <td style="color:#ffffff; font-size:18px; font-weight:600;"
-                      th:text="${fromName}">Dynamiq Solutions</td>
-                  <td align="right" style="color:#ea7c28; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; font-weight:600;">
-                    Payment Reminder
-                  </td>
-                </tr>
-              </table>
+            <td style="padding:28px 32px 24px;">
+              <p style="margin:0; color:#141c34; font-size:19px; font-weight:600; line-height:1.35; letter-spacing:-0.02em;" th:text="${fromName}">Dynamiq Solutions</p>
             </td>
           </tr>
-
           <tr>
-            <td style="padding:32px;">
-
-              <p style="margin:0 0 16px; font-size:15px; line-height:1.5;">
+            <td style="padding:30px 32px 34px; border-top:1px solid #e5e9ee;">
+              <h1 style="margin:0 0 22px; color:#141c34; font-size:22px; font-weight:600; line-height:1.3; letter-spacing:-0.02em;">Payment reminder</h1>
+              <p style="margin:0 0 18px; font-size:15px; line-height:1.65;">
                 Hi <span th:text="${client.name}">Client</span>,
               </p>
-
-              <p style="margin:0 0 24px; font-size:15px; line-height:1.55; color:#475569;">
+              <p style="margin:0 0 28px; color:#4c5869; font-size:15px; line-height:1.65;">
                 This is a friendly reminder that the following invoice<span th:if="${#lists.size(invoices) > 1}">s</span>
                 remain<span th:unless="${#lists.size(invoices) > 1}">s</span> unpaid. Please let us know if you have any questions.
               </p>
 
-              <!-- Invoice list -->
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
-                     style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:24px;">
-                <tr>
-                  <td style="padding:6px 16px; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; font-weight:600; border-bottom:1px solid #e2e8f0;">Reference</td>
-                  <td style="padding:6px 16px; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; font-weight:600; border-bottom:1px solid #e2e8f0;">Issued</td>
-                  <td style="padding:6px 16px; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; font-weight:600; border-bottom:1px solid #e2e8f0;">Due</td>
-                  <td align="right" style="padding:6px 16px; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; font-weight:600; border-bottom:1px solid #e2e8f0;">Balance</td>
-                </tr>
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; margin:0 0 28px; border-top:1px solid #cfd5dc;">
                 <tr th:each="inv : ${invoices}">
-                  <td style="padding:12px 16px; font-size:14px; font-family:ui-monospace, Menlo, monospace; color:#ea7c28; border-bottom:1px solid #f1f5f9;"
-                      th:text="${inv.reference}">INV-1001</td>
-                  <td style="padding:12px 16px; font-size:14px; color:#475569; border-bottom:1px solid #f1f5f9;"
-                      th:text="${#temporals.format(inv.issuedAt, 'MMM d, yyyy')}">Apr 1, 2026</td>
-                  <td style="padding:12px 16px; font-size:14px; color:#475569; border-bottom:1px solid #f1f5f9;">
-                    <span th:text="${inv.dueAt != null ? #temporals.format(inv.dueAt, 'MMM d, yyyy') : '—'}">May 1, 2026</span>
-                    <span th:if="${inv.dueAt != null and inv.dueAt.isBefore(today)}"
-                          style="display:inline-block; margin-left:6px; font-size:11px; color:#dc2626; font-weight:600;"
-                          th:text="'(' + ${T(java.time.temporal.ChronoUnit).DAYS.between(inv.dueAt, today)} + 'd overdue)'">(5d overdue)</span>
-                  </td>
-                  <td align="right" style="padding:12px 16px; font-size:14px; font-family:ui-monospace, Menlo, monospace; font-weight:600; color:#161f30; border-bottom:1px solid #f1f5f9;"
-                      th:text="${inv.currency} + ' ' + ${#numbers.formatDecimal(inv.balance(), 1, 'COMMA', 2, 'POINT')}">
-                    USD 1,000.00
+                  <td style="padding:17px 0; border-bottom:1px solid #cfd5dc;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; table-layout:fixed;">
+                      <tr>
+                        <td style="padding:0 12px 5px 0; color:#141c34; font-size:15px; font-weight:600; line-height:1.4; word-break:break-word;" th:text="${inv.reference}">INV-1001</td>
+                        <td align="right" style="padding:0 0 5px 12px; color:#141c34; font-size:15px; font-weight:600; line-height:1.4; white-space:nowrap;" th:text="${inv.currency} + ' ' + ${#numbers.formatDecimal(inv.balance(), 1, 'COMMA', 2, 'POINT')}">USD 1,000.00</td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="color:#637083; font-size:12px; line-height:1.6;">
+                          Issued <span th:text="${#temporals.format(inv.issuedAt, 'MMM d, yyyy')}">Apr 1, 2026</span>
+                          <span style="color:#a5afbd;"> &middot; </span>
+                          Due <span th:if="${inv.dueAt != null}" th:text="${#temporals.format(inv.dueAt, 'MMM d, yyyy')}">May 1, 2026</span><span th:unless="${inv.dueAt != null}">&mdash;</span>
+                          <span th:if="${inv.dueAt != null and inv.dueAt.isBefore(today)}" style="color:#b42318; font-weight:600;"><span aria-hidden="true"> &middot; </span><span th:text="${T(java.time.temporal.ChronoUnit).DAYS.between(inv.dueAt, today)} + 'd overdue'">5d overdue</span></span>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin:0; font-size:14px; line-height:1.55; color:#475569;">
-                Thanks,<br>
-                <span th:text="${fromName}">Dynamiq Solutions</span>
-              </p>
-
+              <div style="margin:0; color:#202936; font-size:14px; line-height:1.55;" th:utext="${signature}">
+                <!-- billing-role-fallback:start -->
+<table class="dynamiq-email-signature" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:460px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#141c34;">
+  <tr>
+    <td style="padding:0 0 12px;font-size:13px;line-height:19px;color:#637083;">Kind regards,</td>
+  </tr>
+  <tr>
+    <td class="dynamiq-email-signature__layout" style="padding:0;font-size:0;line-height:0;text-align:left;">
+      <div class="dynamiq-email-signature__logo" style="display:inline-block;box-sizing:border-box;width:170px;max-width:100%;padding:0 10px 0 0;vertical-align:middle;">
+        <a href="https://dynamiq.dev" target="_blank" style="text-decoration:none;">
+          <img src="https://lh3.googleusercontent.com/d/1lfKgLhKID6PZSIddPdfC6R_p7XwnE8Qu" width="160" alt="Dynamiq Solutions" style="display:block;width:160px;max-width:100%;height:auto;border:0;">
+        </a>
+      </div><span class="dynamiq-email-signature__spacer" style="display:inline-block;width:14px;height:1px;font-size:1px;line-height:1px;vertical-align:middle;">&nbsp;</span><div class="dynamiq-email-signature__contact" style="display:inline-block;box-sizing:border-box;width:245px;max-width:100%;padding-left:14px;border-left:1px solid #ea7c28;vertical-align:middle;text-align:left;font-size:12px;line-height:20px;">
+        <div style="margin:0;font-size:13px;line-height:20px;font-weight:500;color:#637083;">Billing</div>
+        <div style="font-size:12px;line-height:20px;"><a href="mailto:billing@dynamiq.dev" style="display:inline-block;max-width:100%;color:#3f4b5e;text-decoration:none;white-space:nowrap;">billing@dynamiq.dev</a></div>
+        <div style="font-size:12px;line-height:20px;"><a href="https://dynamiq.dev" target="_blank" style="display:inline-block;color:#ea7c28;text-decoration:none;white-space:nowrap;">dynamiq.dev</a></div>
+      </div>
+    </td>
+  </tr>
+</table>
+<!-- billing-role-fallback:end -->
+              </div>
             </td>
           </tr>
-
           <tr>
-            <td style="background:#f8fafc; padding:16px 32px; border-top:1px solid #e2e8f0;">
-              <p style="margin:0; font-size:12px; color:#94a3b8; line-height:1.5;">
-                Automated reminder — reply to this email if you need anything.
-              </p>
+            <td style="padding:16px 32px; background:#f7f8fa; border-top:1px solid #e5e9ee;">
+              <p style="margin:0; color:#7a8595; font-size:12px; line-height:1.5;">Automated reminder &mdash; reply to this email if you need anything.</p>
             </td>
           </tr>
         </table>
-
       </td>
     </tr>
   </table>
-
 </body>
 </html>

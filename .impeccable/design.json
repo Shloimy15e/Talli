@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-15T00:00:00+03:00",
+  "title": "Design System: Talli",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "neutral", "displayName": "Working Ink", "canonical": "#202936", "tonalRamp": ["#10151c", "#202936", "#354255", "#526176", "#718096", "#98a4b5", "#c5ccd6", "#f1f3f6"] },
+      "muted": { "role": "neutral", "displayName": "Slate Metadata", "canonical": "#637083", "tonalRamp": ["#151a21", "#2d3541", "#4b5667", "#637083", "#8490a1", "#aab3c0", "#d0d5dd", "#f2f4f7"] },
+      "rail": { "role": "neutral", "displayName": "Workspace Navy", "canonical": "#141c2a", "tonalRamp": ["#0b1018", "#141c2a", "#253044", "#3e4b60", "#647086", "#929cad", "#c2c8d1", "#f0f2f5"] },
+      "surface": { "role": "neutral", "displayName": "Paper", "canonical": "#ffffff", "tonalRamp": ["#17191c", "#30343a", "#555b64", "#7c838d", "#a4aab2", "#c9cdd2", "#e9ebee", "#ffffff"] },
+      "subtle": { "role": "neutral", "displayName": "Cool Mist", "canonical": "#f7f8fa", "tonalRamp": ["#16191d", "#31353b", "#565c65", "#7d858f", "#a5acb5", "#cbd0d6", "#e9ecef", "#f7f8fa"] },
+      "canvas": { "role": "neutral", "displayName": "Canvas Mist", "canonical": "#f5f6f8", "tonalRamp": ["#15181c", "#30343a", "#555b64", "#7c848e", "#a4abb4", "#c9ced5", "#e7eaee", "#f5f6f8"] },
+      "line": { "role": "neutral", "displayName": "Hairline", "canonical": "#e5e9ee", "tonalRamp": ["#15191d", "#30363d", "#545d68", "#79838f", "#a0a9b4", "#c3cad2", "#e5e9ee", "#f7f9fa"] },
+      "border-strong": { "role": "neutral", "displayName": "Strong Hairline", "canonical": "#cfd5dc", "tonalRamp": ["#15191d", "#2f353c", "#505963", "#737d88", "#98a2ad", "#b8c0c9", "#cfd5dc", "#f4f6f8"] },
+      "accent": { "role": "primary", "displayName": "Dynamiq Orange", "canonical": "#ea7c28", "tonalRamp": ["#3a1605", "#682b0b", "#984413", "#c2601d", "#ea7c28", "#f39b5d", "#f9bd91", "#fde1c9"] },
+      "accent-hover": { "role": "primary", "displayName": "Dynamiq Orange Pressed", "canonical": "#d46819", "tonalRamp": ["#351204", "#602407", "#8d390c", "#b85012", "#d46819", "#e58a43", "#f2b07c", "#fadbc0"] },
+      "accent-foreground": { "role": "neutral", "displayName": "Accent Foreground", "canonical": "#ffffff", "tonalRamp": ["#141c2a", "#41516b", "#63738c", "#8e9aae", "#c2c8d1", "#e5e9ee", "#f7f8fa", "#ffffff"] },
+      "accent-ink": { "role": "primary", "displayName": "Accent Ink", "canonical": "#9e4510", "tonalRamp": ["#2d1003", "#491a05", "#652607", "#82340b", "#9e4510", "#bd6b38", "#dda17d", "#f2ddce"] },
+      "focus": { "role": "primary", "displayName": "Focus Ring", "canonical": "#b65316", "tonalRamp": ["#321205", "#521e08", "#722c0c", "#933d11", "#b65316", "#d37b40", "#eeb18a", "#fae5d6"] },
+      "selected": { "role": "primary", "displayName": "Warm Selection", "canonical": "#fff1e7", "tonalRamp": ["#3a1607", "#612810", "#8b3e1b", "#b85a2a", "#df8050", "#f2ad84", "#fbd6bc", "#fff1e7"] },
+      "hover": { "role": "neutral", "displayName": "Hover Mist", "canonical": "#e9ecf0", "tonalRamp": ["#15191d", "#30363d", "#545d68", "#79838f", "#a0a9b4", "#c7cdd4", "#e9ecf0", "#f7f9fa"] },
+      "active": { "role": "neutral", "displayName": "Active Mist", "canonical": "#e6e9ee", "tonalRamp": ["#15191d", "#30363d", "#545d68", "#78828e", "#9fa8b3", "#c4cad2", "#e6e9ee", "#f7f8fa"] },
+      "rail-ink": { "role": "neutral", "displayName": "Rail Ink", "canonical": "#aeb9ca", "tonalRamp": ["#101722", "#202b3b", "#39475b", "#58687d", "#7c8ba0", "#aeb9ca", "#d3d9e2", "#f2f4f7"] },
+      "rail-hover": { "role": "neutral", "displayName": "Rail Hover", "canonical": "#253044", "tonalRamp": ["#0c1119", "#17202e", "#253044", "#3f4b60", "#626f85", "#919cad", "#c1c8d2", "#eff1f4"] },
+      "rail-active": { "role": "neutral", "displayName": "Rail Active", "canonical": "#303245", "tonalRamp": ["#101119", "#20212f", "#303245", "#4a4d63", "#6e7188", "#9a9cae", "#c7c8d1", "#f1f1f4"] },
+      "rail-accent": { "role": "primary", "displayName": "Rail Accent", "canonical": "#ffb57d", "tonalRamp": ["#3b1a07", "#663016", "#914a28", "#bd683e", "#df8958", "#ffb57d", "#ffd6b7", "#fff0e4"] },
+      "selection": { "role": "primary", "displayName": "Text Selection", "canonical": "#ffe1c9", "tonalRamp": ["#391609", "#622a16", "#8b4228", "#b85f3f", "#df8764", "#f3b695", "#ffe1c9", "#fff5ed"] },
+      "selection-ink": { "role": "primary", "displayName": "Text Selection Ink", "canonical": "#52280f", "tonalRamp": ["#1f0c03", "#351506", "#52280f", "#743d1c", "#985a31", "#be8157", "#dfb194", "#f5e2d5"] },
+      "success-surface": { "role": "tertiary", "displayName": "Success Wash", "canonical": "#edf8f1", "tonalRamp": ["#102b19", "#1d482a", "#30653e", "#4b8358", "#73a07f", "#a4c4ad", "#d0e6d6", "#edf8f1"] },
+      "success": { "role": "tertiary", "displayName": "Success Ink", "canonical": "#386545", "tonalRamp": ["#0d2615", "#193d24", "#285535", "#386545", "#5c8667", "#86aa90", "#b7cfbd", "#e7f0e9"] },
+      "success-line": { "role": "tertiary", "displayName": "Success Hairline", "canonical": "#dceee2", "tonalRamp": ["#102819", "#20442c", "#386044", "#587d62", "#7f9e88", "#acc2b2", "#dceee2", "#f1f8f3"] },
+      "warning-surface": { "role": "tertiary", "displayName": "Warning Wash", "canonical": "#fff4ed", "tonalRamp": ["#38160a", "#602817", "#8a4128", "#b65e3d", "#db825f", "#efa98e", "#f9d3c1", "#fff4ed"] },
+      "warning": { "role": "tertiary", "displayName": "Warning Ink", "canonical": "#94431a", "tonalRamp": ["#2b1004", "#471b07", "#65280d", "#7e3613", "#94431a", "#bd6c43", "#dea282", "#f3ddce"] },
+      "warning-line": { "role": "tertiary", "displayName": "Warning Hairline", "canonical": "#f4d5bc", "tonalRamp": ["#361509", "#5c2918", "#83422b", "#aa6042", "#ce825f", "#e5a98d", "#f4d5bc", "#fcf0e6"] },
+      "danger-surface": { "role": "tertiary", "displayName": "Danger Wash", "canonical": "#fff3f0", "tonalRamp": ["#39110d", "#611f19", "#8c342c", "#b85046", "#dc786f", "#efa7a0", "#f8d2ce", "#fff3f0"] },
+      "danger": { "role": "tertiary", "displayName": "Danger Ink", "canonical": "#9e4033", "tonalRamp": ["#2e0e0a", "#4c1812", "#69251d", "#853329", "#9e4033", "#c36b60", "#dfa19a", "#f3dcda"] },
+      "danger-line": { "role": "tertiary", "displayName": "Danger Hairline", "canonical": "#f4ddd6", "tonalRamp": ["#34110d", "#59231c", "#7f3a31", "#a3554a", "#c8766b", "#dfaaa2", "#f4ddd6", "#fcf1ef"] },
+      "disabled": { "role": "neutral", "displayName": "Disabled Ink", "canonical": "#7c8796", "tonalRamp": ["#171b21", "#303741", "#515b67", "#697482", "#7c8796", "#9ea7b3", "#c4cad1", "#eef0f3"] },
+      "disabled-surface": { "role": "neutral", "displayName": "Disabled Surface", "canonical": "#d6dae0", "tonalRamp": ["#15191d", "#30363d", "#535b65", "#77818c", "#9ca5af", "#bec5cd", "#d6dae0", "#f5f6f8"] }
+    },
+    "typographyMeta": {
+      "headline": { "displayName": "Conversation Headline", "purpose": "Reader subject and strongest page-level content." },
+      "title": { "displayName": "Workspace Title", "purpose": "Mailbox and pane headings." },
+      "body": { "displayName": "Message Body", "purpose": "Sustained reading with generous leading." },
+      "label": { "displayName": "Operational Label", "purpose": "Folders, senders, subjects, fields, and actions." },
+      "metadata": { "displayName": "Compact Metadata", "purpose": "Dates, counts, attachment sizes, and keyboard hints." }
+    },
+    "shadows": [
+      { "name": "composer-float", "value": "0 16px 48px #1720331c, 0 3px 12px #17203312", "purpose": "Detached desktop composer only." },
+      { "name": "folder-drawer", "value": "7px 0 22px #25334a18", "purpose": "Temporary mailbox drawer below 900px." },
+      { "name": "network-alert", "value": "0 5px 20px #16263826", "purpose": "Network retry alert above the workspace." },
+      { "name": "barely-raised", "value": "0 2px 4px #1c304205", "purpose": "Near-flat reply prompt." }
+    ],
+    "motion": [
+      { "name": "state", "value": "150ms ease", "purpose": "Background, text, and border state changes when reduced motion is not requested." },
+      { "name": "reduced", "value": "0.01ms", "purpose": "Effectively removes composer transitions when reduced motion is requested." }
+    ],
+    "breakpoints": [
+      { "name": "wide", "value": "1500px" },
+      { "name": "compact-desktop", "value": "1150px" },
+      { "name": "drawer", "value": "900px" },
+      { "name": "single-pane", "value": "650px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Action",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Compose and send actions; the warm emphasis is rare and purposeful.",
+      "html": "<button class=\"ds-button-primary\">Compose</button>",
+      "css": ".ds-button-primary{border:0;border-radius:8px;background:#ea7c28;color:#fff;padding:11px 13px;font:650 13px/1.4 'Inter var',Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;transition:background-color 150ms ease}.ds-button-primary:hover,.ds-button-primary:active{background:#d46819}.ds-button-primary:focus-visible{outline:2px solid #b65316;outline-offset:3px}"
+    },
+    {
+      "name": "Secondary Action",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Quiet bordered action for writing a message, retrying, or other secondary work.",
+      "html": "<button class=\"ds-button-secondary\">Write a message</button>",
+      "css": ".ds-button-secondary{border:1px solid #e5e9ee;border-radius:8px;background:#fff;color:#202936;padding:9px 13px;font:500 12px/1.4 'Inter var',Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif;transition:background-color 150ms ease,border-color 150ms ease}.ds-button-secondary:hover{background:#f7f8fa;border-color:#cfd5dc}.ds-button-secondary:focus-visible{outline:2px solid #b65316;outline-offset:3px}"
+    },
+    {
+      "name": "Icon Action",
+      "kind": "button",
+      "refersTo": "icon-button",
+      "description": "Compact toolbar action with an accessible name supplied by the host interface.",
+      "html": "<button class=\"ds-icon-button\" aria-label=\"Archive conversation\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 7h16v13H4zM3 4h18v3H3zm6 7h6\"/></svg></button>",
+      "css": ".ds-icon-button{display:inline-grid;width:32px;height:32px;place-items:center;border:0;border-radius:6px;background:transparent;color:#637083}.ds-icon-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}.ds-icon-button:hover{background:#e9ecf0;color:#202936}.ds-icon-button:focus-visible{outline:2px solid #b65316;outline-offset:3px}"
+    },
+    {
+      "name": "Mail Search",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "Compact search field for names, addresses, and message text.",
+      "html": "<label class=\"ds-search\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"7\"/><path d=\"m20 20-3.2-3.2\"/></svg><span class=\"ds-search-label\">Search mail</span><input type=\"search\" placeholder=\"Search mail\"></label>",
+      "css": ".ds-search{display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid #e5e9ee;border-radius:8px;background:#f7f8fa;color:#637083}.ds-search svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7}.ds-search-label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.ds-search input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:#202936;font:400 12px/1.4 'Inter var',Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.ds-search:focus-within{border-color:#b65316;box-shadow:0 0 0 2px #f4dfcf;background:#fff}"
+    },
+    {
+      "name": "Active Mailbox",
+      "kind": "nav",
+      "description": "Current mailbox state in the cool-neutral folder column.",
+      "html": "<a class=\"ds-mailbox\" href=\"#\" aria-current=\"page\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 4h16v16H4zM4 14h4l2 3h4l2-3h4\"/></svg><span>Inbox</span><span class=\"ds-mailbox-count\">12</span></a>",
+      "css": ".ds-mailbox{display:flex;min-height:40px;align-items:center;gap:10px;padding:10px 11px;border-radius:8px;background:#e6e9ee;color:#202936;text-decoration:none;font:600 13px/1.4 'Inter var',Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.ds-mailbox svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7}.ds-mailbox-count{margin-left:auto;color:#637083;font-size:11px;font-variant-numeric:tabular-nums}.ds-mailbox:hover{background:#e9ecf0}.ds-mailbox:focus-visible{outline:2px solid #b65316;outline-offset:3px}"
+    },
+    {
+      "name": "Selected Conversation",
+      "kind": "card",
+      "refersTo": "conversation-selected",
+      "description": "A complete conversation summary with selection expressed by a calm warm tint.",
+      "html": "<article class=\"ds-conversation\"><div class=\"ds-conversation-top\"><strong>Alex Morgan</strong><time>Sep 15</time></div><div class=\"ds-conversation-subject\">August invoice <span>3</span></div><p>Thanks, I’ve reviewed the statement and…</p></article>",
+      "css": ".ds-conversation{min-height:107px;padding:17px 19px 17px 23px;border-bottom:1px solid #e5e9ee;background:#fff1e7;color:#202936;font-family:'Inter var',Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.ds-conversation-top{display:flex;gap:10px;align-items:baseline;margin-bottom:5px}.ds-conversation-top strong{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}.ds-conversation time{color:#637083;font-size:10px;font-variant-numeric:tabular-nums}.ds-conversation-subject{font-size:13px;font-weight:600;line-height:1.5}.ds-conversation-subject span{color:#637083;font-size:10px;font-weight:500}.ds-conversation p{display:-webkit-box;overflow:hidden;margin:4px 16px 0 0;color:#637083;font-size:12px;line-height:1.65;-webkit-box-orient:vertical;-webkit-line-clamp:2}"
+    },
+    {
+      "name": "Message Summary",
+      "kind": "custom",
+      "description": "Progressively disclosed conversation message: preview when closed, recipient context when open.",
+      "html": "<details class=\"ds-message\" open><summary><span class=\"ds-avatar\">A</span><span class=\"ds-message-copy\"><strong>alex@example.com</strong><span>to billing@talli.test</span></span><time>10:42 AM</time></summary><div class=\"ds-message-body\">The message content begins here.</div></details>",
+      "css": ".ds-message{border-top:1px solid #e5e9ee;color:#202936;font-family:'Inter var',Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.ds-message summary{display:flex;align-items:center;gap:12px;padding:21px 0;cursor:pointer;list-style:none}.ds-avatar{display:grid;width:34px;height:34px;flex:0 0 auto;place-items:center;border-radius:50%;background:#edf1f7;color:#637083;font-size:12px}.ds-message-copy{display:flex;min-width:0;flex:1;flex-direction:column;gap:4px}.ds-message-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600}.ds-message-copy span,.ds-message time{color:#637083;font-size:11px}.ds-message-body{padding:0 0 25px 46px;color:#344256;font-size:14px;line-height:1.85}.ds-message summary:focus-visible{outline:2px solid #b65316;outline-offset:3px}"
+    },
+    {
+      "name": "Attachment Chip",
+      "kind": "chip",
+      "description": "Compact removable attachment with truncation and a full pill silhouette.",
+      "html": "<span class=\"ds-chip\"><span>statement-august.pdf</span><button aria-label=\"Remove statement-august.pdf\">×</button></span>",
+      "css": ".ds-chip{display:inline-flex;max-width:240px;align-items:center;gap:6px;padding:5px 7px 5px 9px;border:1px solid #e5e9ee;border-radius:999px;background:#fff;color:#526075;font:400 11px/1.4 'Inter var',Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.ds-chip>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ds-chip button{display:grid;width:20px;height:20px;place-items:center;padding:0;border:0;border-radius:50%;background:transparent;color:#637083}.ds-chip button:hover{background:#f7f8fa;color:#202936}.ds-chip button:focus-visible{outline:2px solid #b65316;outline-offset:1px}"
+    },
+    {
+      "name": "Inline Reply Composer",
+      "kind": "custom",
+      "description": "The shared composer adapted to the reading flow with neutral chrome and no floating shadow.",
+      "html": "<section class=\"ds-inline-compose\"><header>Reply to conversation <span>Saved locally</span></header><div class=\"ds-inline-field\"><label>From</label><span>Billing &lt;billing@example.com&gt;</span></div><div class=\"ds-inline-editor\">Write your message…</div><footer><button>Send</button></footer></section>",
+      "css": ".ds-inline-compose{overflow:hidden;border:1px solid #e5e9ee;border-radius:10px;background:#fff;color:#202936;font-family:'Inter var',Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.ds-inline-compose header{padding:11px 16px;border-bottom:1px solid #e5e9ee;background:#f5f6f8;font-size:13px;font-weight:650}.ds-inline-compose header span{margin-left:8px;color:#637083;font-size:11px;font-weight:400}.ds-inline-field{display:grid;grid-template-columns:72px 1fr;gap:9px;align-items:center;min-height:42px;margin:0 16px;border-bottom:1px solid #e5e9ee;font-size:13px}.ds-inline-field label{color:#637083;font-size:12px;font-weight:560}.ds-inline-editor{min-height:150px;padding:16px;color:#637083;font-size:14px;line-height:1.65}.ds-inline-compose footer{padding:10px 12px;border-top:1px solid #e5e9ee}.ds-inline-compose footer button{height:36px;padding:0 17px;border:1px solid #ea7c28;border-radius:6px;background:#ea7c28;color:#fff;font-weight:650}.ds-inline-compose footer button:hover{background:#d46819;border-color:#d46819}.ds-inline-compose footer button:focus-visible{outline:2px solid #b65316;outline-offset:3px}"
+    },
+    {
+      "name": "Searchable Select",
+      "kind": "input",
+      "description": "Generic Talli select with an optional search field, secondary labels, and semantic selected state.",
+      "html": "<div class=\"ds-select\"><button class=\"ds-select-trigger\" type=\"button\" aria-expanded=\"true\"><span><strong>Acme Studio</strong><small>billing@acme.test</small></span><i></i></button><div class=\"ds-select-popup\"><input aria-label=\"Search options\" placeholder=\"Search options\"><div class=\"ds-select-option is-selected\"><span><strong>Acme Studio</strong><small>billing@acme.test</small></span><b>✓</b></div><div class=\"ds-select-option\"><span><strong>North &amp; Pine</strong><small>accounts@northpine.test</small></span></div></div></div>",
+      "css": ".ds-select{width:290px;color:#202936;font-family:'Inter var',Inter,system-ui,-apple-system,BlinkMacSystemFont,sans-serif}.ds-select-trigger{display:flex;width:100%;min-height:36px;align-items:center;justify-content:space-between;gap:10px;padding:0;border:0;border-radius:6px;background:transparent;color:#202936;text-align:left}.ds-select-trigger>span,.ds-select-option>span{display:flex;min-width:0;flex-direction:column}.ds-select strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}.ds-select small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#637083;font-size:11px}.ds-select-trigger i{width:8px;height:8px;border-right:1.5px solid #637083;border-bottom:1.5px solid #637083;transform:rotate(225deg)}.ds-select-trigger:focus-visible,.ds-select-popup input:focus-visible{outline:2px solid #b65316;outline-offset:3px}.ds-select-popup{margin-top:4px;overflow:hidden;border:1px solid #cfd5dc;border-radius:8px;background:#fff;box-shadow:0 12px 32px #17203320,0 2px 8px #17203314}.ds-select-popup input{width:calc(100% - 12px);height:36px;margin:6px;padding:0 10px;border:1px solid #e5e9ee;border-radius:6px;background:#f7f8fa;color:#202936}.ds-select-option{display:flex;min-height:36px;align-items:center;justify-content:space-between;gap:12px;margin:4px;padding:7px 10px;border-radius:6px}.ds-select-option.is-selected{background:#fff1e7;color:#52280f;font-weight:560}.ds-select-option b{color:#9e4510;font-size:14px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Workbench",
+    "overview": "Talli should feel like a finely made work tool: calm enough for sustained use, compact enough for real operations, and familiar on first contact. Apple’s interface discipline is a useful reference—clear hierarchy, restrained chrome, native-feeling controls, and content that receives more visual weight than the interface—translated into Talli’s Inter typography and warm orange identity. The shared foundation is implemented in design-tokens.css; Mail is its first complete reference surface. Other Talli screens have not yet been migrated. Reusable controls belong in generic ui-* assets and must stay free of mail-domain assumptions. Inbox rows, the conversation reader, and the composer remain Mail patterns.",
+    "keyCharacteristics": [
+      "Quiet operational surfaces that let client, financial, and communication content lead.",
+      "Cool white and mist-gray surfaces separated by hairlines rather than decorative cards.",
+      "Orange reserved for primary action, current selection, focus, and meaningful links.",
+      "Inter throughout, with compact metadata and comfortable reading rhythm.",
+      "Progressive disclosure for secondary choices and technical detail.",
+      "Familiar keyboard behavior, visible focus, honest status feedback, and 44px mobile action targets."
+    ],
+    "rules": [
+      { "name": "The One Warm Voice Rule", "body": "Orange is Talli’s only brand accent. Use it for action and state, never as broad decoration.", "section": "colors" },
+      { "name": "The Quiet Chrome Rule", "body": "Dark navy belongs to global workspace navigation. Local toolbars, dialogs, editors, and reading chrome use cool neutral surfaces so Talli reads as one system.", "section": "colors" },
+      { "name": "The Content Leads Rule", "body": "The object being worked on is the strongest type in the view. Supporting identity and content follow; system machinery and provider references stay quiet until requested.", "section": "typography" },
+      { "name": "The Context Stays Put Rule", "body": "Selection changes update the reader while the list remains visible and restores its previous scroll position.", "section": "layout" },
+      { "name": "The One Task Pane Rule", "body": "Below 650px, never squeeze the list and reader side by side. Show the current task at full width with a clear path back.", "section": "layout" },
+      { "name": "The Earned Elevation Rule", "body": "A shadow communicates floating or temporary position. It is not a default card treatment.", "section": "elevation" },
+      { "name": "The Continuous Surface Rule", "body": "Do not round every region. Reserve visible corner treatment for controls, disclosures, temporary windows, and compact contained objects.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do keep the object being worked on visually ahead of metadata and system chrome.",
+      "Do preserve side-by-side selection and detail context on capable viewports when the task benefits from it, including independent scroll state where needed.",
+      "Do build reusable controls on the shared --ui-* tokens and generic ui-* assets.",
+      "Do keep reusable component APIs free of client, template, email, and other domain assumptions.",
+      "Do disclose Cc, Bcc, templates, source editing, and message details only when requested. Keep the editable signature in the message body; use the shared HTML preview dialog in sender settings.",
+      "Do state draft scope and unavailable actions honestly, especially local-only drafts, attachment reattachment, and legacy reply limits.",
+      "Do pair color with text, weight, shape, or iconography for selection, failure, and unread state."
+    ],
+    "donts": [
+      "Don't spread the Mail pane topology to screens that do not need persistent selection and detail context.",
+      "Don't mix dark application chrome into local tools or ordinary content panels; reserve navy for global workspace navigation.",
+      "Don't turn conversations into audit-table rows, card grids, or isolated rounded tiles.",
+      "Don't expose provider references, delivery diagnostics, or full recipient metadata before the user asks for details.",
+      "Don't imply cloud draft sync, successful delivery, reply threading, or retained attachment files unless the implementation proves it.",
+      "Don't add decorative accent colors, gratuitous motion, or oversized marketing typography to this operating surface."
+    ]
+  }
+}

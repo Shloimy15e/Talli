@@ -1,13 +1,27 @@
 package dev.dynamiq.talli.service;
 
-/** A validated outbound email identity. */
-record EmailSender(String address, String name) {
+import java.util.Objects;
 
-    String formatted() {
-        return name + " <" + address + ">";
+/** A validated outbound email identity and the signature owned by that identity. */
+public record EmailSender(String address, String name, String signatureHtml) {
+
+    private static final String PHRASE_SPECIALS = "()<>@,;:\\\".[]";
+
+    public EmailSender {
+        Objects.requireNonNull(address, "Sender address is required.");
+        Objects.requireNonNull(name, "Sender name is required.");
+        Objects.requireNonNull(signatureHtml, "Sender signature is required.");
     }
 
-    String defaultSignatureHtml() {
+    public String formatted() {
+        String formattedName = name;
+        if (name.chars().anyMatch(character -> PHRASE_SPECIALS.indexOf(character) >= 0)) {
+            formattedName = "\"" + name.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+        }
+        return formattedName + " <" + address + ">";
+    }
+
+    public static String basicSignatureHtml(String address, String name) {
         String safeName = escapeHtml(name);
         String safeAddress = escapeHtml(address);
         return "<strong>" + safeName + "</strong><br>"

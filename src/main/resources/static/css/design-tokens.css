@@ -1,0 +1,42 @@
+/* Shared Talli design tokens. Components and product surfaces consume semantic roles. */
+:root {
+  --ui-font: "Inter var", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --ui-ink: #202936;
+  --ui-muted: #637083;
+  --ui-line: #e5e9ee;
+  --ui-border-strong: #cfd5dc;
+  --ui-surface: #ffffff;
+  --ui-canvas: #f5f6f8;
+  --ui-subtle: #f7f8fa;
+  --ui-accent: #ea7c28;
+  --ui-accent-hover: #d46819;
+  --ui-accent-foreground: #ffffff;
+  --ui-accent-ink: #9e4510;
+  --ui-selected: #fff1e7;
+  --ui-focus: #b65316;
+  --ui-hover: #e9ecf0;
+  --ui-active: #e6e9ee;
+  --ui-rail: #141c2a;
+  --ui-rail-ink: #aeb9ca;
+  --ui-rail-hover: #253044;
+  --ui-rail-active: #303245;
+  --ui-rail-accent: #ffb57d;
+  --ui-selection: #ffe1c9;
+  --ui-selection-ink: #52280f;
+  --ui-success: #386545;
+  --ui-success-surface: #edf8f1;
+  --ui-success-line: #dceee2;
+  --ui-warning: #94431a;
+  --ui-warning-surface: #fff4ed;
+  --ui-warning-line: #f4d5bc;
+  --ui-danger: #9e4033;
+  --ui-danger-surface: #fff3f0;
+  --ui-danger-line: #f4ddd6;
+  --ui-disabled: #7c8796;
+  --ui-disabled-surface: #d6dae0;
+  --ui-radius-sm: 6px;
+  --ui-radius-md: 8px;
+  --ui-radius-lg: 10px;
+  --ui-state-duration: 150ms;
+  --ui-window-shadow: 0 16px 48px #1720331c, 0 3px 12px #17203312;
+}

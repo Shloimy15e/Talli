@@ -84,6 +84,8 @@ public class InvoiceEmailService {
             LocalDateTime now = LocalDateTime.now();
             log.setBodyHtml(result.html());
             log.setResendId(result.resendId());
+            log.setMessageId(result.messageId());
+            log.setFromAddress(result.fromAddress());
             log.setStatus("sent");
             log.setSentAt(now);
             invoice.setSentAt(now);

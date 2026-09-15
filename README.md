@@ -52,11 +52,43 @@ Requires JDK 21+, Maven, and PostgreSQL.
 # Create the database
 createdb talli
 
-# Run the app (dev mode with hot reload)
+# Run the app (see below for automatic local updates)
 mvn spring-boot:run
 ```
 
 App runs at `http://localhost:8080`.
+
+### Automatic local updates (Windows)
+
+```powershell
+.\scripts\dev.ps1
+```
+
+This starts the local server and watches `src/main`. After saves settle, Maven
+compiles the changes; Spring Boot DevTools then refreshes connected browser tabs
+and restarts the application when Java or configuration changes require it.
+No browser extension is needed. This is automatic page reload, not component HMR.
+Open pages once after starting this mode to load the development client.
+
+The server binds to loopback and disables outbound email. Watcher output is in
+`target/dev-watch.log`; failed compilation is retried on the next source save.
+Stop with Ctrl+C. The `local` profile and browser reload client are not enabled
+by the normal run command. Save non-email forms before code changes trigger a
+page reload; the email composer retains its existing local draft behavior.
+
+## Mail oversight and notifications
+
+MCP emails can optionally include the configured `MCP_EMAIL_CC` as a visible
+oversight recipient. This is off by default and shown in the approval preview.
+The app records the authenticated initiating account, provider ID, delivery
+events, and conversation separately; recipient copies are not the audit trail.
+
+Incoming mail is stored in Talli without forwarding it to admins. Every day at
+05:00 UTC, enabled admins with an email address outside `dynamiq.dev` receive a
+count and inbox link if their own inbox has unread conversations. Read or archived
+conversations do not trigger a notification; a new incoming reply can make an
+archived conversation eligible again. These notifications use `APP_BASE_URL` for
+the inbox link and require the application to be running at the scheduled time.
 
 ## Mercury
 

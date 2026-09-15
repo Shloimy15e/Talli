@@ -24,6 +24,7 @@ public class EmailService {
     private static final String RESEND_RECEIVING_URL = "https://api.resend.com/emails/receiving/";
 
     private final SpringTemplateEngine templateEngine;
+    private final EmailSenderProfileService senders;
     private final ObjectMapper mapper = new ObjectMapper();
     private HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(10))
@@ -31,12 +32,6 @@ public class EmailService {
 
     @Value("${app.mail.resend.api-key:}")
     private String apiKey;
-
-    @Value("${app.mail.from}")
-    private String fromAddress;
-
-    @Value("${app.mail.from-name}")
-    private String fromName;
 
     @Value("${app.business.name:Dynamiq Solutions Inc}")
     private String businessName;
@@ -47,12 +42,13 @@ public class EmailService {
     @Value("${app.business.address:100 Cherry Ln, Airmont, NY 10952}")
     private String businessAddress;
 
-    public EmailService(SpringTemplateEngine templateEngine) {
+    public EmailService(SpringTemplateEngine templateEngine, EmailSenderProfileService senders) {
         this.templateEngine = templateEngine;
+        this.senders = senders;
     }
 
     /** Result of a send — html is the rendered body (empty for plain), resendId is the Resend message id. */
-    public record Result(String html, String resendId) {}
+    public record Result(String html, String resendId, String messageId, String fromAddress) {}
 
     /** File content and metadata to include with an outbound email. */
     public record Attachment(String filename, byte[] content, String contentType) {
@@ -65,7 +61,7 @@ public class EmailService {
     }
 
     /** Body of a received email fetched from the Resend receiving API. */
-    public record ReceivedEmail(String text, String html) {}
+    public record ReceivedEmail(String text, String html, String messageId, String inReplyTo, String references) {}
 
     /**
      * Fetches the body of an inbound email by id. Resend's email.received
@@ -91,7 +87,8 @@ public class EmailService {
             var node = mapper.readTree(response.body());
             String text = node.path("text").asText(null);
             String html = node.path("html").asText(null);
-            return new ReceivedEmail(text, html);
+            return new ReceivedEmail(text, html, node.path("message_id").asText(null),
+                    header(node.path("headers"), "In-Reply-To"), header(node.path("headers"), "References"));
         } catch (java.io.IOException e) {
             throw new RuntimeException("Failed to fetch received email: " + e.getMessage(), e);
         } catch (InterruptedException e) {
@@ -120,14 +117,12 @@ public class EmailService {
 
     public Result sendPlain(String to, List<String> cc, List<String> bcc,
                             String subject, String body, List<Attachment> attachments) {
-        String id = send(defaultSender(), to, cc, bcc, subject, null, body, attachments);
-        return new Result("", id);
+        return send(defaultSender(), to, cc, bcc, subject, null, body, attachments);
     }
 
     Result sendPlain(EmailSender sender, String to, List<String> cc, List<String> bcc,
                      String subject, String body) {
-        String id = send(sender, to, cc, bcc, subject, null, body, List.of());
-        return new Result("", id);
+        return send(sender, to, cc, bcc, subject, null, body, List.of());
     }
 
     /**
@@ -151,14 +146,12 @@ public class EmailService {
     public Result sendHtml(String to, List<String> cc, List<String> bcc,
                            String subject, String text, String html,
                            List<Attachment> attachments) {
-        String id = send(defaultSender(), to, cc, bcc, subject, html, text, attachments);
-        return new Result(html, id);
+        return send(defaultSender(), to, cc, bcc, subject, html, text, attachments);
     }
 
     Result sendHtml(EmailSender sender, String to, List<String> cc, List<String> bcc,
                     String subject, String text, String html) {
-        String id = send(sender, to, cc, bcc, subject, html, text, List.of());
-        return new Result(html, id);
+        return send(sender, to, cc, bcc, subject, html, text, List.of());
     }
 
     /**
@@ -194,9 +187,11 @@ public class EmailService {
     public Result sendTemplate(String to, List<String> cc, List<String> bcc,
                                String subject, String templateName,
                                Map<String, Object> variables, List<Attachment> attachments) {
-        String html = render(templateName, variables);
-        String id = send(defaultSender(), to, cc, bcc, subject, html, null, attachments);
-        return new Result(html, id);
+        EmailSender sender = "invoice".equals(templateName) || "reminder".equals(templateName)
+                ? senders.resolve("billing@dynamiq.dev")
+                : defaultSender();
+        String html = render(templateName, variables, sender);
+        return send(sender, to, cc, bcc, subject, html, null, attachments);
     }
 
     public Result sendTemplateWithAttachment(String to, String subject, String templateName,
@@ -225,24 +220,64 @@ public class EmailService {
         return sendTemplate(to, cc, bcc, subject, templateName, variables, List.of(attachment));
     }
 
-    private String render(String templateName, Map<String, Object> variables) {
+    private String render(String templateName, Map<String, Object> variables, EmailSender sender) {
         Context context = new Context();
         context.setVariables(variables);
-        context.setVariable("fromAddress", fromAddress);
-        context.setVariable("fromName", fromName);
+        context.setVariable("fromAddress", sender.address());
+        context.setVariable("fromName", sender.name());
+        context.setVariable("signature", sender.signatureHtml());
+        context.setVariable("signatureResponsiveStyles", EmailTemplateCatalog.signatureStyles());
         context.setVariable("businessName", businessName);
         context.setVariable("businessEmail", businessEmail);
         context.setVariable("businessAddress", businessAddress);
         return templateEngine.process("emails/" + templateName, context);
     }
 
-    private EmailSender defaultSender() {
-        return new EmailSender(fromAddress, fromName);
+    public EmailSender defaultSender() {
+        return senders.resolve(null);
     }
 
-    private String send(EmailSender sender, String to, List<String> cc, List<String> bcc, String subject,
+    public Result sendMessage(EmailSender sender, String to, List<String> cc, List<String> bcc,
+                              String subject, String text, String html,
+                              List<Attachment> attachments, Map<String, String> headers) {
+        return send(sender, to, cc, bcc, subject, html, text, attachments, headers);
+    }
+
+    public String fetchSentMessageId(String resendId) {
+        if (resendId == null || resendId.isBlank() || apiKey == null || apiKey.isBlank()) return null;
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(RESEND_URL + "/" + resendId))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .timeout(Duration.ofSeconds(10)).GET().build();
+            HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 300) return null;
+            return mapper.readTree(response.body()).path("message_id").asText(null);
+        } catch (java.io.IOException exception) {
+            throw new IllegalStateException("Could not retrieve email threading metadata.", exception);
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Email metadata lookup interrupted.", exception);
+        }
+    }
+
+    private static String header(com.fasterxml.jackson.databind.JsonNode headers, String name) {
+        var fields = headers.fields();
+        while (fields.hasNext()) {
+            var field = fields.next();
+            if (field.getKey().equalsIgnoreCase(name)) return field.getValue().asText(null);
+        }
+        return null;
+    }
+
+    private Result send(EmailSender sender, String to, List<String> cc, List<String> bcc, String subject,
                         String html, String text,
                         List<Attachment> attachments) {
+        return send(sender, to, cc, bcc, subject, html, text, attachments, Map.of());
+    }
+
+    private Result send(EmailSender sender, String to, List<String> cc, List<String> bcc, String subject,
+                        String html, String text, List<Attachment> attachments, Map<String, String> headers) {
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException("RESEND_API_KEY is not configured.");
         }
@@ -251,6 +286,15 @@ public class EmailService {
         payload.put("from", sender.formatted());
         payload.put("to", List.of(to));
         payload.put("subject", subject);
+        if (headers != null && !headers.isEmpty()) {
+            headers.forEach((name, value) -> {
+                if ((!name.equals("In-Reply-To") && !name.equals("References"))
+                        || value == null || value.contains("\r") || value.contains("\n")) {
+                    throw new IllegalArgumentException("Invalid reply headers.");
+                }
+            });
+            payload.put("headers", headers);
+        }
         if (html != null) payload.put("html", html);
         if (text != null) payload.put("text", text);
         if (cc != null && !cc.isEmpty()) payload.put("cc", cc);
@@ -276,7 +320,14 @@ public class EmailService {
             }
             var node = mapper.readTree(response.body());
             var idNode = node.get("id");
-            return idNode != null ? idNode.asText() : null;
+            String id = idNode != null ? idNode.asText() : null;
+            String messageId = null;
+            try {
+                messageId = fetchSentMessageId(id);
+            } catch (RuntimeException ignored) {
+                // Delivery was accepted; webhooks can recover threading metadata.
+            }
+            return new Result(html == null ? "" : html, id, messageId, sender.address());
         } catch (java.io.IOException e) {
             throw new RuntimeException("Failed to send email: " + e.getMessage(), e);
         } catch (InterruptedException e) {

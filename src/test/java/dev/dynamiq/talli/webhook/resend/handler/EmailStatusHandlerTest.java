@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.repository.EmailRepository;
+import dev.dynamiq.talli.service.EmailThreadService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +17,7 @@ import static org.mockito.Mockito.*;
 class EmailStatusHandlerTest {
 
     private EmailRepository repo;
+    private EmailThreadService threads;
     private EmailStatusHandler handler;
     private Email email;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -23,7 +25,8 @@ class EmailStatusHandlerTest {
     @BeforeEach
     void setUp() {
         repo = mock(EmailRepository.class);
-        handler = new EmailStatusHandler(repo);
+        threads = mock(EmailThreadService.class);
+        handler = new EmailStatusHandler(repo, threads);
 
         email = new Email();
         email.setId(1L);
@@ -117,6 +120,23 @@ class EmailStatusHandlerTest {
         handler.handle("email.sent", data("{\"email_id\":\"msg_abc\"}"));
         assertThat(email.getDeliveredAt()).isNull();
         assertThat(email.getBouncedAt()).isNull();
+    }
+
+    @Test
+    void sentCapturesProviderMessageIdAndReconcilesAnyEarlyInboundReply() throws Exception {
+        handler.handle("email.sent", data("{\"email_id\":\"msg_abc\",\"message_id\":\"<sent@dynamiq.dev>\"}"));
+
+        assertThat(email.getMessageId()).isEqualTo("<sent@dynamiq.dev>");
+        verify(threads).reconcileAfterMessageId(email);
+    }
+
+    @Test
+    void sentReconcilesWhenTheProviderMessageIdWasAlreadyStoredAtSendTime() throws Exception {
+        email.setMessageId("<sent@dynamiq.dev>");
+
+        handler.handle("email.sent", data("{\"email_id\":\"msg_abc\",\"message_id\":\"<sent@dynamiq.dev>\"}"));
+
+        verify(threads).reconcileAfterMessageId(email);
     }
 
     private JsonNode data(String json) throws Exception {

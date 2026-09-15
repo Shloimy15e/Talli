@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <style th:fragment="styles" th:text="${signatureResponsiveStyles}">
+    @media only screen and (max-width:480px) {
+      .dynamiq-email-signature .dynamiq-email-signature__logo { display:block !important; width:100% !important; max-width:100% !important; height:44px !important; overflow:hidden !important; }
+      .dynamiq-email-signature .dynamiq-email-signature__logo img { margin-top:-36px !important; }
+      .dynamiq-email-signature .dynamiq-email-signature__spacer { display:none !important; width:0 !important; height:0 !important; }
+      .dynamiq-email-signature .dynamiq-email-signature__contact { display:inline-block !important; width:auto !important; max-width:100% !important; margin:14px 0 0 10px !important; padding:13px 0 0 !important; border-left:0 !important; border-top:1px solid #ea7c28 !important; }
+    }
+  </style>
+</head>
+</html>

@@ -3,6 +3,7 @@ package dev.dynamiq.talli.webhook.resend.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.repository.EmailRepository;
+import dev.dynamiq.talli.service.EmailThreadService;
 import dev.dynamiq.talli.webhook.resend.ResendEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +20,11 @@ public class EmailStatusHandler implements ResendEventHandler {
     private static final Logger log = LoggerFactory.getLogger(EmailStatusHandler.class);
 
     private final EmailRepository emailRepository;
+    private final EmailThreadService threads;
 
-    public EmailStatusHandler(EmailRepository emailRepository) {
+    public EmailStatusHandler(EmailRepository emailRepository, EmailThreadService threads) {
         this.emailRepository = emailRepository;
+        this.threads = threads;
     }
 
     @Override
@@ -43,6 +46,11 @@ public class EmailStatusHandler implements ResendEventHandler {
             return;
         }
         Email email = maybe.get();
+        String messageId = EmailThreadService.normalizeMessageId(data.path("message_id").asText(null));
+        if (email.getMessageId() == null && messageId != null) {
+            email.setMessageId(messageId);
+        }
+        if (EmailThreadService.normalizeMessageId(email.getMessageId()) != null) threads.reconcileAfterMessageId(email);
         LocalDateTime now = LocalDateTime.now();
 
         switch (type) {
@@ -69,7 +77,7 @@ public class EmailStatusHandler implements ResendEventHandler {
                 String reason = data.path("reason").asText(null);
                 if (reason != null) email.setErrorMessage(reason);
             }
-            default -> { /* email.sent, email.delivery_delayed — nothing to persist */ }
+            default -> { /* email.sent records Message-ID above; no delivery timestamp yet. */ }
         }
     }
 }

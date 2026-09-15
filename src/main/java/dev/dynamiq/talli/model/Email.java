@@ -72,6 +72,34 @@ public class Email implements HasMedia {
     @Column(name = "resend_id")
     private String resendId;
 
+    /** Application channel that created this email, such as "mcp". Historical rows may be unknown. */
+    @Column(name = "send_source")
+    private String source;
+
+    /** Authenticated account that initiated the send when the channel supplies one. */
+    @Column(name = "initiated_by")
+    private String initiatedBy;
+
+    /** RFC 5322 Message-ID, including angle brackets, when supplied by Resend. */
+    @Column(name = "message_id")
+    private String messageId;
+
+    /** RFC In-Reply-To header for messages that reply to a local or external email. */
+    @Column(name = "in_reply_to")
+    private String inReplyTo;
+
+    /** RFC References header: ordered, space-separated message IDs. */
+    @Column(name = "references_header", columnDefinition = "TEXT")
+    private String referencesHeader;
+
+    /** First local Email record in this conversation. Root messages point to themselves. */
+    @Column(name = "thread_root_id")
+    private Long threadRootId;
+
+    /** Returning inbound copy of a locally sent message, retained for audit but hidden from mailbox reads. */
+    @Column(name = "copy_of_email_id")
+    private Long copyOfEmailId;
+
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
 
@@ -205,6 +233,62 @@ public class Email implements HasMedia {
 
     public void setResendId(String resendId) {
         this.resendId = resendId;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
+    public void setSource(String source) {
+        this.source = source;
+    }
+
+    public String getInitiatedBy() {
+        return initiatedBy;
+    }
+
+    public void setInitiatedBy(String initiatedBy) {
+        this.initiatedBy = initiatedBy;
+    }
+
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
+    }
+
+    public String getInReplyTo() {
+        return inReplyTo;
+    }
+
+    public void setInReplyTo(String inReplyTo) {
+        this.inReplyTo = inReplyTo;
+    }
+
+    public String getReferencesHeader() {
+        return referencesHeader;
+    }
+
+    public void setReferencesHeader(String referencesHeader) {
+        this.referencesHeader = referencesHeader;
+    }
+
+    public Long getThreadRootId() {
+        return threadRootId;
+    }
+
+    public void setThreadRootId(Long threadRootId) {
+        this.threadRootId = threadRootId;
+    }
+
+    public Long getCopyOfEmailId() {
+        return copyOfEmailId;
+    }
+
+    public void setCopyOfEmailId(Long copyOfEmailId) {
+        this.copyOfEmailId = copyOfEmailId;
     }
 
     public LocalDateTime getDeliveredAt() {

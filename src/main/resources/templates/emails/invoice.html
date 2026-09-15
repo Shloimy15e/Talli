@@ -1,135 +1,108 @@
 <!doctype html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Invoice</title>
+  <style th:replace="~{emails/_signature-responsive :: styles}">
+    @media only screen and (max-width:480px) {
+      .dynamiq-email-signature .dynamiq-email-signature__logo { display:block !important; width:100% !important; max-width:100% !important; height:44px !important; overflow:hidden !important; }
+      .dynamiq-email-signature .dynamiq-email-signature__logo img { margin-top:-36px !important; }
+      .dynamiq-email-signature .dynamiq-email-signature__spacer { display:none !important; width:0 !important; height:0 !important; }
+      .dynamiq-email-signature .dynamiq-email-signature__contact { display:inline-block !important; width:auto !important; max-width:100% !important; margin:14px 0 0 10px !important; padding:13px 0 0 !important; border-left:0 !important; border-top:1px solid #ea7c28 !important; }
+    }
+  </style>
 </head>
-<body style="margin:0; padding:0; background:#f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color:#1a1a1a;">
-
-  <!-- Outer wrapper for email-client compatibility -->
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f1f5f9;">
+<body style="margin:0; padding:0; background:#f5f6f8; font-family:Arial, Helvetica, sans-serif; color:#202936;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background:#f5f6f8;">
     <tr>
-      <td align="center" style="padding:32px 16px;">
-
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px; width:100%; background:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-
-          <!-- Brand bar -->
+      <td align="center" style="padding:40px 12px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; max-width:600px; background:#ffffff; border:1px solid #cfd5dc; border-radius:10px; overflow:hidden;">
           <tr>
-            <td style="background:#161f30; padding:22px 32px;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
-                <tr>
-                  <td style="color:#ffffff; font-size:19px; font-weight:700; line-height:1.25; width:70%;">
-                    <div th:text="${businessName}">Dynamiq Solutions Inc</div>
-                    <div style="margin-top:6px; color:#cbd5e1; font-size:12px; font-weight:400; line-height:1.45;">
-                      <a th:href="'mailto:' + ${businessEmail}" th:text="${businessEmail}"
-                         style="color:#cbd5e1; text-decoration:none;">info@dynamiq.dev</a><br>
-                      <span th:text="${businessAddress}">100 Cherry Ln, Airmont, NY 10952</span>
-                    </div>
-                  </td>
-                  <td align="right" style="color:#ffffff; font-size:12px; line-height:1.45; width:30%; vertical-align:top;">
-                    <div style="color:#ea7c28; text-transform:uppercase; letter-spacing:0.08em; font-weight:700;">Invoice</div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
-          <!-- Body -->
-          <tr>
-            <td style="padding:32px;">
-
-              <p style="margin:0 0 16px; font-size:15px; line-height:1.5;">
-                Hi <span th:text="${client.name}">Client</span>,
-              </p>
-
-              <p style="margin:0 0 24px; font-size:15px; line-height:1.55; color:#475569;">
-                Here's your latest invoice. The PDF is attached, and the key details are below.
-              </p>
-
-              <!-- Summary card -->
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; margin-bottom:24px;">
-                <tr>
-                  <td style="padding:20px 24px;">
-                    <p style="margin:0 0 4px; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#64748b; font-weight:600;">
-                      Amount due
-                    </p>
-                    <p style="margin:0; font-size:28px; font-weight:600; color:#161f30; font-family: 'SF Mono', Menlo, Consolas, monospace; letter-spacing:-0.01em;"
-                       th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(invoice.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
-                    <p style="margin:6px 0 0; font-size:13px; color:#64748b;">
-                      Reference
-                      <span style="font-family: 'SF Mono', Menlo, Consolas, monospace; color:#1a1a1a;"
-                            th:text="${invoice.reference}">INV-1001</span>
-                    </p>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Primary payment action -->
-              <table th:if="${mercuryPaymentUrl != null and invoice.outstanding}"
-                     role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:24px;">
-                <tr>
-                  <td align="center">
-                    <a th:href="${mercuryPaymentUrl}"
-                       style="display:inline-block; background:#ea7c28; color:#ffffff; text-decoration:none; font-size:15px; font-weight:600; padding:13px 28px; border-radius:6px;">
-                      Pay with ACH
-                    </a>
-                    <p style="margin:10px 0 0; font-size:12px; color:#64748b;">
-                      Pay securely by ACH through Mercury.
-                    </p>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- Details table -->
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="font-size:14px; margin-bottom:24px;">
-                <tr>
-                  <td style="padding:8px 0; color:#64748b; width:140px;">Issued</td>
-                  <td style="padding:8px 0; color:#1a1a1a;"
-                      th:text="${#temporals.format(invoice.issuedAt, 'MMMM d, yyyy')}">April 15, 2026</td>
-                </tr>
-                <tr th:if="${invoice.dueAt != null}" style="border-top:1px solid #f1f5f9;">
-                  <td style="padding:8px 0; color:#64748b; border-top:1px solid #f1f5f9;">Due by</td>
-                  <td style="padding:8px 0; color:#1a1a1a; font-weight:500; border-top:1px solid #f1f5f9;"
-                      th:text="${#temporals.format(invoice.dueAt, 'MMMM d, yyyy')}">May 15, 2026</td>
-                </tr>
-                <tr th:if="${invoice.periodStart != null and invoice.periodEnd != null}" style="border-top:1px solid #f1f5f9;">
-                  <td style="padding:8px 0; color:#64748b; border-top:1px solid #f1f5f9;">Service period</td>
-                  <td style="padding:8px 0; color:#1a1a1a; border-top:1px solid #f1f5f9;"
-                      th:text="${#temporals.format(invoice.periodStart, 'MMM d')} + ' – ' + ${#temporals.format(invoice.periodEnd, 'MMM d, yyyy')}">Apr 1 – Apr 30, 2026</td>
-                </tr>
-              </table>
-
-              <p style="margin:0 0 8px; font-size:14px; line-height:1.55; color:#475569;">
-                Let me know if anything looks off, and feel free to reply with any questions.
-              </p>
-
-              <p style="margin:24px 0 0; font-size:14px; color:#1a1a1a;">
-                Thanks,<br>
-                <span th:text="${businessName}">Dynamiq Solutions Inc</span>
-              </p>
-
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="padding:20px 32px; background:#f8fafc; border-top:1px solid #e2e8f0; text-align:center;">
-              <p style="margin:0; font-size:12px; color:#94a3b8; line-height:1.5;">
-                <span th:text="${businessName}">Dynamiq Solutions Inc</span>
-                <span style="color:#cbd5e1;">&middot;</span>
-                <a th:href="'mailto:' + ${businessEmail}" th:text="${businessEmail}"
-                   style="color:#94a3b8; text-decoration:none;">info@dynamiq.dev</a>
-                <span style="color:#cbd5e1;">&middot;</span>
+            <td style="padding:28px 32px 24px;">
+              <p style="margin:0; color:#141c34; font-size:19px; font-weight:600; line-height:1.35; letter-spacing:-0.02em;" th:text="${businessName}">Dynamiq Solutions</p>
+              <p style="margin:7px 0 0; color:#637083; font-size:13px; line-height:1.55; word-break:break-word;">
+                <a th:href="'mailto:' + ${businessEmail}" th:text="${businessEmail}" style="color:#637083; text-decoration:none;">billing@dynamiq.dev</a>
+                <span style="color:#a5afbd;"> &middot; </span>
                 <span th:text="${businessAddress}">100 Cherry Ln, Airmont, NY 10952</span>
               </p>
             </td>
           </tr>
+          <tr>
+            <td style="padding:30px 32px 36px; border-top:1px solid #e5e9ee;">
+              <p style="margin:0 0 18px; font-size:15px; line-height:1.65;">
+                Hi <span th:text="${client.name}">Client</span>,
+              </p>
+              <p style="margin:0 0 28px; color:#4c5869; font-size:15px; line-height:1.65;">
+                Here's your latest invoice. The PDF is attached, and the key details are below.
+              </p>
 
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; margin:0 0 26px; border-top:1px solid #cfd5dc; border-bottom:1px solid #cfd5dc;">
+                <tr>
+                  <td style="padding:20px 0;">
+                    <p style="margin:0 0 5px; color:#637083; font-size:13px; line-height:1.45;">Amount due</p>
+                    <p style="margin:0; color:#141c34; font-size:30px; font-weight:600; line-height:1.2; letter-spacing:-0.025em;" th:text="${invoice.currency} + ' ' + ${#numbers.formatDecimal(invoice.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
+                    <p style="margin:8px 0 0; color:#637083; font-size:13px; line-height:1.5;">
+                      Reference <span style="color:#202936;" th:text="${invoice.reference}">INV-1001</span>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <table th:if="${mercuryPaymentUrl != null and invoice.outstanding}" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; margin:0 0 28px;">
+                <tr>
+                  <td>
+                    <a th:href="${mercuryPaymentUrl}" style="display:inline-block; padding:13px 22px; border-radius:8px; background:#ea7c28; color:#ffffff; font-size:15px; font-weight:600; line-height:1.2; text-decoration:none;">Pay with ACH</a>
+                    <p style="margin:10px 0 0; color:#637083; font-size:12px; line-height:1.5;">Pay securely by ACH through Mercury.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; margin:0 0 28px; font-size:14px; line-height:1.55;">
+                <tr>
+                  <td style="width:36%; padding:10px 12px 10px 0; color:#637083; border-bottom:1px solid #e5e9ee;">Issued</td>
+                  <td style="padding:10px 0; color:#202936; border-bottom:1px solid #e5e9ee;" th:text="${#temporals.format(invoice.issuedAt, 'MMMM d, yyyy')}">April 15, 2026</td>
+                </tr>
+                <tr th:if="${invoice.dueAt != null}">
+                  <td style="padding:10px 12px 10px 0; color:#637083; border-bottom:1px solid #e5e9ee;">Due by</td>
+                  <td style="padding:10px 0; color:#202936; font-weight:500; border-bottom:1px solid #e5e9ee;" th:text="${#temporals.format(invoice.dueAt, 'MMMM d, yyyy')}">May 15, 2026</td>
+                </tr>
+                <tr th:if="${invoice.periodStart != null and invoice.periodEnd != null}">
+                  <td style="padding:10px 12px 10px 0; color:#637083;">Service period</td>
+                  <td style="padding:10px 0; color:#202936;" th:text="${#temporals.format(invoice.periodStart, 'MMM d')} + ' – ' + ${#temporals.format(invoice.periodEnd, 'MMM d, yyyy')}">Apr 1 – Apr 30, 2026</td>
+                </tr>
+              </table>
+
+              <p style="margin:0; color:#4c5869; font-size:14px; line-height:1.65;">
+                Let me know if anything looks off, and feel free to reply with any questions.
+              </p>
+              <div style="margin:26px 0 0; color:#202936; font-size:14px; line-height:1.55;" th:utext="${signature}">
+                <!-- billing-role-fallback:start -->
+<table class="dynamiq-email-signature" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:460px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#141c34;">
+  <tr>
+    <td style="padding:0 0 12px;font-size:13px;line-height:19px;color:#637083;">Kind regards,</td>
+  </tr>
+  <tr>
+    <td class="dynamiq-email-signature__layout" style="padding:0;font-size:0;line-height:0;text-align:left;">
+      <div class="dynamiq-email-signature__logo" style="display:inline-block;box-sizing:border-box;width:170px;max-width:100%;padding:0 10px 0 0;vertical-align:middle;">
+        <a href="https://dynamiq.dev" target="_blank" style="text-decoration:none;">
+          <img src="https://lh3.googleusercontent.com/d/1lfKgLhKID6PZSIddPdfC6R_p7XwnE8Qu" width="160" alt="Dynamiq Solutions" style="display:block;width:160px;max-width:100%;height:auto;border:0;">
+        </a>
+      </div><span class="dynamiq-email-signature__spacer" style="display:inline-block;width:14px;height:1px;font-size:1px;line-height:1px;vertical-align:middle;">&nbsp;</span><div class="dynamiq-email-signature__contact" style="display:inline-block;box-sizing:border-box;width:245px;max-width:100%;padding-left:14px;border-left:1px solid #ea7c28;vertical-align:middle;text-align:left;font-size:12px;line-height:20px;">
+        <div style="margin:0;font-size:13px;line-height:20px;font-weight:500;color:#637083;">Billing</div>
+        <div style="font-size:12px;line-height:20px;"><a href="mailto:billing@dynamiq.dev" style="display:inline-block;max-width:100%;color:#3f4b5e;text-decoration:none;white-space:nowrap;">billing@dynamiq.dev</a></div>
+        <div style="font-size:12px;line-height:20px;"><a href="https://dynamiq.dev" target="_blank" style="display:inline-block;color:#ea7c28;text-decoration:none;white-space:nowrap;">dynamiq.dev</a></div>
+      </div>
+    </td>
+  </tr>
+</table>
+<!-- billing-role-fallback:end -->
+              </div>
+            </td>
+          </tr>
         </table>
-
       </td>
     </tr>
   </table>
-
 </body>
 </html>

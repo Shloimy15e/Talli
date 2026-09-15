@@ -1,11 +1,13 @@
 package dev.dynamiq.talli.mcp;
 
 import dev.dynamiq.talli.model.Client;
+import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.Project;
 import dev.dynamiq.talli.model.TimeEntry;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.ExpenseRepository;
+import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.InvoiceItemRepository;
 import dev.dynamiq.talli.repository.InvoiceRepository;
 import dev.dynamiq.talli.repository.PaymentRepository;
@@ -13,6 +15,7 @@ import dev.dynamiq.talli.repository.ProjectRepository;
 import dev.dynamiq.talli.repository.SubscriptionRepository;
 import dev.dynamiq.talli.repository.TimeEntryRepository;
 import dev.dynamiq.talli.service.ReportService;
+import dev.dynamiq.talli.service.EmailThreadService;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,12 +40,15 @@ public class TalliMcpReadTools {
     private final PaymentRepository payments;
     private final SubscriptionRepository subscriptions;
     private final ReportService reports;
+    private final EmailRepository emails;
+    private final EmailThreadService threads;
 
     public TalliMcpReadTools(ClientRepository clients, ProjectRepository projects,
                              TimeEntryRepository timeEntries, ExpenseRepository expenses,
-                             InvoiceRepository invoices, InvoiceItemRepository invoiceItems,
-                             PaymentRepository payments, SubscriptionRepository subscriptions,
-                             ReportService reports) {
+                              InvoiceRepository invoices, InvoiceItemRepository invoiceItems,
+                              PaymentRepository payments, SubscriptionRepository subscriptions,
+                              ReportService reports, EmailRepository emails,
+                              EmailThreadService threads) {
         this.clients = clients;
         this.projects = projects;
         this.timeEntries = timeEntries;
@@ -52,6 +58,8 @@ public class TalliMcpReadTools {
         this.payments = payments;
         this.subscriptions = subscriptions;
         this.reports = reports;
+        this.emails = emails;
+        this.threads = threads;
     }
 
     @McpTool(name = "find_clients", title = "Find clients",
@@ -71,6 +79,45 @@ public class TalliMcpReadTools {
                 .limit(limit(limit))
                 .map(McpViews::client)
                 .toList();
+    }
+
+    @McpTool(name = "find_client_emails", title = "Find client emails",
+            description = "List up to 100 email messages recorded for one client, newest first, including source, initiating account, provider ID, send status, errors, bounce reason, and delivery-event timestamps when known. Use get_email_conversation to read the full local thread before replying.",
+            annotations = @McpTool.McpAnnotations(title = "Find client emails", readOnlyHint = true,
+                    destructiveHint = false, idempotentHint = true, openWorldHint = false))
+    @PreAuthorize("hasRole('admin')")
+    public EmailSearchResult findClientEmails(
+            @McpToolParam(description = "Talli client ID", required = true) Long clientId,
+            @McpToolParam(description = "Messages to skip; defaults to 0", required = false) Integer offset,
+            @McpToolParam(description = "Maximum messages to return, 1-100; defaults to 50", required = false) Integer limit) {
+        if (clientId == null) throw new IllegalArgumentException("client_id is required");
+        long start = offset(offset);
+        int size = (int) limit(limit);
+        List<Email> page = emails.findClientEmails(clientId, size + 1, start);
+        boolean hasMore = page.size() > size;
+        return new EmailSearchResult(page.stream().limit(size).map(McpViews::emailSummary).toList(),
+                start, hasMore ? start + size : null);
+    }
+
+    @McpTool(name = "get_email_conversation", title = "Get an email conversation",
+            description = "Return one oldest-first page of locally recorded messages in the selected email conversation, including full bodies, source, initiating account, provider ID, send status, errors, bounce reason, and delivery-event timestamps when known. Returns next_offset when more messages remain; an email without saved threading metadata returns only itself.",
+            annotations = @McpTool.McpAnnotations(title = "Get an email conversation", readOnlyHint = true,
+                    destructiveHint = false, idempotentHint = true, openWorldHint = false))
+    @PreAuthorize("hasRole('admin')")
+    public EmailConversation getEmailConversation(
+            @McpToolParam(description = "Any email ID in the conversation", required = true) Long emailId,
+            @McpToolParam(description = "Messages to skip; defaults to 0", required = false) Integer offset,
+            @McpToolParam(description = "Maximum messages to return, 1-100; defaults to 50", required = false) Integer limit) {
+        if (emailId == null) throw new IllegalArgumentException("email_id is required");
+        Email email = emails.findById(emailId)
+                .orElseThrow(() -> new IllegalArgumentException("Email not found: " + emailId));
+        long start = offset(offset);
+        int size = (int) limit(limit);
+        List<Email> conversation = threads.conversation(email);
+        boolean hasMore = conversation.size() > start + size;
+        List<McpViews.EmailView> messages = conversation.stream().skip(start).limit(size).map(McpViews::email).toList();
+        Long rootId = email.getThreadRootId() == null ? email.getId() : email.getThreadRootId();
+        return new EmailConversation(rootId, messages, hasMore ? start + size : null);
     }
 
     @McpTool(name = "find_projects", title = "Find projects",
@@ -320,6 +367,10 @@ public class TalliMcpReadTools {
     }
 
     private record DateRange(LocalDate from, LocalDate to) {}
+
+    public record EmailSearchResult(List<McpViews.EmailView> emails, long offset, Long nextOffset) {}
+
+    public record EmailConversation(Long threadRootId, List<McpViews.EmailView> messages, Long nextOffset) {}
 
     public record InvoiceDetails(McpViews.InvoiceView invoice,
                                  List<McpViews.InvoiceItemView> items,

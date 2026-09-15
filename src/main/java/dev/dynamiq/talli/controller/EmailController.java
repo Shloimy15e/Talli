@@ -2,13 +2,16 @@ package dev.dynamiq.talli.controller;
 
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Email;
-import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.UserRepository;
 import dev.dynamiq.talli.service.EmailAttachmentPolicy;
 import dev.dynamiq.talli.service.EmailTemplateCatalog;
 import dev.dynamiq.talli.service.EmailService;
+import dev.dynamiq.talli.service.EmailSender;
+import dev.dynamiq.talli.service.EmailSenderProfileService;
+import dev.dynamiq.talli.service.EmailThreadService;
+import dev.dynamiq.talli.service.MailboxService;
 import dev.dynamiq.talli.service.MediaService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -16,6 +19,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -32,6 +36,9 @@ public class EmailController {
     private final MediaService mediaService;
     private final EmailAttachmentPolicy attachmentPolicy;
     private final EmailTemplateCatalog emailTemplates;
+    private final EmailSenderProfileService senders;
+    private final EmailThreadService threads;
+    private final MailboxService mailbox;
 
     public EmailController(EmailRepository emailRepository,
                            ClientRepository clientRepository,
@@ -39,7 +46,10 @@ public class EmailController {
                            UserRepository userRepository,
                            MediaService mediaService,
                            EmailAttachmentPolicy attachmentPolicy,
-                           EmailTemplateCatalog emailTemplates) {
+                           EmailTemplateCatalog emailTemplates,
+                           EmailSenderProfileService senders,
+                           EmailThreadService threads,
+                           MailboxService mailbox) {
         this.emailRepository = emailRepository;
         this.clientRepository = clientRepository;
         this.emailService = emailService;
@@ -47,61 +57,121 @@ public class EmailController {
         this.mediaService = mediaService;
         this.attachmentPolicy = attachmentPolicy;
         this.emailTemplates = emailTemplates;
+        this.senders = senders;
+        this.threads = threads;
+        this.mailbox = mailbox;
     }
 
     @GetMapping
     public String index(@RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "all") String folder,
                         @RequestParam(required = false) String flow,
                         @RequestParam(required = false) List<String> status,
                         @RequestParam(required = false) String search,
-                        @RequestParam(defaultValue = "created") String sort,
-                        @RequestParam(defaultValue = "desc") String direction,
+                        Authentication auth,
                         Model model) {
-        List<String> statuses = status == null ? List.of() : status;
-        String q = (search == null) ? "" : search;
-        String normalizedFlow = switch (flow == null ? "" : flow) {
-            case "in", "out" -> flow;
-            default -> "";
-        };
-        String normalizedSort = switch (sort) {
-            case "sent", "subject", "status" -> sort;
-            default -> "created";
-        };
-        String normalizedDir = "asc".equalsIgnoreCase(direction) ? "asc" : "desc";
-
-        var emailPage = emailRepository.findFiltered(
-                normalizedFlow, statuses, q, normalizedSort, normalizedDir,
-                org.springframework.data.domain.PageRequest.of(page, 25));
-
-        model.addAttribute("emails", emailPage.getContent());
-        model.addAttribute("page", emailPage);
-        model.addAttribute("filterStatuses", statuses);
-        model.addAttribute("filterSearch", search);
-        model.addAttribute("filterFlow", normalizedFlow);
-        model.addAttribute("sort", normalizedSort);
-        model.addAttribute("direction", normalizedDir);
+        var user = mailbox.currentUser(auth);
+        addMailboxModel(model, mailbox.mailbox(user, folder, search, page, flow, status));
+        model.addAttribute("selectedEmail", null);
+        model.addAttribute("selectedRootId", null);
         return "emails/index";
     }
 
     @GetMapping("/{id}")
-    public String show(@PathVariable Long id, Model model) {
-        Email email = emailRepository.findById(id).orElseThrow();
-        model.addAttribute("email", email);
-        model.addAttribute("attachments", mediaService.forOwner(email, "attachments"));
-        return "emails/show";
+    public String show(@PathVariable Long id,
+                       @RequestParam(defaultValue = "0") int page,
+                       @RequestParam(defaultValue = "all") String folder,
+                       @RequestParam(required = false) String flow,
+                       @RequestParam(required = false) List<String> status,
+                       @RequestParam(required = false) String search,
+                       Authentication auth,
+                       Model model) {
+        var user = mailbox.currentUser(auth);
+        var selected = mailbox.conversation(user, id, true);
+        addMailboxModel(model, mailbox.mailbox(user, folder, search, page, flow, status));
+
+        LinkedHashMap<Long, List<dev.dynamiq.talli.model.Media>> attachmentsByEmailId = new LinkedHashMap<>();
+        LinkedHashMap<Long, Boolean> canReplyByEmailId = new LinkedHashMap<>();
+        Long replyId = null;
+        for (Email message : selected.conversation()) {
+            attachmentsByEmailId.put(message.getId(), mediaService.forOwner(message, "attachments"));
+            try {
+                threads.replyContext(message.getId());
+                canReplyByEmailId.put(message.getId(), true);
+                replyId = message.getId();
+            } catch (IllegalArgumentException | IllegalStateException exception) {
+                canReplyByEmailId.put(message.getId(), false);
+            }
+        }
+
+        model.addAttribute("selectedEmail", selected.selectedEmail());
+        model.addAttribute("selectedRootId", selected.rootId());
+        model.addAttribute("conversation", selected.conversation());
+        model.addAttribute("selectedStarred", selected.starred());
+        model.addAttribute("selectedArchived", selected.archived());
+        model.addAttribute("attachmentsByEmailId", attachmentsByEmailId);
+        model.addAttribute("canReplyByEmailId", canReplyByEmailId);
+        model.addAttribute("replyId", replyId);
+        if (replyId == null) {
+            model.addAttribute("replyUnavailableReason",
+                    "This saved conversation does not have a valid reply recipient.");
+        }
+        return "emails/index";
+    }
+
+    @PostMapping("/{id}/mailbox")
+    public String updateMailbox(@PathVariable Long id,
+                                @RequestParam String action,
+                                @RequestParam(defaultValue = "all") String folder,
+                                @RequestParam(required = false) String search,
+                                @RequestParam(defaultValue = "0") int page,
+                                @RequestParam(defaultValue = "false") boolean returnToConversation,
+                                Authentication auth) {
+        mailbox.update(mailbox.currentUser(auth), id, action);
+        String path = returnToConversation ? "/emails/{id}" : "/emails";
+        UriComponentsBuilder redirect = UriComponentsBuilder.fromPath(path)
+                .queryParam("folder", MailboxService.normalizeFolder(folder))
+                .queryParam("page", Math.max(page, 0));
+        String normalizedSearch = MailboxService.normalizeSearch(search);
+        if (!normalizedSearch.isEmpty()) redirect.queryParam("search", "{search}");
+        return "redirect:" + redirect.encode().buildAndExpand(java.util.Map.of("id", id, "search", normalizedSearch)).toUriString();
     }
 
     @GetMapping("/new")
-    public String newForm(Authentication auth, Model model) {
-        model.addAttribute("email", new Email());
+    public String newForm(Authentication auth, @RequestParam(required = false) Long replyToEmailId, Model model) {
+        Email draft = new Email();
+        EmailSender sender = senders.resolve(null);
+        boolean providerThreadedReply = false;
+        if (replyToEmailId != null) {
+            var reply = threads.replyContext(replyToEmailId);
+            draft.setToAddress(reply.recipientAddress());
+            draft.setCc(reply.ccAddresses());
+            draft.setBcc(reply.bccAddresses());
+            draft.setSubject(reply.subject());
+            draft.setClient(emailRepository.findById(replyToEmailId).orElseThrow().getClient());
+            providerThreadedReply = reply.providerThreaded();
+            try { sender = senders.resolve(reply.senderAddressHint()); }
+            catch (IllegalArgumentException ignored) { /* A retired sender can be replaced by an active profile. */ }
+        }
+        model.addAttribute("email", draft);
+        model.addAttribute("replyToEmailId", replyToEmailId);
+        model.addAttribute("providerThreadedReply", providerThreadedReply);
         model.addAttribute("clients", clientRepository.findAll());
         model.addAttribute("users", userRepository.findAllByOrderByCreatedAtDesc());
-        model.addAttribute("signature", currentUserSignature(auth));
-        model.addAttribute("emailTemplates", emailTemplates.all());
+        model.addAttribute("signature", sender.signatureHtml());
+        model.addAttribute("senderProfiles", senders.options());
+        model.addAttribute("senderEmail", sender.address());
+        model.addAttribute("emailTemplates", emailTemplates.all(sender));
         model.addAttribute("maxAttachmentFileBytes", attachmentPolicy.maxFileBytes());
         model.addAttribute("maxAttachmentTotalBytes", attachmentPolicy.maxTotalBytes());
         model.addAttribute("attachmentLimitDescription", attachmentPolicy.limitDescription());
         return "emails/_form :: form";
+    }
+
+    @GetMapping("/sender-templates")
+    @ResponseBody
+    public List<EmailTemplateCatalog.Template> senderTemplates(@RequestParam String senderEmail) {
+        return emailTemplates.all(senders.resolve(senderEmail));
     }
 
     @PostMapping
@@ -116,6 +186,8 @@ public class EmailController {
                        @RequestParam(value = "bccUserId", required = false) List<Long> bccUserIds,
                        @RequestParam(value = "bccManual", required = false) String bccManual,
                        @RequestParam(value = "attachments", required = false) List<MultipartFile> attachments,
+                       @RequestParam(value = "senderEmail", required = false) String senderEmail,
+                       @RequestParam(value = "replyToEmailId", required = false) Long replyToEmailId,
                        RedirectAttributes redirectAttributes) {
         var attachmentError = attachmentPolicy.validationError(attachments);
         if (attachmentError.isPresent()) {
@@ -123,8 +195,29 @@ public class EmailController {
             return "redirect:/emails";
         }
 
+        EmailSender sender;
+        EmailThreadService.ReplyContext reply;
+        try {
+            sender = senders.resolve(senderEmail);
+            reply = replyToEmailId == null ? null : threads.replyContext(replyToEmailId);
+            if (reply != null && reply.providerThreaded()
+                    && !reply.recipientAddress().equalsIgnoreCase(toAddress.trim())) {
+                throw new IllegalArgumentException("Reply recipient must match the original conversation.");
+            }
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            redirectAttributes.addFlashAttribute("error", exception.getMessage());
+            return "redirect:/emails";
+        }
+
         Email email = new Email();
-        if (clientId != null) {
+        email.setFromAddress(sender.address());
+        if (reply != null) {
+            email.setClient(emailRepository.findById(replyToEmailId).orElseThrow().getClient());
+            email.setThreadRootId(reply.threadRootId());
+            email.setInReplyTo(reply.inReplyTo());
+            email.setReferencesHeader(reply.referencesHeader());
+            if (reply.providerThreaded()) subject = reply.subject();
+        } else if (clientId != null) {
             Client client = clientRepository.findById(clientId).orElse(null);
             email.setClient(client);
         }
@@ -143,10 +236,11 @@ public class EmailController {
         // legacy callers that still POST only `body`.
         String htmlToSend = (bodyHtml != null && !bodyHtml.isBlank()) ? bodyHtml : null;
         if (htmlToSend == null) {
-            String signature = currentUserSignature(auth);
+            String signature = sender.signatureHtml();
             if (signature != null && !signature.isBlank()) {
                 htmlToSend = "<div>" + EmailService.plainToHtml(body) + "</div>"
                            + "<br><div>" + signature + "</div>";
+                htmlToSend = emailTemplates.wrapBare(htmlToSend);
             }
         }
         if (htmlToSend != null) email.setBodyHtml(htmlToSend);
@@ -155,10 +249,12 @@ public class EmailController {
 
         try {
             List<EmailService.Attachment> outboundAttachments = storeAttachments(email, attachments);
-            EmailService.Result result = htmlToSend != null
-                    ? emailService.sendHtml(toAddress, cc, bcc, subject, body, htmlToSend, outboundAttachments)
-                    : emailService.sendPlain(toAddress, cc, bcc, subject, body, outboundAttachments);
+            EmailService.Result result = emailService.sendMessage(sender, toAddress, cc, bcc,
+                    subject, body, htmlToSend, outboundAttachments,
+                    reply == null || !reply.providerThreaded() ? java.util.Map.of()
+                            : java.util.Map.of("In-Reply-To", reply.inReplyTo(), "References", reply.referencesHeader()));
             email.setResendId(result.resendId());
+            email.setMessageId(result.messageId());
             email.setStatus("sent");
             email.setSentAt(LocalDateTime.now());
         } catch (Exception e) {
@@ -166,8 +262,18 @@ public class EmailController {
             email.setErrorMessage(e.getMessage());
         }
 
+        if (email.getThreadRootId() == null) email.setThreadRootId(email.getId());
         emailRepository.save(email);
-        return "redirect:/emails";
+        if ("sent".equals(email.getStatus())) {
+            redirectAttributes.addFlashAttribute("success", "Message sent.");
+            if (auth != null) {
+                redirectAttributes.addFlashAttribute("sentDraftKey", "talli:mail-draft:v1:"
+                        + auth.getName() + ":" + (replyToEmailId == null ? "new" : replyToEmailId));
+            }
+        } else {
+            redirectAttributes.addFlashAttribute("error", "This message wasn't sent. Your draft is still available.");
+        }
+        return reply == null ? "redirect:/emails" : "redirect:/emails/" + email.getId();
     }
 
     private List<EmailService.Attachment> storeAttachments(Email email, List<MultipartFile> files) {
@@ -203,10 +309,12 @@ public class EmailController {
         addresses.putIfAbsent(trimmed.toLowerCase(java.util.Locale.ROOT), trimmed);
     }
 
-    private String currentUserSignature(Authentication auth) {
-        if (auth == null || auth.getName() == null) return null;
-        return userRepository.findByEmail(auth.getName())
-                .map(User::getSignature)
-                .orElse(null);
+    private static void addMailboxModel(Model model, MailboxService.MailboxView mailbox) {
+        model.addAttribute("mailRows", mailbox.mailRows());
+        model.addAttribute("folderCounts", mailbox.folderCounts());
+        model.addAttribute("folder", mailbox.folder());
+        model.addAttribute("search", mailbox.search());
+        model.addAttribute("page", mailbox.mailRows().getNumber());
     }
+
 }

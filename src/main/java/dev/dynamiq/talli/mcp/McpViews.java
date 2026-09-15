@@ -2,6 +2,7 @@ package dev.dynamiq.talli.mcp;
 
 import dev.dynamiq.talli.model.Client;
 import dev.dynamiq.talli.model.Expense;
+import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.model.Invoice;
 import dev.dynamiq.talli.model.InvoiceItem;
 import dev.dynamiq.talli.model.Payment;
@@ -104,6 +105,28 @@ public final class McpViews {
                 subscription.isActive());
     }
 
+    public static EmailView email(Email email) {
+        return email(email, email.getBody(), email.getBodyHtml());
+    }
+
+    public static EmailView emailSummary(Email email) {
+        String body = email.getBody() == null ? "" : email.getBody();
+        String excerpt = body.length() <= 250 ? body : body.substring(0, 247) + "...";
+        return email(email, excerpt, null);
+    }
+
+    private static EmailView email(Email email, String body, String bodyHtml) {
+        return new EmailView(email.getId(), email.getClient() == null ? null : email.getClient().getId(),
+                email.getDirection(), email.getFromAddress(), email.getToAddress(), email.getCc(),
+                email.getSubject(), body, bodyHtml, email.getSource(), email.getInitiatedBy(),
+                email.getResendId(), email.getStatus(), email.getErrorMessage(), email.getBounceReason(),
+                email.getCreatedAt(), email.getSentAt(),
+                email.getReceivedAt(), email.getDeliveredAt(), email.getBouncedAt(),
+                email.getComplainedAt(), email.getOpenedAt(), email.getClickedAt(),
+                email.getMessageId(), email.getInReplyTo(),
+                email.getReferencesHeader(), email.getThreadRootId());
+    }
+
     public record ClientView(Long id, String name, String email, String phone,
                              String billingAddress, Integer paymentTermsDays, String notes,
                              LocalDateTime createdAt, LocalDateTime updatedAt) {}
@@ -153,4 +176,15 @@ public final class McpViews {
                                    LocalDate cancelledOn, LocalDate nextDueOn,
                                    String paymentMethod, String manageUrl, String cancelUrl,
                                    boolean active) {}
+
+    /** Email content is returned only by MCP tools protected with send-emails. */
+    public record EmailView(Long id, Long clientId, String direction, String fromAddress,
+                            String toAddress, String ccAddress, String subject, String body, String bodyHtml,
+                            String source, String initiatedBy, String providerId, String status,
+                            String errorMessage, String bounceReason,
+                            LocalDateTime createdAt, LocalDateTime sentAt, LocalDateTime receivedAt,
+                            LocalDateTime deliveredAt, LocalDateTime bouncedAt,
+                            LocalDateTime complainedAt, LocalDateTime openedAt, LocalDateTime clickedAt,
+                            String messageId, String inReplyTo, String referencesHeader,
+                            Long threadRootId) {}
 }

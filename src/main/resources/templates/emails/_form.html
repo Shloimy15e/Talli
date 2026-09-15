@@ -2,494 +2,260 @@
 <html xmlns:th="http://www.thymeleaf.org">
   <body>
     <div th:fragment="form"
-         class="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 backdrop-blur-sm overflow-y-auto py-10"
-         @click.self="$dispatch('close-modal')">
+         class="mail-compose-host"
+         th:attr="data-signature=${signature} ?: '',data-sender=${senderEmail},data-client=${email.client != null ? email.client.id : ''},data-reply-id=${replyToEmailId} ?: '',data-provider-threaded=${providerThreadedReply},data-actor=${#authentication.name},data-to-address=${email.toAddress} ?: '',data-subject=${email.subject} ?: '',data-cc=${email.cc} ?: '',data-bcc=${email.bcc} ?: ''"
+         x-data="mailComposer($el)"
+         x-id="['mail-compose-title', 'mail-preview-title', 'to-address', 'sender-email', 'subject', 'compose-client', 'compose-template']"
+         @keydown.escape.window="handleEscape()">
+      <section class="mail-compose-window"
+               :class="{ 'is-minimized': minimized, 'is-expanded': expanded, 'is-inline': inlineMode }"
+               role="dialog" aria-modal="false" :aria-labelledby="$id('mail-compose-title')">
+        <header class="mail-compose-header" @dblclick.self="if (!inlineMode) minimized = !minimized">
+          <div class="min-w-0">
+            <span :id="$id('mail-compose-title')" class="mail-compose-title"
+                  th:text="${replyToEmailId != null ? 'Reply to conversation' : 'New message'}">New message</span>
+            <span class="mail-compose-draft-status" x-text="draftStatus" aria-live="polite"></span>
+          </div>
+          <div class="mail-compose-header-actions">
+            <button type="button" class="mail-compose-icon-button" x-show="!inlineMode"
+                    @click="minimized = !minimized" :aria-label="minimized ? 'Restore composer' : 'Minimize composer'"
+                    :title="minimized ? 'Restore' : 'Minimize'">
+              <i data-lucide="minus" class="h-4 w-4"></i>
+            </button>
+            <button type="button" class="mail-compose-icon-button" x-show="!inlineMode &amp;&amp; !minimized"
+                    @click="expanded = !expanded" :aria-label="expanded ? 'Exit full screen' : 'Expand composer'"
+                    :title="expanded ? 'Exit full screen' : 'Expand'">
+              <i data-lucide="maximize-2" class="h-4 w-4" x-show="!expanded"></i>
+              <i data-lucide="minimize-2" class="h-4 w-4" x-show="expanded"></i>
+            </button>
+            <button type="button" class="mail-compose-icon-button" @click="closeComposer()"
+                    aria-label="Save draft and close" title="Save draft and close">
+              <i data-lucide="x" class="h-4 w-4"></i>
+            </button>
+          </div>
+        </header>
 
-      <style>
-        .compose-editor { min-height: 16rem; resize: vertical; overflow: auto; }
-        .compose-editor:focus { outline: none; }
-        .compose-editor:empty::before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; }
-        .compose-editor a { color: #ea7c28; text-decoration: underline; }
-        .compose-editor h1 { font-size: 1.5rem; font-weight: 600; margin: 0.75rem 0 0.5rem; }
-        .compose-editor h2 { font-size: 1.25rem; font-weight: 600; margin: 0.6rem 0 0.4rem; }
-        .compose-editor h3 { font-size: 1.1rem; font-weight: 600; margin: 0.5rem 0 0.35rem; }
-        .compose-editor blockquote { border-left: 3px solid #e2e8f0; padding-left: 0.75rem; color: #64748b; margin: 0.5rem 0; }
-        .compose-editor pre { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 0.5rem 0.75rem; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; overflow-x: auto; }
-        .compose-editor ul, .compose-editor ol { padding-left: 1.5rem; margin: 0.35rem 0; }
-        .compose-editor hr { border: 0; border-top: 1px solid #e2e8f0; margin: 0.75rem 0; }
-        .compose-editor [data-signature] { margin-top: 1.5rem; color: #64748b; }
-        .compose-source { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 12px; line-height: 1.6; min-height: 16rem; resize: vertical; }
-      </style>
-
-      <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl mx-4"
-           x-show="modalOpen"
-           x-transition:enter="ease-out duration-200"
-           x-transition:enter-start="opacity-0 scale-95 translate-y-2"
-           x-transition:enter-end="opacity-100 scale-100 translate-y-0"
-           x-transition:leave="ease-in duration-150"
-           x-transition:leave-start="opacity-100 scale-100 translate-y-0"
-           x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-           th:attr="data-signature=${signature} ?: ''"
-           x-data="{
-             clientId: '',
-             mode: 'rich',
-             html: '',
-             plain: '',
-             previewOpen: false,
-             templateHtml: '',
-             attachmentNames: [],
-             attachmentError: '',
-             compose() {
-               // Wrap the editor body HTML in the selected template (if any).
-               // Uses a function replacer so literal $ sequences in the body
-               // are not interpreted as regex backreferences.
-               const body = this.html || '';
-               if (!this.templateHtml) return body;
-               return this.templateHtml.replace('{{body}}', () => body);
-             },
-             includeSignature: ($el.dataset.signature || '').trim().length > 0,
-             signature: ($el.dataset.signature || ''),
-             templateId: '',
-             exec(cmd, value) {
-               this.$refs.editor.focus();
-               document.execCommand(cmd, false, value || null);
-               this.syncFromRich();
-             },
-             makeLink() {
-               const url = prompt('URL:', 'https://');
-               if (url) this.exec('createLink', url);
-             },
-             insertImage() {
-               const url = prompt('Image URL:', 'https://');
-               if (url) this.exec('insertImage', url);
-             },
-             setBlock(tag) {
-               if (!tag) return;
-               this.exec('formatBlock', tag);
-             },
-             setColor(color) {
-               if (!color) return;
-               this.exec('foreColor', color);
-             },
-             setFont(face) {
-               if (!face) return;
-               this.exec('fontName', face);
-             },
-             syncFromRich() {
-               this.html = this.$refs.editor.innerHTML;
-               this.plain = this.$refs.editor.innerText;
-             },
-             toggleSignature() {
-               this.includeSignature = !this.includeSignature;
-               this.applySignature();
-             },
-             applySignature() {
-               const editor = this.$refs.editor;
-               if (!editor) return;
-               const existing = editor.querySelector('[data-signature]');
-               if (this.includeSignature) {
-                 if (!existing && this.signature.trim().length > 0) {
-                   // If the editor has no real content yet, seed a couple of
-                   // empty lines so the user has a spot to type above the signature.
-                   const bodyEmpty = editor.innerText.trim().length === 0;
-                   if (bodyEmpty) {
-                     editor.innerHTML = '<div><br></div><div><br></div>';
-                   }
-                   const wrap = document.createElement('div');
-                   wrap.setAttribute('data-signature', '1');
-                   wrap.innerHTML = this.signature;
-                   editor.appendChild(wrap);
-                 }
-               } else if (existing) {
-                 existing.remove();
-               }
-               this.syncFromRich();
-             },
-             toggleMode() {
-               if (this.mode === 'rich') {
-                 this.syncFromRich();
-                 this.mode = 'source';
-               } else {
-                 this.mode = 'rich';
-                 this.$nextTick(() => {
-                   this.$refs.editor.innerHTML = this.html;
-                   this.syncFromRich();
-                 });
-               }
-             },
-             applyTemplate(html) {
-               // Templates wrap the body, they don't replace it. Just store
-               // the wrapper — compose() injects the current body on every render.
-               this.templateHtml = html || '';
-               // Auto-reveal the preview so the user can see the styled output.
-               if (this.templateHtml) this.previewOpen = true;
-             },
-             validateAttachments(event) {
-               const input = event.target;
-               const files = Array.from(input.files || []);
-               const maxFileBytes = Number(input.dataset.maxFileBytes);
-               const maxTotalBytes = Number(input.dataset.maxTotalBytes);
-               const oversizedFile = files.find(file => file.size > maxFileBytes);
-
-               this.attachmentError = '';
-               this.attachmentNames = [];
-
-               if (oversizedFile) {
-                 this.attachmentError = `${oversizedFile.name} is too large. Each attachment must be ${this.formatFileSize(maxFileBytes)} or smaller.`;
-                 input.value = '';
-                 return;
-               }
-
-               const totalBytes = files.reduce((total, file) => total + file.size, 0);
-               if (totalBytes > maxTotalBytes) {
-                 this.attachmentError = `The selected attachments exceed the ${this.formatFileSize(maxTotalBytes)} total limit. Remove a file or choose smaller files.`;
-                 input.value = '';
-                 return;
-               }
-
-               this.attachmentNames = files.map(file => file.name);
-             },
-             formatFileSize(bytes) {
-               return `${Math.round(bytes / (1024 * 1024))} MB`;
-             },
-             onSubmit(event) {
-               if (this.attachmentError) {
-                 event.preventDefault();
-                 return;
-               }
-               if (this.mode === 'source') {
-                 this.$refs.editor.innerHTML = this.html;
-               }
-               this.syncFromRich();
-             }
-           }"
-           x-init="$nextTick(() => applySignature())">
-
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-          <h2 class="text-lg font-semibold">Compose Email</h2>
-          <button type="button" @click="$dispatch('close-modal')"
-                  class="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
+        <div class="mail-compose-notice" x-show="draftRestored || filesNeedReattach" x-cloak>
+          <span>
+            <strong x-show="draftRestored">Local draft restored.</strong>
+            <span x-show="filesNeedReattach"> Attachments cannot be stored in the browser; add them again before sending.</span>
+          </span>
+          <button type="button" class="mail-compose-link whitespace-nowrap" @click="discardDraft()">Discard draft</button>
         </div>
 
-        <form th:action="@{/emails}" method="post" enctype="multipart/form-data" class="p-6 space-y-5"
-              @submit="onSubmit($event)">
+        <form th:action="@{/emails}" method="post" enctype="multipart/form-data"
+              class="contents" @submit="onSubmit($event)" @input.debounce.400ms="scheduleDraft()" @change="scheduleDraft()">
+          <input type="hidden" name="replyToEmailId" th:value="${replyToEmailId}" th:if="${replyToEmailId != null}">
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Client (optional)</label>
-              <select name="clientId" x-model="clientId"
-                      onchange="if(this.value) { document.getElementById('toAddress').value = this.options[this.selectedIndex].dataset.email || ''; }"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-                <option value="">— None —</option>
-                <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}" th:attr="data-email=${c.email}">Client</option>
-              </select>
-            </div>
+          <div class="mail-compose-content">
+            <div class="mail-compose-fields">
+              <div class="mail-compose-field">
+                <label :for="$id('to-address')">To</label>
+                <input type="email" :id="$id('to-address')" name="toAddress" required x-ref="toAddress" x-model="toAddress"
+                       th:value="${email.toAddress}" th:readonly="${providerThreadedReply}"
+                       autocomplete="section-to email" placeholder="recipient@example.com">
+                <div class="mail-compose-inline-actions">
+                  <button type="button" class="mail-compose-link" @click="ccOpen = !ccOpen" :aria-expanded="ccOpen">Cc</button>
+                  <button type="button" class="mail-compose-link" @click="bccOpen = !bccOpen" :aria-expanded="bccOpen">Bcc</button>
+                </div>
+              </div>
 
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Template (optional)</label>
-              <select x-model="templateId"
-                      @change="applyTemplate($event.target.selectedOptions[0]?.dataset.html)"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-                <option value="">— Blank —</option>
-                <option th:each="t : ${emailTemplates}"
-                        th:value="${t.id}"
-                        th:attr="data-html=${t.html}"
-                        th:text="${t.name}">Template</option>
-              </select>
-            </div>
-          </div>
+              <div class="mail-compose-recipient-panel" x-show="ccOpen" x-cloak>
+                <div class="mail-compose-user-list" x-show="clientId" x-cloak th:if="${!#lists.isEmpty(users)}">
+                  <label th:each="u : ${users}" th:if="${u.client != null}" th:attr="data-client-id=${u.client.id}"
+                         x-show="$el.dataset.clientId === String(clientId)" class="mail-compose-user-option">
+                    <input type="checkbox" name="ccUserId" th:value="${u.id}">
+                    <span th:text="${u.name + ' · ' + u.email}">User</span>
+                  </label>
+                </div>
+                <input type="text" name="ccManual" x-model="ccManual" autocomplete="off"
+                       aria-label="Cc email addresses" placeholder="Cc addresses, separated by commas">
+              </div>
 
-          <div>
-            <label for="toAddress" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">To</label>
-            <input type="email" id="toAddress" name="toAddress" required autofocus
-                   autocomplete="section-to email"
-                   placeholder="recipient@example.com"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-          </div>
+              <div class="mail-compose-recipient-panel" x-show="bccOpen" x-cloak>
+                <div class="mail-compose-user-list" x-show="clientId" x-cloak th:if="${!#lists.isEmpty(users)}">
+                  <label th:each="u : ${users}" th:if="${u.client != null}" th:attr="data-client-id=${u.client.id}"
+                         x-show="$el.dataset.clientId === String(clientId)" class="mail-compose-user-option">
+                    <input type="checkbox" name="bccUserId" th:value="${u.id}">
+                    <span th:text="${u.name + ' · ' + u.email}">User</span>
+                  </label>
+                </div>
+                <input type="text" name="bccManual" x-model="bccManual" autocomplete="off"
+                       aria-label="Bcc email addresses" placeholder="Bcc addresses, separated by commas">
+              </div>
 
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">CC (optional)</label>
-            <div x-show="clientId" x-cloak th:if="${!#lists.isEmpty(users)}"
-                 class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5 mb-2">
-              <label th:each="u : ${users}"
-                     th:if="${u.client != null}"
-                     th:attr="data-client-id=${u.client.id}"
-                     x-show="$el.dataset.clientId === clientId"
-                     class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-                <input type="checkbox" name="ccUserId" th:value="${u.id}"
-                       class="w-4 h-4 rounded border-slate-300 text-[#ea7c28] focus:ring-[#ea7c28]/30">
-                <span th:text="${u.name + ' — ' + u.email}">User</span>
-              </label>
-            </div>
-            <input type="text" name="ccManual"
-                   autocomplete="off"
-                   placeholder="Additional email addresses (comma-separated)"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-          </div>
+              <div class="mail-compose-field">
+                <label :for="$id('sender-email')">From</label>
+                <select :id="$id('sender-email')" name="senderEmail" x-ref="sender" x-model="senderEmail" data-ui-select
+                        @change="changeSender($event.target.selectedOptions[0])">
+                  <option th:each="sender : ${senderProfiles}" th:value="${sender.address}"
+                          th:attr="data-signature=${sender.signatureHtml}"
+                          th:text="${sender.name} + ' &lt;' + ${sender.address} + '&gt;'">Sender</option>
+                </select>
+                <a href="/emails/senders" class="mail-compose-link">Manage</a>
+              </div>
 
-          <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">BCC (optional)</label>
-            <div x-show="clientId" x-cloak th:if="${!#lists.isEmpty(users)}"
-                 class="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1.5 mb-2">
-              <label th:each="u : ${users}"
-                     th:if="${u.client != null}"
-                     th:attr="data-client-id=${u.client.id}"
-                     x-show="$el.dataset.clientId === clientId"
-                     class="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-                <input type="checkbox" name="bccUserId" th:value="${u.id}"
-                       class="w-4 h-4 rounded border-slate-300 text-[#ea7c28] focus:ring-[#ea7c28]/30">
-                <span th:text="${u.name + ' — ' + u.email}">User</span>
-              </label>
-            </div>
-            <input type="text" name="bccManual"
-                   autocomplete="off"
-                   placeholder="Additional email addresses (comma-separated)"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-          </div>
-
-          <div>
-            <label for="subject" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Subject</label>
-            <input type="text" id="subject" name="subject" required
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
-          </div>
-
-          <div>
-            <label for="attachments" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Attachments (optional)</label>
-            <label for="attachments"
-                   class="flex items-center justify-center gap-2 w-full px-4 py-3 border border-dashed border-slate-300 rounded-lg bg-slate-50 text-sm text-slate-600 hover:border-[#ea7c28] hover:text-[#ea7c28] cursor-pointer transition">
-              <i data-lucide="paperclip" class="w-4 h-4"></i>
-              <span x-text="attachmentNames.length ? attachmentNames.length + (attachmentNames.length === 1 ? ' file selected' : ' files selected') : 'Choose files'">Choose files</span>
-            </label>
-            <input type="file" id="attachments" name="attachments" multiple class="sr-only"
-                   x-ref="attachments"
-                   data-max-file-bytes="20971520"
-                   data-max-total-bytes="26214400"
-                   th:data-max-file-bytes="${maxAttachmentFileBytes}"
-                   th:data-max-total-bytes="${maxAttachmentTotalBytes}"
-                   aria-describedby="attachmentsHelp attachmentsError"
-                   :aria-invalid="attachmentError ? 'true' : 'false'"
-                   @change="validateAttachments($event)">
-            <p id="attachmentsHelp" class="mt-1.5 text-xs text-slate-400"
-               th:text="${attachmentLimitDescription}">Up to 20 MB per file, 25 MB total.</p>
-            <p id="attachmentsError" x-show="attachmentError" x-cloak x-text="attachmentError"
-               role="alert" aria-live="polite"
-               class="mt-2 text-xs font-medium text-red-700"></p>
-            <ul x-show="attachmentNames.length" x-cloak class="mt-2 space-y-1">
-              <template x-for="name in attachmentNames" :key="name">
-                <li class="flex items-center gap-2 text-xs text-slate-600">
-                  <span class="text-slate-400">•</span>
-                  <span x-text="name" class="truncate"></span>
-                </li>
-              </template>
-            </ul>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500">Message</label>
-              <div class="flex items-center gap-3">
-                <label class="inline-flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none"
-                       th:if="${signature != null and !signature.isEmpty()}">
-                  <input type="checkbox" :checked="includeSignature" @change="toggleSignature()"
-                         class="w-3.5 h-3.5 rounded border-slate-300 text-[#ea7c28] focus:ring-[#ea7c28]/30">
-                  Signature
-                </label>
-                <button type="button" @click="toggleMode()"
-                        class="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900 transition">
-                  <i data-lucide="code-2" class="w-3.5 h-3.5"></i>
-                  <span x-text="mode === 'rich' ? 'HTML' : 'Rich'"></span>
-                </button>
+              <div class="mail-compose-field">
+                <label :for="$id('subject')">Subject</label>
+                <input type="text" :id="$id('subject')" name="subject" required x-ref="subject" x-model="subject"
+                       th:value="${email.subject}" th:readonly="${providerThreadedReply}"
+                       autocomplete="off" placeholder="What is this message about?">
+                <span></span>
               </div>
             </div>
 
-            <div class="rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-[#ea7c28]/30 focus-within:border-[#ea7c28]">
-              <!-- Toolbar -->
-              <div class="flex items-center flex-wrap gap-0.5 px-2 py-1.5 border-b border-slate-200 bg-slate-50 rounded-t-lg"
-                   x-show="mode === 'rich'">
-                <!-- Undo / Redo -->
-                <button type="button" @mousedown.prevent @click="exec('undo')" title="Undo (Ctrl+Z)"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="undo-2" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('redo')" title="Redo (Ctrl+Y)"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="redo-2" class="w-4 h-4"></i>
-                </button>
-                <span class="w-px h-5 bg-slate-200 mx-1"></span>
-
-                <!-- Block style -->
-                <select @mousedown.stop
-                        @change="setBlock($event.target.value); $event.target.value = ''"
-                        class="px-2 py-1 rounded text-xs bg-white border border-slate-200 hover:bg-slate-50 focus:outline-none text-slate-700"
-                        title="Paragraph style">
-                  <option value="">Style</option>
-                  <option value="p">Paragraph</option>
-                  <option value="h1">Heading 1</option>
-                  <option value="h2">Heading 2</option>
-                  <option value="h3">Heading 3</option>
-                  <option value="blockquote">Blockquote</option>
-                  <option value="pre">Code block</option>
+            <div class="mail-compose-options" x-show="optionsOpen" x-cloak>
+              <div class="mail-compose-field">
+                <label :for="$id('compose-client')">Client</label>
+                <select :id="$id('compose-client')" name="clientId" x-model="clientId" data-ui-select data-ui-select-search="Search clients" th:disabled="${replyToEmailId != null}"
+                        @change="changeClient($event)">
+                  <option value="">No client</option>
+                  <option th:each="c : ${clients}" th:value="${c.id}" th:text="${c.name}"
+                          th:attr="data-email=${c.email}">Client</option>
                 </select>
-
-                <!-- Font family -->
-                <select @mousedown.stop
-                        @change="setFont($event.target.value); $event.target.value = ''"
-                        class="px-2 py-1 rounded text-xs bg-white border border-slate-200 hover:bg-slate-50 focus:outline-none text-slate-700"
-                        title="Font">
-                  <option value="">Font</option>
-                  <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">System sans-serif</option>
-                  <option value="Arial, Helvetica, sans-serif" style="font-family:Arial,Helvetica,sans-serif;">Arial</option>
-                  <option value="Verdana, Geneva, sans-serif" style="font-family:Verdana,Geneva,sans-serif;">Verdana</option>
-                  <option value="'Trebuchet MS', sans-serif" style="font-family:'Trebuchet MS',sans-serif;">Trebuchet MS</option>
-                  <option value="Georgia, 'Times New Roman', serif" style="font-family:Georgia,'Times New Roman',serif;">Georgia</option>
-                  <option value="'Times New Roman', Times, serif" style="font-family:'Times New Roman',Times,serif;">Times New Roman</option>
-                  <option value="'Courier New', Courier, monospace" style="font-family:'Courier New',Courier,monospace;">Courier New</option>
-                </select>
-                <span class="w-px h-5 bg-slate-200 mx-1"></span>
-
-                <!-- Inline formatting -->
-                <button type="button" @mousedown.prevent @click="exec('bold')" title="Bold (Ctrl+B)"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="bold" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('italic')" title="Italic (Ctrl+I)"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="italic" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('underline')" title="Underline (Ctrl+U)"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="underline" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('strikeThrough')" title="Strikethrough"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="strikethrough" class="w-4 h-4"></i>
-                </button>
-
-                <!-- Color -->
-                <label class="relative p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition cursor-pointer"
-                       title="Text color" @mousedown.prevent>
-                  <i data-lucide="palette" class="w-4 h-4"></i>
-                  <input type="color"
-                         @input="setColor($event.target.value)"
-                         class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                </label>
-                <span class="w-px h-5 bg-slate-200 mx-1"></span>
-
-                <!-- Alignment -->
-                <button type="button" @mousedown.prevent @click="exec('justifyLeft')" title="Align left"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="align-left" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('justifyCenter')" title="Align center"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="align-center" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('justifyRight')" title="Align right"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="align-right" class="w-4 h-4"></i>
-                </button>
-                <span class="w-px h-5 bg-slate-200 mx-1"></span>
-
-                <!-- Lists & indent -->
-                <button type="button" @mousedown.prevent @click="exec('insertUnorderedList')" title="Bulleted list"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="list" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('insertOrderedList')" title="Numbered list"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="list-ordered" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('outdent')" title="Decrease indent"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="indent-decrease" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('indent')" title="Increase indent"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="indent-increase" class="w-4 h-4"></i>
-                </button>
-                <span class="w-px h-5 bg-slate-200 mx-1"></span>
-
-                <!-- Links, images, rule -->
-                <button type="button" @mousedown.prevent @click="makeLink()" title="Insert link"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="link" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('unlink')" title="Remove link"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="link-2-off" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="insertImage()" title="Insert image"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="image" class="w-4 h-4"></i>
-                </button>
-                <button type="button" @mousedown.prevent @click="exec('insertHorizontalRule')" title="Horizontal rule"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition">
-                  <i data-lucide="minus" class="w-4 h-4"></i>
-                </button>
-
-                <button type="button" @mousedown.prevent @click="exec('removeFormat')" title="Clear formatting"
-                        class="p-1.5 rounded hover:bg-white text-slate-600 hover:text-slate-900 transition ml-auto">
-                  <i data-lucide="eraser" class="w-4 h-4"></i>
-                </button>
               </div>
-
-              <!-- Rich editor -->
-              <div x-ref="editor"
-                   x-show="mode === 'rich'"
-                   contenteditable="true"
-                   @input="syncFromRich()"
-                   @blur="syncFromRich()"
-                   data-placeholder="Write your message…"
-                   class="compose-editor p-4 text-sm text-slate-800"></div>
-
-              <!-- HTML source view -->
-              <textarea x-show="mode === 'source'"
-                        x-model="html"
-                        spellcheck="false"
-                        autocomplete="off"
-                        class="compose-source w-full p-3 bg-slate-50 text-slate-800 border-0 rounded-b-lg focus:outline-none focus:ring-0"></textarea>
+              <div class="mail-compose-field">
+                <label :for="$id('compose-template')">Template</label>
+                <select :id="$id('compose-template')" x-model="templateId" x-ref="templates" data-ui-select data-ui-select-search="Search templates"
+                        @change="applyTemplate($event.target.selectedOptions[0]?.dataset.html)">
+                  <option value="">Blank message</option>
+                  <option th:each="t : ${emailTemplates}" th:value="${t.id}"
+                          th:attr="data-html=${t.html}" th:text="${t.name}">Template</option>
+                </select>
+              </div>
+              <div class="mail-compose-option-actions">
+                <button type="button" class="mail-compose-link" @click="toggleMode()" x-text="mode === 'rich' ? 'Edit HTML source' : 'Return to rich text'"></button>
+                <label x-show="signature"><input type="checkbox" :checked="includeSignature" @change="toggleSignature()"> Include signature</label>
+              </div>
             </div>
 
-            <!-- Hidden inputs submitted with the form. bodyHtml is the body
-                 wrapped in the selected template; body is the plain-text fallback. -->
+            <p class="mail-compose-status" x-show="senderLoading" x-cloak>Updating sender signature and templates…</p>
+            <p class="mail-compose-error" x-show="senderError" x-cloak x-text="senderError" role="alert"></p>
+
+            <div class="mail-compose-toolbar" x-show="formattingOpen &amp;&amp; mode === 'rich'" x-cloak aria-label="Message formatting">
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('undo')" title="Undo" aria-label="Undo"><i data-lucide="undo-2" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('redo')" title="Redo" aria-label="Redo"><i data-lucide="redo-2" class="h-4 w-4"></i></button>
+              <span class="mail-compose-divider"></span>
+              <select class="mail-compose-tool" data-ui-select data-ui-select-compact @change="setBlock($event.target.value); $event.target.value = ''" title="Paragraph style" aria-label="Paragraph style">
+                <option value="">Style</option><option value="p">Paragraph</option><option value="h1">Heading 1</option>
+                <option value="h2">Heading 2</option><option value="h3">Heading 3</option>
+                <option value="blockquote">Quote</option><option value="pre">Code</option>
+              </select>
+              <select class="mail-compose-tool" data-ui-select data-ui-select-compact @change="setFont($event.target.value); $event.target.value = ''" title="Font" aria-label="Font">
+                <option value="">Font</option>
+                <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">System sans</option>
+                <option value="Arial, Helvetica, sans-serif">Arial</option><option value="Verdana, Geneva, sans-serif">Verdana</option>
+                <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option><option value="Georgia, 'Times New Roman', serif">Georgia</option>
+                <option value="'Times New Roman', Times, serif">Times New Roman</option><option value="'Courier New', Courier, monospace">Courier New</option>
+              </select>
+              <span class="mail-compose-divider"></span>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('bold')" title="Bold" aria-label="Bold"><i data-lucide="bold" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('italic')" title="Italic" aria-label="Italic"><i data-lucide="italic" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('underline')" title="Underline" aria-label="Underline"><i data-lucide="underline" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('strikeThrough')" title="Strikethrough" aria-label="Strikethrough"><i data-lucide="strikethrough" class="h-4 w-4"></i></button>
+              <label class="mail-compose-tool relative" title="Text color" aria-label="Text color"><i data-lucide="palette" class="h-4 w-4"></i><input type="color" class="absolute inset-0 h-full w-full cursor-pointer opacity-0" @input="setColor($event.target.value)"></label>
+              <span class="mail-compose-divider"></span>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('justifyLeft')" title="Align left" aria-label="Align left"><i data-lucide="align-left" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('justifyCenter')" title="Align center" aria-label="Align center"><i data-lucide="align-center" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('justifyRight')" title="Align right" aria-label="Align right"><i data-lucide="align-right" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('insertUnorderedList')" title="Bulleted list" aria-label="Bulleted list"><i data-lucide="list" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('insertOrderedList')" title="Numbered list" aria-label="Numbered list"><i data-lucide="list-ordered" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('outdent')" title="Decrease indent" aria-label="Decrease indent"><i data-lucide="indent-decrease" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('indent')" title="Increase indent" aria-label="Increase indent"><i data-lucide="indent-increase" class="h-4 w-4"></i></button>
+              <span class="mail-compose-divider"></span>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="makeLink()" title="Insert link" aria-label="Insert link"><i data-lucide="link" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('unlink')" title="Remove link" aria-label="Remove link"><i data-lucide="link-2-off" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="insertImage()" title="Insert image" aria-label="Insert image"><i data-lucide="image" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('insertHorizontalRule')" title="Horizontal rule" aria-label="Horizontal rule"><i data-lucide="minus" class="h-4 w-4"></i></button>
+              <button type="button" class="mail-compose-tool" @mousedown.prevent @click="exec('removeFormat')" title="Clear formatting" aria-label="Clear formatting"><i data-lucide="eraser" class="h-4 w-4"></i></button>
+            </div>
+
+            <div x-ref="editor" x-show="mode === 'rich'" contenteditable="true" role="textbox"
+                 aria-multiline="true" aria-label="Message" data-placeholder="Write your message…"
+                 class="mail-compose-editor" @input="syncFromRich()" @blur="syncFromRich()" @paste="handlePaste($event)"></div>
+            <textarea x-ref="source" x-show="mode === 'source'" x-cloak x-model="html" spellcheck="false" autocomplete="off"
+                      aria-label="Message HTML source" class="mail-compose-source"></textarea>
+
             <input type="hidden" name="bodyHtml" :value="compose()">
             <input type="hidden" name="body" :value="plain">
 
-            <!-- Collapsible live preview -->
-            <div class="mt-3 border border-slate-200 rounded-lg overflow-hidden">
-              <button type="button" @click="previewOpen = !previewOpen"
-                      class="w-full flex items-center justify-between px-4 py-2 bg-slate-50 hover:bg-slate-100 text-xs font-semibold uppercase tracking-wider text-slate-500 transition">
-                <span class="inline-flex items-center gap-1.5">
-                  <i data-lucide="eye" class="w-3.5 h-3.5"></i>
-                  Preview
-                  <span x-show="templateHtml" x-cloak
-                        class="ml-1 px-1.5 py-0.5 rounded bg-[#ea7c28]/10 text-[#ea7c28] text-[10px] normal-case tracking-normal font-medium">
-                    template active
-                  </span>
+            <div class="mail-compose-attachments" x-show="attachmentNames.length || attachmentError || filesNeedReattach" x-cloak>
+              <template x-for="(file, index) in attachmentNames" :key="file.name + index">
+                <span class="mail-compose-chip"><i data-lucide="paperclip" class="h-3.5 w-3.5 shrink-0"></i>
+                  <span class="mail-compose-chip-name" x-text="file.name"></span>
+                  <button type="button" @click="removeAttachment(index)" :aria-label="'Remove ' + file.name"><i data-lucide="x" class="h-3.5 w-3.5"></i></button>
                 </span>
-                <i data-lucide="chevron-down" class="w-4 h-4 transition"
-                   :class="previewOpen ? 'rotate-180' : ''"></i>
-              </button>
-              <div x-show="previewOpen" x-cloak class="bg-white">
-                <iframe sandbox=""
-                        :srcdoc="compose()"
-                        class="w-full bg-white"
-                        style="min-height: 260px;"
-                        onload="try { this.style.height = (this.contentWindow.document.documentElement.scrollHeight + 24) + 'px'; } catch(e) {}"></iframe>
-              </div>
+              </template>
+              <span class="text-xs text-amber-700" x-show="filesNeedReattach">Reattach files from the restored draft.</span>
+              <span class="text-xs text-red-700" x-show="attachmentError" x-text="attachmentError" role="alert" aria-live="polite"></span>
             </div>
           </div>
 
-          <div class="flex items-center justify-end gap-3 pt-2">
-            <button type="button" @click="$dispatch('close-modal')"
-                    class="text-sm text-slate-600 hover:text-slate-900 px-4 py-2">Cancel</button>
-            <button type="submit"
-                    class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
-              Send
-            </button>
-          </div>
+          <footer class="mail-compose-footer">
+            <button type="submit" class="mail-compose-send" :disabled="senderLoading || !!senderError || !!attachmentError || isSending"
+                    x-text="isSending ? 'Sending…' : 'Send'">Send</button>
+            <button type="button" class="mail-compose-tool cursor-pointer" title="Attach files" aria-label="Attach files" @click="$refs.attachments.click()"><i data-lucide="paperclip" class="h-4 w-4"></i></button>
+            <input type="file" name="attachments" multiple class="sr-only" x-ref="attachments"
+                   data-max-file-bytes="20971520" data-max-total-bytes="26214400"
+                   th:data-max-file-bytes="${maxAttachmentFileBytes}" th:data-max-total-bytes="${maxAttachmentTotalBytes}"
+                   th:attr="aria-label=${attachmentLimitDescription}" :aria-invalid="attachmentError ? 'true' : 'false'" @change="validateAttachments($event)">
+            <button type="button" class="mail-compose-tool" :class="formattingOpen ? 'is-active' : ''" @click="formattingOpen = !formattingOpen" title="Formatting options" aria-label="Formatting options"><i data-lucide="type" class="h-4 w-4"></i></button>
+            <button type="button" class="mail-compose-tool" :class="optionsOpen ? 'is-active' : ''" @click="optionsOpen = !optionsOpen" title="Message options" aria-label="Message options"><i data-lucide="sliders-horizontal" class="h-4 w-4"></i></button>
+            <button type="button" class="mail-compose-tool" @click="openPreview()" title="Preview message" aria-label="Preview message"><i data-lucide="eye" class="h-4 w-4"></i></button>
+            <span class="mail-compose-footer-note" th:text="${attachmentLimitDescription}">Up to 20 MB per file, 25 MB total.</span>
+            <button type="button" class="mail-compose-tool text-red-600" @click="discardDraft()" title="Discard draft" aria-label="Discard draft"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+          </footer>
+
+          <dialog x-ref="previewDialog" class="mail-preview-dialog"
+                  :aria-labelledby="$id('mail-preview-title')"
+                  @cancel.prevent.stop="closePreview()"
+                  @click.self="closePreview()"
+                  @close="previewClosed()">
+            <div class="mail-preview-shell">
+              <header class="mail-preview-header">
+                <div class="min-w-0">
+                  <h2 :id="$id('mail-preview-title')">Message preview</h2>
+                  <p>Review the email exactly as it will be composed.</p>
+                </div>
+                <div class="mail-preview-header-actions">
+                  <div class="mail-preview-viewport-toggle" role="group" aria-label="Preview width">
+                    <button type="button" :class="previewViewport === 'desktop' ? 'is-active' : ''"
+                            :aria-pressed="previewViewport === 'desktop'" @click="previewViewport = 'desktop'">
+                      <i data-lucide="monitor" class="h-4 w-4"></i><span>Desktop</span>
+                    </button>
+                    <button type="button" :class="previewViewport === 'mobile' ? 'is-active' : ''"
+                            :aria-pressed="previewViewport === 'mobile'" @click="previewViewport = 'mobile'">
+                      <i data-lucide="smartphone" class="h-4 w-4"></i><span>Mobile</span>
+                    </button>
+                  </div>
+                  <button type="button" x-ref="previewBack" class="mail-preview-back" @click="closePreview()">
+                    <i data-lucide="arrow-left" class="h-4 w-4"></i><span>Back to editing</span>
+                  </button>
+                </div>
+              </header>
+
+              <dl class="mail-preview-metadata">
+                <div><dt>From</dt><dd x-text="senderSummary()"></dd></div>
+                <div><dt>To</dt><dd x-text="toAddress || 'No recipient'" :class="toAddress ? '' : 'is-empty'"></dd></div>
+                <div x-show="recipientSummary('ccUserId', ccManual)" x-cloak>
+                  <dt>Cc</dt><dd x-text="recipientSummary('ccUserId', ccManual)"></dd>
+                </div>
+                <div x-show="recipientSummary('bccUserId', bccManual)" x-cloak>
+                  <dt>Bcc</dt><dd x-text="recipientSummary('bccUserId', bccManual)"></dd>
+                </div>
+                <div class="mail-preview-subject"><dt>Subject</dt><dd x-text="subject || 'No subject'" :class="subject ? '' : 'is-empty'"></dd></div>
+              </dl>
+
+              <div class="mail-preview-stage">
+                <div class="mail-preview-device" :class="previewViewport === 'mobile' ? 'is-mobile' : 'is-desktop'">
+                  <iframe sandbox="" referrerpolicy="no-referrer" :srcdoc="compose()"
+                          :title="'Email preview: ' + (subject || 'No subject')"></iframe>
+                </div>
+              </div>
+            </div>
+          </dialog>
         </form>
-      </div>
+      </section>
     </div>
   </body>
 </html>

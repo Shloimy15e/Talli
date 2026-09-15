@@ -611,44 +611,48 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "list_email_senders", title = "List email senders",
-            description = "List the approved Dynamiq From addresses and matching signatures available for agent email. Use one as sender_email when previewing and sending; omitting it uses info@dynamiq.dev.",
+            description = "List active Talli sender profiles and their matching signatures available for agent email. Use one as senderEmail when previewing and sending; omitting it uses the current default profile.",
             annotations = @McpTool.McpAnnotations(title = "List email senders", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('send-emails')")
     public List<EmailSenderOption> listEmailSenders() {
         return agentEmailService.availableSenders().stream()
-                .map(sender -> new EmailSenderOption(sender.address(), sender.name(), sender.defaultSender(),
-                        sender.defaultSignatureHtml()))
+                .map(sender -> new EmailSenderOption(sender.getAddress(), sender.getName(), sender.isDefaultSender(),
+                        sender.getSignatureHtml()))
                 .toList();
     }
 
     @McpTool(name = "preview_client_email", title = "Preview a client email",
-            description = "Render a no-send preview addressed to an existing Talli client's saved email. Returns the approved From address, fixed CC, plain and HTML bodies, and a token binding the exact sender, recipient, content, template, and signature choice for send_client_email.",
+            description = "Render a no-send preview addressed to an existing Talli client's saved email. Optionally reply to a recorded email in the same RFC thread. Returns the selected From address, oversight and saved reply recipients, plain and HTML bodies, threading headers, and a token binding the exact sender, recipients, content, template, signature, and reply target for send_client_email.",
             annotations = @McpTool.McpAnnotations(title = "Preview a client email", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
-    @PreAuthorize("hasAuthority('send-emails')")
+    @PreAuthorize("hasAuthority('send-emails') and (#replyToEmailId == null or hasRole('admin'))")
     public EmailPreview previewClientEmail(
             @McpToolParam(description = "Existing client ID; preview uses that client's saved email address", required = true) Long clientId,
             @McpToolParam(description = "Email subject", required = true) String subject,
             @McpToolParam(description = "Plain-text email body", required = true) String body,
-            @McpToolParam(description = "Optional approved From address from list_email_senders; defaults to info@dynamiq.dev", required = false) String senderEmail,
+            @McpToolParam(description = "Optional active From address from list_email_senders; defaults to the current default profile", required = false) String senderEmail,
             @McpToolParam(description = "Optional template: branded, branded-notice, formal, or minimal", required = false) String templateId,
-            @McpToolParam(description = "Include the selected sender's matching signature; defaults to true", required = false) Boolean includeSignature) {
+            @McpToolParam(description = "Include the selected sender's matching signature; defaults to true", required = false) Boolean includeSignature,
+            @McpToolParam(description = "CC the configured owner oversight address; defaults to false and is omitted when already To or From", required = false) Boolean includeOversightCc,
+            @McpToolParam(description = "Optional existing email ID to reply to in the same email thread", required = false) Long replyToEmailId) {
         if (clientId == null) throw new IllegalArgumentException("client_id is required");
         AgentEmailService.Preview preview = agentEmailService.preview(
                 authenticatedEmail(), clientId, subject, body, templateId,
-                includeSignature == null || includeSignature, senderEmail);
+                includeSignature == null || includeSignature, Boolean.TRUE.equals(includeOversightCc),
+                senderEmail, replyToEmailId);
         return new EmailPreview(preview.clientId(), preview.fromAddress(), preview.fromName(),
-                preview.toAddress(), preview.ccAddress(),
+                preview.toAddress(), preview.ccAddress(), preview.bccAddress(),
                 preview.subject(), preview.body(), preview.bodyHtml(), preview.templateId(),
-                preview.signatureIncluded(), preview.previewToken());
+                preview.signatureIncluded(), preview.replyToEmailId(), preview.inReplyTo(),
+                preview.referencesHeader(), preview.previewToken());
     }
 
     @McpTool(name = "send_client_email", title = "Send a client email",
-            description = "Send an explicitly approved client email exactly as returned by preview_client_email and audit it in Talli. Requires the matching preview_token and confirm_send=true. Every agent email visibly CCs the configured MCP_EMAIL_CC address.",
+            description = "Send an explicitly approved client email exactly as returned by preview_client_email and audit its MCP source, initiating account, provider ID, status, and delivery lifecycle in Talli. A reply preserves saved CC/BCC recipients plus In-Reply-To and References headers. Requires the matching previewToken and confirmSend=true. When includeOversightCc=true, the configured MCP_EMAIL_CC owner oversight address is visibly CCed unless already To or From.",
             annotations = @McpTool.McpAnnotations(title = "Send a client email", readOnlyHint = false,
                     destructiveHint = true, idempotentHint = false, openWorldHint = true))
-    @PreAuthorize("hasAuthority('send-emails')")
+    @PreAuthorize("hasAuthority('send-emails') and (#replyToEmailId == null or hasRole('admin'))")
     public SentEmail sendClientEmail(
             @McpToolParam(description = "Existing client ID; email is sent only to that client's saved email address", required = true) Long clientId,
             @McpToolParam(description = "Approved email subject", required = true) String subject,
@@ -656,19 +660,22 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Approved From address used in preview_client_email; omit only when the default sender was previewed", required = false) String senderEmail,
             @McpToolParam(description = "Optional template: branded, branded-notice, formal, or minimal", required = false) String templateId,
             @McpToolParam(description = "Include the selected sender's matching signature; defaults to true", required = false) Boolean includeSignature,
+            @McpToolParam(description = "CC the configured owner oversight address approved in the preview; defaults to false", required = false) Boolean includeOversightCc,
             @McpToolParam(description = "Token returned by preview_client_email for these exact inputs", required = true) String previewToken,
-            @McpToolParam(description = "Must be true only after a human approves this exact recipient, subject, and body", required = true) Boolean confirmSend) {
+            @McpToolParam(description = "Must be true only after a human approves this exact recipient, subject, and body", required = true) Boolean confirmSend,
+            @McpToolParam(description = "Optional email ID returned by the matching preview when replying", required = false) Long replyToEmailId) {
         if (clientId == null) throw new IllegalArgumentException("client_id is required");
 
         AgentEmailService.SendResult result = agentEmailService.send(
                 authenticatedEmail(), clientId, subject, body, templateId,
-                includeSignature == null || includeSignature, senderEmail, previewToken,
-                Boolean.TRUE.equals(confirmSend));
+                includeSignature == null || includeSignature, Boolean.TRUE.equals(includeOversightCc),
+                senderEmail, previewToken,
+                Boolean.TRUE.equals(confirmSend), replyToEmailId);
         var email = result.email();
         return new SentEmail(email.getId(), clientId, email.getFromAddress(), result.fromName(),
                 email.getToAddress(), email.getCc(),
                 email.getSubject(), email.getStatus(), email.getSentAt(), result.templateId(),
-                result.signatureIncluded(), email.getErrorMessage());
+                result.signatureIncluded(), email.getMessageId(), email.getThreadRootId(), email.getErrorMessage());
     }
 
     private static String authenticatedEmail() {
@@ -741,13 +748,15 @@ public class TalliMcpWriteTools {
                                     String defaultSignatureHtml) {}
 
     public record EmailPreview(Long clientId, String fromAddress, String fromName,
-                               String toAddress, String ccAddress,
+                               String toAddress, String ccAddress, String bccAddress,
                                String subject, String body, String bodyHtml,
                                String templateId, boolean signatureIncluded,
+                               Long replyToEmailId, String inReplyTo, String referencesHeader,
                                String previewToken) {}
 
     public record SentEmail(Long emailId, Long clientId, String fromAddress, String fromName,
-                            String toAddress, String ccAddress,
-                            String subject, String status, LocalDateTime sentAt, String templateId,
-                            boolean signatureIncluded, String errorMessage) {}
+                             String toAddress, String ccAddress,
+                             String subject, String status, LocalDateTime sentAt, String templateId,
+                             boolean signatureIncluded, String messageId, Long threadRootId,
+                             String errorMessage) {}
 }

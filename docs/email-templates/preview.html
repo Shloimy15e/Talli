@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Email template comparison</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px; background: #f5f6f8; color: #202936; font: 14px/1.5 system-ui, sans-serif; }
+    main { max-width: 1280px; margin: auto; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+    h1 { margin: 0 0 4px; font-size: 24px; letter-spacing: -.5px; }
+    p { margin: 0; color: #637083; }
+    button { flex-shrink: 0; min-height: 44px; padding: 8px 14px; border: 1px solid #cfd5dc; border-radius: 8px; background: white; color: #202936; font: inherit; cursor: pointer; }
+    button:focus-visible { outline: 2px solid #ea7c28; outline-offset: 3px; }
+    .templates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+    h2 { font-size: 14px; margin: 0 0 10px; font-weight: 600; }
+    .preview { display: flex; justify-content: center; overflow: auto; border: 1px solid #e5e9ee; background: #e9ecf0; }
+    iframe { display: block; width: 100%; height: 720px; border: 0; background: white; }
+    .narrow iframe { flex: 0 0 320px; width: 320px; }
+    @media (max-width: 800px) { body { padding: 16px; } header { align-items: flex-start; flex-direction: column; } .templates { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div><h1>Email templates</h1><p>Reusable correspondence layouts and rendered billing messages.</p></div>
+      <button type="button" aria-pressed="false" onclick="const narrow = document.body.classList.toggle('narrow'); this.setAttribute('aria-pressed', narrow); this.textContent = narrow ? 'Show full width' : 'Show at 320px';">Show at 320px</button>
+    </header>
+    <div class="templates">
+      <section><h2>Branded correspondence</h2><div class="preview"><iframe title="Branded correspondence preview" data-preview="branded" sandbox=""></iframe></div></section>
+      <section><h2>Branded notice</h2><div class="preview"><iframe title="Branded notice preview" data-preview="branded-notice" sandbox=""></iframe></div></section>
+      <section><h2>Formal letter</h2><div class="preview"><iframe title="Formal letter preview" data-preview="formal" sandbox=""></iframe></div></section>
+      <section><h2>Minimal</h2><div class="preview"><iframe title="Minimal preview" data-preview="minimal" sandbox=""></iframe></div></section>
+      <section><h2>Invoice</h2><div class="preview"><iframe title="Invoice email preview" data-preview="invoice" sandbox=""></iframe></div></section>
+      <section><h2>Payment reminder</h2><div class="preview"><iframe title="Payment reminder email preview" data-preview="reminder" sandbox=""></iframe></div></section>
+    </div>
+  </main>
+  <!-- email-template-fixtures:start -->
+<script type="text/plain" id="preview-source-branded"><!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>@media only screen and (max-width:480px) {
+  .dynamiq-email-signature .dynamiq-email-signature__logo { display:block !important; width:100% !important; max-width:100% !important; height:44px !important; overflow:hidden !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__logo img { margin-top:-36px !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__spacer { display:none !important; width:0 !important; height:0 !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__contact { display:inline-block !important; width:auto !important; max-width:100% !important; margin:14px 0 0 10px !important; padding:13px 0 0 !important; border-left:0 !important; border-top:1px solid #ea7c28 !important; }
+}</style></head>
+<body style="margin:0; padding:0; background:#f5f6f8; font-family:Arial, Helvetica, sans-serif; color:#202936;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background:#f5f6f8;">
+    <tr><td align="center" style="padding:40px 12px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; max-width:600px; background:#ffffff; border:1px solid #cfd5dc; border-radius:10px; overflow:hidden;">
+        <tr><td style="padding:29px 32px 24px;">
+          <p style="margin:0; color:#141c34; font-size:19px; font-weight:600; line-height:1.35; letter-spacing:-0.02em;">Dynamiq Solutions</p>
+          <p style="margin:7px 0 0; color:#637083; font-size:13px; line-height:1.5; word-break:break-word;">
+            <a href="mailto:billing@dynamiq.dev" style="color:#637083; text-decoration:none;">billing@dynamiq.dev</a>
+          </p>
+        </td></tr>
+        <tr><td style="padding:30px 32px 34px; border-top:1px solid #e5e9ee; color:#202936; font-size:15px; line-height:1.75; word-break:break-word;">
+          <!-- Illustrative fixture only; not template content. -->
+<p style="margin:0 0 18px;">Hello,</p>
+<p style="margin:0 0 18px;">This illustrative message shows the template's spacing, type, links, and current role signature with ordinary correspondence.</p>
+<p style="margin:0 0 26px;"><a href="https://example.com" style="color:#ea7c28; text-decoration:underline; text-underline-offset:3px;">View an example link</a></p>
+<table class="dynamiq-email-signature" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:460px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#141c34;">
+  <tr>
+    <td style="padding:0 0 12px;font-size:13px;line-height:19px;color:#637083;">Kind regards,</td>
+  </tr>
+  <tr>
+    <td class="dynamiq-email-signature__layout" style="padding:0;font-size:0;line-height:0;text-align:left;">
+      <div class="dynamiq-email-signature__logo" style="display:inline-block;box-sizing:border-box;width:170px;max-width:100%;padding:0 10px 0 0;vertical-align:middle;">
+        <a href="https://dynamiq.dev" target="_blank" style="text-decoration:none;">
+          <img src="https://lh3.googleusercontent.com/d/1lfKgLhKID6PZSIddPdfC6R_p7XwnE8Qu" width="160" alt="Dynamiq Solutions" style="display:block;width:160px;max-width:100%;height:auto;border:0;">
+        </a>
+      </div><span class="dynamiq-email-signature__spacer" style="display:inline-block;width:14px;height:1px;font-size:1px;line-height:1px;vertical-align:middle;">&nbsp;</span><div class="dynamiq-email-signature__contact" style="display:inline-block;box-sizing:border-box;width:245px;max-width:100%;padding-left:14px;border-left:1px solid #ea7c28;vertical-align:middle;text-align:left;font-size:12px;line-height:20px;">
+        <div style="margin:0;font-size:13px;line-height:20px;font-weight:500;color:#637083;">Billing</div>
+        <div style="font-size:12px;line-height:20px;"><a href="mailto:billing@dynamiq.dev" style="display:inline-block;max-width:100%;color:#3f4b5e;text-decoration:none;white-space:nowrap;">billing@dynamiq.dev</a></div>
+        <div style="font-size:12px;line-height:20px;"><a href="https://dynamiq.dev" target="_blank" style="display:inline-block;color:#ea7c28;text-decoration:none;white-space:nowrap;">dynamiq.dev</a></div>
+      </div>
+    </td>
+  </tr>
+</table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>
+</script>
+<script type="text/plain" id="preview-source-branded-notice"><!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>@media only screen and (max-width:480px) {
+  .dynamiq-email-signature .dynamiq-email-signature__logo { display:block !important; width:100% !important; max-width:100% !important; height:44px !important; overflow:hidden !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__logo img { margin-top:-36px !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__spacer { display:none !important; width:0 !important; height:0 !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__contact { display:inline-block !important; width:auto !important; max-width:100% !important; margin:14px 0 0 10px !important; padding:13px 0 0 !important; border-left:0 !important; border-top:1px solid #ea7c28 !important; }
+}</style></head>
+<body style="margin:0; padding:0; background:#f5f6f8; font-family:Arial, Helvetica, sans-serif; color:#202936;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background:#f5f6f8;">
+    <tr><td align="center" style="padding:40px 12px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; max-width:600px; background:#ffffff; border:1px solid #cfd5dc; border-radius:10px; overflow:hidden;">
+        <tr><td style="padding:32px 32px 34px; color:#202936; font-size:15px; line-height:1.75; word-break:break-word;">
+          <!-- Illustrative fixture only; not template content. -->
+<p style="margin:0 0 18px;">Hello,</p>
+<p style="margin:0 0 18px;">This illustrative message shows the template's spacing, type, links, and current role signature with ordinary correspondence.</p>
+<p style="margin:0 0 26px;"><a href="https://example.com" style="color:#ea7c28; text-decoration:underline; text-underline-offset:3px;">View an example link</a></p>
+<table class="dynamiq-email-signature" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:460px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#141c34;">
+  <tr>
+    <td style="padding:0 0 12px;font-size:13px;line-height:19px;color:#637083;">Kind regards,</td>
+  </tr>
+  <tr>
+    <td class="dynamiq-email-signature__layout" style="padding:0;font-size:0;line-height:0;text-align:left;">
+      <div class="dynamiq-email-signature__logo" style="display:inline-block;box-sizing:border-box;width:170px;max-width:100%;padding:0 10px 0 0;vertical-align:middle;">
+        <a href="https://dynamiq.dev" target="_blank" style="text-decoration:none;">
+          <img src="https://lh3.googleusercontent.com/d/1lfKgLhKID6PZSIddPdfC6R_p7XwnE8Qu" width="160" alt="Dynamiq Solutions" style="display:block;width:160px;max-width:100%;height:auto;border:0;">
+        </a>
+      </div><span class="dynamiq-email-signature__spacer" style="display:inline-block;width:14px;height:1px;font-size:1px;line-height:1px;vertical-align:middle;">&nbsp;</span><div class="dynamiq-email-signature__contact" style="display:inline-block;box-sizing:border-box;width:245px;max-width:100%;padding-left:14px;border-left:1px solid #ea7c28;vertical-align:middle;text-align:left;font-size:12px;line-height:20px;">
+        <div style="margin:0;font-size:13px;line-height:20px;font-weight:500;color:#637083;">Billing</div>
+        <div style="font-size:12px;line-height:20px;"><a href="mailto:billing@dynamiq.dev" style="display:inline-block;max-width:100%;color:#3f4b5e;text-decoration:none;white-space:nowrap;">billing@dynamiq.dev</a></div>
+        <div style="font-size:12px;line-height:20px;"><a href="https://dynamiq.dev" target="_blank" style="display:inline-block;color:#ea7c28;text-decoration:none;white-space:nowrap;">dynamiq.dev</a></div>
+      </div>
+    </td>
+  </tr>
+</table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>
+</script>
+<script type="text/plain" id="preview-source-formal"><!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>@media only screen and (max-width:480px) {
+  .dynamiq-email-signature .dynamiq-email-signature__logo { display:block !important; width:100% !important; max-width:100% !important; height:44px !important; overflow:hidden !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__logo img { margin-top:-36px !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__spacer { display:none !important; width:0 !important; height:0 !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__contact { display:inline-block !important; width:auto !important; max-width:100% !important; margin:14px 0 0 10px !important; padding:13px 0 0 !important; border-left:0 !important; border-top:1px solid #ea7c28 !important; }
+}</style></head>
+<body style="margin:0; padding:0; background:#ffffff; font-family:Arial, Helvetica, sans-serif; color:#202936;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background:#ffffff;">
+    <tr><td align="center" style="padding:52px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; max-width:620px;">
+        <tr><td style="padding:0 0 24px; border-bottom:1px solid #cfd5dc;">
+          <p style="margin:0; color:#141c34; font-size:21px; font-weight:600; line-height:1.35; letter-spacing:-0.025em;">Dynamiq Solutions</p>
+          <p style="margin:7px 0 0; color:#637083; font-size:13px; line-height:1.5; word-break:break-word;">
+            <a href="mailto:billing@dynamiq.dev" style="color:#637083; text-decoration:none;">billing@dynamiq.dev</a>
+          </p>
+        </td></tr>
+        <tr><td style="padding:36px 0 0; color:#202936; font-size:16px; line-height:1.8; word-break:break-word;">
+          <!-- Illustrative fixture only; not template content. -->
+<p style="margin:0 0 18px;">Hello,</p>
+<p style="margin:0 0 18px;">This illustrative message shows the template's spacing, type, links, and current role signature with ordinary correspondence.</p>
+<p style="margin:0 0 26px;"><a href="https://example.com" style="color:#ea7c28; text-decoration:underline; text-underline-offset:3px;">View an example link</a></p>
+<table class="dynamiq-email-signature" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:460px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#141c34;">
+  <tr>
+    <td style="padding:0 0 12px;font-size:13px;line-height:19px;color:#637083;">Kind regards,</td>
+  </tr>
+  <tr>
+    <td class="dynamiq-email-signature__layout" style="padding:0;font-size:0;line-height:0;text-align:left;">
+      <div class="dynamiq-email-signature__logo" style="display:inline-block;box-sizing:border-box;width:170px;max-width:100%;padding:0 10px 0 0;vertical-align:middle;">
+        <a href="https://dynamiq.dev" target="_blank" style="text-decoration:none;">
+          <img src="https://lh3.googleusercontent.com/d/1lfKgLhKID6PZSIddPdfC6R_p7XwnE8Qu" width="160" alt="Dynamiq Solutions" style="display:block;width:160px;max-width:100%;height:auto;border:0;">
+        </a>
+      </div><span class="dynamiq-email-signature__spacer" style="display:inline-block;width:14px;height:1px;font-size:1px;line-height:1px;vertical-align:middle;">&nbsp;</span><div class="dynamiq-email-signature__contact" style="display:inline-block;box-sizing:border-box;width:245px;max-width:100%;padding-left:14px;border-left:1px solid #ea7c28;vertical-align:middle;text-align:left;font-size:12px;line-height:20px;">
+        <div style="margin:0;font-size:13px;line-height:20px;font-weight:500;color:#637083;">Billing</div>
+        <div style="font-size:12px;line-height:20px;"><a href="mailto:billing@dynamiq.dev" style="display:inline-block;max-width:100%;color:#3f4b5e;text-decoration:none;white-space:nowrap;">billing@dynamiq.dev</a></div>
+        <div style="font-size:12px;line-height:20px;"><a href="https://dynamiq.dev" target="_blank" style="display:inline-block;color:#ea7c28;text-decoration:none;white-space:nowrap;">dynamiq.dev</a></div>
+      </div>
+    </td>
+  </tr>
+</table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>
+</script>
+<script type="text/plain" id="preview-source-minimal"><!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>@media only screen and (max-width:480px) {
+  .dynamiq-email-signature .dynamiq-email-signature__logo { display:block !important; width:100% !important; max-width:100% !important; height:44px !important; overflow:hidden !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__logo img { margin-top:-36px !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__spacer { display:none !important; width:0 !important; height:0 !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__contact { display:inline-block !important; width:auto !important; max-width:100% !important; margin:14px 0 0 10px !important; padding:13px 0 0 !important; border-left:0 !important; border-top:1px solid #ea7c28 !important; }
+}</style></head>
+<body style="margin:0; padding:0; background:#ffffff; font-family:Arial, Helvetica, sans-serif; color:#202936;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background:#ffffff;">
+    <tr><td align="center" style="padding:44px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; max-width:560px;">
+        <tr><td style="color:#202936; font-size:15px; line-height:1.75; word-break:break-word;">
+          <!-- Illustrative fixture only; not template content. -->
+<p style="margin:0 0 18px;">Hello,</p>
+<p style="margin:0 0 18px;">This illustrative message shows the template's spacing, type, links, and current role signature with ordinary correspondence.</p>
+<p style="margin:0 0 26px;"><a href="https://example.com" style="color:#ea7c28; text-decoration:underline; text-underline-offset:3px;">View an example link</a></p>
+<table class="dynamiq-email-signature" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:460px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#141c34;">
+  <tr>
+    <td style="padding:0 0 12px;font-size:13px;line-height:19px;color:#637083;">Kind regards,</td>
+  </tr>
+  <tr>
+    <td class="dynamiq-email-signature__layout" style="padding:0;font-size:0;line-height:0;text-align:left;">
+      <div class="dynamiq-email-signature__logo" style="display:inline-block;box-sizing:border-box;width:170px;max-width:100%;padding:0 10px 0 0;vertical-align:middle;">
+        <a href="https://dynamiq.dev" target="_blank" style="text-decoration:none;">
+          <img src="https://lh3.googleusercontent.com/d/1lfKgLhKID6PZSIddPdfC6R_p7XwnE8Qu" width="160" alt="Dynamiq Solutions" style="display:block;width:160px;max-width:100%;height:auto;border:0;">
+        </a>
+      </div><span class="dynamiq-email-signature__spacer" style="display:inline-block;width:14px;height:1px;font-size:1px;line-height:1px;vertical-align:middle;">&nbsp;</span><div class="dynamiq-email-signature__contact" style="display:inline-block;box-sizing:border-box;width:245px;max-width:100%;padding-left:14px;border-left:1px solid #ea7c28;vertical-align:middle;text-align:left;font-size:12px;line-height:20px;">
+        <div style="margin:0;font-size:13px;line-height:20px;font-weight:500;color:#637083;">Billing</div>
+        <div style="font-size:12px;line-height:20px;"><a href="mailto:billing@dynamiq.dev" style="display:inline-block;max-width:100%;color:#3f4b5e;text-decoration:none;white-space:nowrap;">billing@dynamiq.dev</a></div>
+        <div style="font-size:12px;line-height:20px;"><a href="https://dynamiq.dev" target="_blank" style="display:inline-block;color:#ea7c28;text-decoration:none;white-space:nowrap;">dynamiq.dev</a></div>
+      </div>
+    </td>
+  </tr>
+</table>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>
+</script>
+  <!-- email-template-fixtures:end -->
+  <!-- transactional-email-fixtures:start -->
+<script type="text/plain" id="preview-source-invoice"><!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Invoice</title>
+  <style>@media only screen and (max-width:480px) {
+  .dynamiq-email-signature .dynamiq-email-signature__logo { display:block !important; width:100% !important; max-width:100% !important; height:44px !important; overflow:hidden !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__logo img { margin-top:-36px !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__spacer { display:none !important; width:0 !important; height:0 !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__contact { display:inline-block !important; width:auto !important; max-width:100% !important; margin:14px 0 0 10px !important; padding:13px 0 0 !important; border-left:0 !important; border-top:1px solid #ea7c28 !important; }
+}</style>
+</head>
+<body style="margin:0; padding:0; background:#f5f6f8; font-family:Arial, Helvetica, sans-serif; color:#202936;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background:#f5f6f8;">
+    <tr>
+      <td align="center" style="padding:40px 12px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; max-width:600px; background:#ffffff; border:1px solid #cfd5dc; border-radius:10px; overflow:hidden;">
+          <tr>
+            <td style="padding:28px 32px 24px;">
+              <p style="margin:0; color:#141c34; font-size:19px; font-weight:600; line-height:1.35; letter-spacing:-0.02em;">Dynamiq Solutions</p>
+              <p style="margin:7px 0 0; color:#637083; font-size:13px; line-height:1.55; word-break:break-word;">
+                <a href="mailto:billing@dynamiq.dev" style="color:#637083; text-decoration:none;">billing@dynamiq.dev</a>
+                <span style="color:#a5afbd;"> &middot; </span>
+                <span>100 Cherry Ln, Airmont, NY 10952</span>
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:30px 32px 36px; border-top:1px solid #e5e9ee;">
+              <p style="margin:0 0 18px; font-size:15px; line-height:1.65;">
+                Hi <span>Northline Studio</span>,
+              </p>
+              <p style="margin:0 0 28px; color:#4c5869; font-size:15px; line-height:1.65;">
+                Here's your latest invoice. The PDF is attached, and the key details are below.
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; margin:0 0 26px; border-top:1px solid #cfd5dc; border-bottom:1px solid #cfd5dc;">
+                <tr>
+                  <td style="padding:20px 0;">
+                    <p style="margin:0 0 5px; color:#637083; font-size:13px; line-height:1.45;">Amount due</p>
+                    <p style="margin:0; color:#141c34; font-size:30px; font-weight:600; line-height:1.2; letter-spacing:-0.025em;">USD 4,850.00</p>
+                    <p style="margin:8px 0 0; color:#637083; font-size:13px; line-height:1.5;">
+                      Reference <span style="color:#202936;">INV-2026-1042</span>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; margin:0 0 28px;">
+                <tr>
+                  <td>
+                    <a href="https://pay.example.test/invoices/preview" style="display:inline-block; padding:13px 22px; border-radius:8px; background:#ea7c28; color:#ffffff; font-size:15px; font-weight:600; line-height:1.2; text-decoration:none;">Pay with ACH</a>
+                    <p style="margin:10px 0 0; color:#637083; font-size:12px; line-height:1.5;">Pay securely by ACH through Mercury.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; margin:0 0 28px; font-size:14px; line-height:1.55;">
+                <tr>
+                  <td style="width:36%; padding:10px 12px 10px 0; color:#637083; border-bottom:1px solid #e5e9ee;">Issued</td>
+                  <td style="padding:10px 0; color:#202936; border-bottom:1px solid #e5e9ee;">September 1, 2026</td>
+                </tr>
+                <tr>
+                  <td style="padding:10px 12px 10px 0; color:#637083; border-bottom:1px solid #e5e9ee;">Due by</td>
+                  <td style="padding:10px 0; color:#202936; font-weight:500; border-bottom:1px solid #e5e9ee;">September 30, 2026</td>
+                </tr>
+
+              </table>
+
+              <p style="margin:0; color:#4c5869; font-size:14px; line-height:1.65;">
+                Let me know if anything looks off, and feel free to reply with any questions.
+              </p>
+              <div style="margin:26px 0 0; color:#202936; font-size:14px; line-height:1.55;"><table class="dynamiq-email-signature" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:460px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#141c34;">
+  <tr>
+    <td style="padding:0 0 12px;font-size:13px;line-height:19px;color:#637083;">Kind regards,</td>
+  </tr>
+  <tr>
+    <td class="dynamiq-email-signature__layout" style="padding:0;font-size:0;line-height:0;text-align:left;">
+      <div class="dynamiq-email-signature__logo" style="display:inline-block;box-sizing:border-box;width:170px;max-width:100%;padding:0 10px 0 0;vertical-align:middle;">
+        <a href="https://dynamiq.dev" target="_blank" style="text-decoration:none;">
+          <img src="https://lh3.googleusercontent.com/d/1lfKgLhKID6PZSIddPdfC6R_p7XwnE8Qu" width="160" alt="Dynamiq Solutions" style="display:block;width:160px;max-width:100%;height:auto;border:0;">
+        </a>
+      </div><span class="dynamiq-email-signature__spacer" style="display:inline-block;width:14px;height:1px;font-size:1px;line-height:1px;vertical-align:middle;">&nbsp;</span><div class="dynamiq-email-signature__contact" style="display:inline-block;box-sizing:border-box;width:245px;max-width:100%;padding-left:14px;border-left:1px solid #ea7c28;vertical-align:middle;text-align:left;font-size:12px;line-height:20px;">
+        <div style="margin:0;font-size:13px;line-height:20px;font-weight:500;color:#637083;">Billing</div>
+        <div style="font-size:12px;line-height:20px;"><a href="mailto:billing@dynamiq.dev" style="display:inline-block;max-width:100%;color:#3f4b5e;text-decoration:none;white-space:nowrap;">billing@dynamiq.dev</a></div>
+        <div style="font-size:12px;line-height:20px;"><a href="https://dynamiq.dev" target="_blank" style="display:inline-block;color:#ea7c28;text-decoration:none;white-space:nowrap;">dynamiq.dev</a></div>
+      </div>
+    </td>
+  </tr>
+</table></div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+</script>
+<script type="text/plain" id="preview-source-reminder"><!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Payment reminder</title>
+  <style>@media only screen and (max-width:480px) {
+  .dynamiq-email-signature .dynamiq-email-signature__logo { display:block !important; width:100% !important; max-width:100% !important; height:44px !important; overflow:hidden !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__logo img { margin-top:-36px !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__spacer { display:none !important; width:0 !important; height:0 !important; }
+  .dynamiq-email-signature .dynamiq-email-signature__contact { display:inline-block !important; width:auto !important; max-width:100% !important; margin:14px 0 0 10px !important; padding:13px 0 0 !important; border-left:0 !important; border-top:1px solid #ea7c28 !important; }
+}</style>
+</head>
+<body style="margin:0; padding:0; background:#f5f6f8; font-family:Arial, Helvetica, sans-serif; color:#202936;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; background:#f5f6f8;">
+    <tr>
+      <td align="center" style="padding:40px 12px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; max-width:600px; background:#ffffff; border:1px solid #cfd5dc; border-radius:10px; overflow:hidden;">
+          <tr>
+            <td style="padding:28px 32px 24px;">
+              <p style="margin:0; color:#141c34; font-size:19px; font-weight:600; line-height:1.35; letter-spacing:-0.02em;">Dynamiq Solutions</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:30px 32px 34px; border-top:1px solid #e5e9ee;">
+              <h1 style="margin:0 0 22px; color:#141c34; font-size:22px; font-weight:600; line-height:1.3; letter-spacing:-0.02em;">Payment reminder</h1>
+              <p style="margin:0 0 18px; font-size:15px; line-height:1.65;">
+                Hi <span>Northline Studio</span>,
+              </p>
+              <p style="margin:0 0 28px; color:#4c5869; font-size:15px; line-height:1.65;">
+                This is a friendly reminder that the following invoice<span>s</span>
+                remain unpaid. Please let us know if you have any questions.
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; margin:0 0 28px; border-top:1px solid #cfd5dc;">
+                <tr>
+                  <td style="padding:17px 0; border-bottom:1px solid #cfd5dc;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; table-layout:fixed;">
+                      <tr>
+                        <td style="padding:0 12px 5px 0; color:#141c34; font-size:15px; font-weight:600; line-height:1.4; word-break:break-word;">INV-2026-1042</td>
+                        <td align="right" style="padding:0 0 5px 12px; color:#141c34; font-size:15px; font-weight:600; line-height:1.4; white-space:nowrap;">USD 3,850.00</td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="color:#637083; font-size:12px; line-height:1.6;">
+                          Issued <span>Aug 1, 2026</span>
+                          <span style="color:#a5afbd;"> &middot; </span>
+                          Due <span>Sep 10, 2026</span>
+                          <span style="color:#b42318; font-weight:600;"><span aria-hidden="true"> &middot; </span><span>7d overdue</span></span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:17px 0; border-bottom:1px solid #cfd5dc;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%; table-layout:fixed;">
+                      <tr>
+                        <td style="padding:0 12px 5px 0; color:#141c34; font-size:15px; font-weight:600; line-height:1.4; word-break:break-word;">INV-2026-1048</td>
+                        <td align="right" style="padding:0 0 5px 12px; color:#141c34; font-size:15px; font-weight:600; line-height:1.4; white-space:nowrap;">USD 975.00</td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="color:#637083; font-size:12px; line-height:1.6;">
+                          Issued <span>Sep 12, 2026</span>
+                          <span style="color:#a5afbd;"> &middot; </span>
+                          Due <span>&mdash;</span>
+
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <div style="margin:0; color:#202936; font-size:14px; line-height:1.55;"><table class="dynamiq-email-signature" role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:460px;border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;color:#141c34;">
+  <tr>
+    <td style="padding:0 0 12px;font-size:13px;line-height:19px;color:#637083;">Kind regards,</td>
+  </tr>
+  <tr>
+    <td class="dynamiq-email-signature__layout" style="padding:0;font-size:0;line-height:0;text-align:left;">
+      <div class="dynamiq-email-signature__logo" style="display:inline-block;box-sizing:border-box;width:170px;max-width:100%;padding:0 10px 0 0;vertical-align:middle;">
+        <a href="https://dynamiq.dev" target="_blank" style="text-decoration:none;">
+          <img src="https://lh3.googleusercontent.com/d/1lfKgLhKID6PZSIddPdfC6R_p7XwnE8Qu" width="160" alt="Dynamiq Solutions" style="display:block;width:160px;max-width:100%;height:auto;border:0;">
+        </a>
+      </div><span class="dynamiq-email-signature__spacer" style="display:inline-block;width:14px;height:1px;font-size:1px;line-height:1px;vertical-align:middle;">&nbsp;</span><div class="dynamiq-email-signature__contact" style="display:inline-block;box-sizing:border-box;width:245px;max-width:100%;padding-left:14px;border-left:1px solid #ea7c28;vertical-align:middle;text-align:left;font-size:12px;line-height:20px;">
+        <div style="margin:0;font-size:13px;line-height:20px;font-weight:500;color:#637083;">Billing</div>
+        <div style="font-size:12px;line-height:20px;"><a href="mailto:billing@dynamiq.dev" style="display:inline-block;max-width:100%;color:#3f4b5e;text-decoration:none;white-space:nowrap;">billing@dynamiq.dev</a></div>
+        <div style="font-size:12px;line-height:20px;"><a href="https://dynamiq.dev" target="_blank" style="display:inline-block;color:#ea7c28;text-decoration:none;white-space:nowrap;">dynamiq.dev</a></div>
+      </div>
+    </td>
+  </tr>
+</table></div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px; background:#f7f8fa; border-top:1px solid #e5e9ee;">
+              <p style="margin:0; color:#7a8595; font-size:12px; line-height:1.5;">Automated reminder &mdash; reply to this email if you need anything.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+</script>
+  <!-- transactional-email-fixtures:end -->
+  <script>
+    document.querySelectorAll('iframe[data-preview]').forEach((frame) => {
+      const source = document.getElementById(`preview-source-${frame.dataset.preview}`);
+      if (source) frame.srcdoc = source.textContent;
+    });
+  </script>
+</body>
+</html>

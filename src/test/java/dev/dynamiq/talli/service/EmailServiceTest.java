@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.ByteArrayOutputStream;
@@ -28,6 +29,7 @@ class EmailServiceTest {
 
     private HttpClient httpClient;
     private SpringTemplateEngine templateEngine;
+    private EmailSenderProfileService senders;
     private EmailService service;
 
     @BeforeEach
@@ -42,11 +44,14 @@ class EmailServiceTest {
         templateEngine = mock(SpringTemplateEngine.class);
         when(templateEngine.process(anyString(), any())).thenReturn("<p>Rendered HTML</p>");
 
-        service = new EmailService(templateEngine);
+        senders = mock(EmailSenderProfileService.class);
+        when(senders.resolve(null)).thenReturn(new EmailSender("test@dynamiq.dev", "Test Sender", "<b>Test Sender</b>"));
+        when(senders.resolve("billing@dynamiq.dev"))
+                .thenReturn(new EmailSender("billing@dynamiq.dev", "Billing | Dynamiq Solutions",
+                        "<strong>Current Billing signature</strong>"));
+        service = new EmailService(templateEngine, senders);
         setField(service, "http", httpClient);
         setField(service, "apiKey", "re_test_key");
-        setField(service, "fromAddress", "test@dynamiq.dev");
-        setField(service, "fromName", "Test Sender");
     }
 
     @Test
@@ -64,7 +69,46 @@ class EmailServiceTest {
         service.sendTemplate("to@example.com", "Subject", "invoice", java.util.Map.of("name", "Shloimy"));
 
         verify(templateEngine).process(eq("emails/invoice"), any());
-        verify(httpClient).send(any(HttpRequest.class), any());
+        verify(httpClient).send(argThat(request -> request.method().equals("POST")), any());
+    }
+
+    @Test
+    void invoiceAndReminderTemplatesUseTheCurrentBillingSender() throws Exception {
+        service.sendTemplate("invoice@example.com", "Invoice", "invoice", java.util.Map.of());
+        service.sendTemplate("reminder@example.com", "Reminder", "reminder", java.util.Map.of());
+
+        List<HttpRequest> requests = capturePostRequests();
+        assertThat(requests).hasSize(2);
+        for (HttpRequest request : requests) {
+            JsonNode payload = new ObjectMapper().readTree(readBody(request));
+            assertThat(payload.path("from").asText())
+                    .isEqualTo("Billing | Dynamiq Solutions <billing@dynamiq.dev>");
+        }
+
+        ArgumentCaptor<Context> invoiceContext = ArgumentCaptor.forClass(Context.class);
+        verify(templateEngine).process(eq("emails/invoice"), invoiceContext.capture());
+        assertThat(invoiceContext.getValue().getVariable("signature"))
+                .isEqualTo("<strong>Current Billing signature</strong>");
+
+        ArgumentCaptor<Context> reminderContext = ArgumentCaptor.forClass(Context.class);
+        verify(templateEngine).process(eq("emails/reminder"), reminderContext.capture());
+        assertThat(reminderContext.getValue().getVariable("signature"))
+                .isEqualTo("<strong>Current Billing signature</strong>");
+        verify(senders, times(2)).resolve("billing@dynamiq.dev");
+        verify(senders, never()).resolve(null);
+    }
+
+    @Test
+    void inviteTemplateKeepsTheDefaultSender() throws Exception {
+        service.sendTemplate("invitee@example.com", "Welcome", "invite", java.util.Map.of());
+
+        JsonNode payload = new ObjectMapper().readTree(readBody(captureRequest()));
+        assertThat(payload.path("from").asText()).isEqualTo("Test Sender <test@dynamiq.dev>");
+        ArgumentCaptor<Context> context = ArgumentCaptor.forClass(Context.class);
+        verify(templateEngine).process(eq("emails/invite"), context.capture());
+        assertThat(context.getValue().getVariable("signature")).isEqualTo("<b>Test Sender</b>");
+        verify(senders).resolve(null);
+        verify(senders, never()).resolve("billing@dynamiq.dev");
     }
 
     @Test
@@ -80,7 +124,7 @@ class EmailServiceTest {
 
     @Test
     void sendPlain_usesExplicitSenderIdentity() throws Exception {
-        service.sendPlain(new EmailSender("billing@dynamiq.dev", "Dynamiq Billing"),
+        service.sendPlain(new EmailSender("billing@dynamiq.dev", "Dynamiq Billing", ""),
                 "to@example.com", List.of(), List.of(), "Hello", "body text");
 
         JsonNode payload = new ObjectMapper().readTree(readBody(captureRequest()));
@@ -107,8 +151,51 @@ class EmailServiceTest {
 
     private HttpRequest captureRequest() throws Exception {
         ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
-        verify(httpClient).send(captor.capture(), any());
-        return captor.getValue();
+        verify(httpClient, atLeastOnce()).send(captor.capture(), any());
+        return captor.getAllValues().stream().filter(request -> request.method().equals("POST")).findFirst().orElseThrow();
+    }
+
+    private List<HttpRequest> capturePostRequests() throws Exception {
+        ArgumentCaptor<HttpRequest> captor = ArgumentCaptor.forClass(HttpRequest.class);
+        verify(httpClient, atLeastOnce()).send(captor.capture(), any());
+        return captor.getAllValues().stream().filter(request -> request.method().equals("POST")).toList();
+    }
+
+    @Test
+    void repliesSendHeadersAndKeepProviderMessageId() throws Exception {
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("{\"message_id\":\"<actual@provider.test>\"}");
+        doReturn(response).when(httpClient).send(argThat(request -> request.method().equals("GET")), any());
+        var result = service.sendMessage(new EmailSender("billing@dynamiq.dev", "Billing", ""),
+                "to@example.com", List.of(), List.of(), "Re: Hello", "Reply", null, List.of(),
+                java.util.Map.of("In-Reply-To", "<parent@example.com>", "References", "<parent@example.com>"));
+        JsonNode payload = new ObjectMapper().readTree(readBody(captureRequest()));
+        assertThat(payload.path("headers").path("In-Reply-To").asText()).isEqualTo("<parent@example.com>");
+        assertThat(payload.path("headers").path("References").asText()).isEqualTo("<parent@example.com>");
+        assertThat(result.messageId()).isEqualTo("<actual@provider.test>");
+        assertThat(result.fromAddress()).isEqualTo("billing@dynamiq.dev");
+    }
+
+    @Test
+    void metadataLookupFailureDoesNotReportAcceptedEmailAsFailed() throws Exception {
+        doThrow(new java.io.IOException("unavailable")).when(httpClient)
+                .send(argThat(request -> request.method().equals("GET")), any());
+        var result = service.sendPlain("to@example.com", "Hello", "Body");
+        assertThat(result.resendId()).isEqualTo("msg_123");
+        assertThat(result.messageId()).isNull();
+    }
+
+    @Test
+    void receivedEmailReadsCaseInsensitiveThreadHeaders() throws Exception {
+        HttpResponse<String> response = mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(200);
+        when(response.body()).thenReturn("{\"message_id\":\"<incoming@example.com>\",\"headers\":{\"in-reply-to\":\"<parent@example.com>\",\"References\":\"<first@example.com> <parent@example.com>\"}}");
+        doReturn(response).when(httpClient).send(any(HttpRequest.class), any());
+        var result = service.fetchReceivedEmail("received-123");
+        assertThat(result.messageId()).isEqualTo("<incoming@example.com>");
+        assertThat(result.inReplyTo()).isEqualTo("<parent@example.com>");
+        assertThat(result.references()).contains("<first@example.com>");
     }
 
     private static String readBody(HttpRequest request) throws Exception {

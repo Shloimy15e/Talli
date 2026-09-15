@@ -55,7 +55,7 @@ class InvoiceEmailServiceTest {
         when(emailService.sendTemplateWithAttachment(
                 anyString(), anyList(), anyString(), anyString(), anyMap(),
                 any(byte[].class), anyString(), anyString()))
-                .thenReturn(new EmailService.Result("<html></html>", "email-123"));
+                .thenReturn(new EmailService.Result("<html></html>", "email-123", null, "info@dynamiq.dev"));
 
         service = new InvoiceEmailService(
                 emailService, invoiceRepository, mediaService, emailRepository,

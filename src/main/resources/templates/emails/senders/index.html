@@ -1,0 +1,166 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Sender profiles')}"></head>
+  <body th:replace="~{layout :: page('sender-profiles', ~{::section})}">
+    <section>
+      <div class="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-8">
+        <div>
+          <a th:href="@{/emails}"
+             class="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 mb-3">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            Emails
+          </a>
+          <h1 class="text-2xl font-semibold tracking-tight">Sender profiles</h1>
+          <p class="text-sm text-slate-500 mt-1 max-w-2xl">
+            Control the names, addresses, and signatures available for outgoing email.
+          </p>
+        </div>
+        <div class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span th:text="${activeProfileCount} + ' active'">0 active</span>
+        </div>
+      </div>
+
+      <div th:if="${success}"
+           class="mb-6 px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-800"
+           th:text="${success}">Saved.</div>
+      <div th:if="${error}"
+           class="mb-6 px-4 py-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800"
+           th:text="${error}">Could not save.</div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.75fr)] gap-6 items-start">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div class="px-6 py-4 border-b border-slate-200">
+            <h2 class="font-semibold">Available senders</h2>
+            <p class="text-sm text-slate-500 mt-0.5">Disabled profiles stay in history and cannot be selected for new messages.</p>
+          </div>
+
+          <div th:if="${#lists.isEmpty(profiles)}" class="px-6 py-12 text-center">
+            <div class="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+              <i data-lucide="mail-plus" class="w-5 h-5"></i>
+            </div>
+            <h3 class="font-medium">Add the first sender</h3>
+            <p class="text-sm text-slate-500 mt-1">The first profile becomes the default automatically.</p>
+          </div>
+
+          <div th:each="profile, status : ${profiles}"
+               class="px-6 py-5"
+               th:classappend="${!status.last} ? 'border-b border-slate-100'">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="font-medium text-slate-900" th:text="${profile.name}">Dynamiq Solutions</h3>
+                  <span th:if="${profile.defaultSender}"
+                        class="inline-flex items-center rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-[#c45f12]">Default</span>
+                  <span th:if="${profile.active and !profile.defaultSender}"
+                        class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Active</span>
+                  <span th:if="${!profile.active}"
+                        class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">Disabled</span>
+                </div>
+                <p class="text-sm text-slate-600 mt-1" th:text="${profile.address}">billing@dynamiq.dev</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-3 shrink-0">
+                <button type="button"
+                        data-html-preview-trigger
+                        aria-haspopup="dialog"
+                        aria-controls="html-preview-dialog"
+                        data-html-preview-title="Signature preview"
+                        th:data-html-preview-subtitle="${profile.address}"
+                        th:data-html-preview-html="${profile.signatureHtml}"
+                        class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-950">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                  Preview signature
+                </button>
+                <a th:href="@{/emails/senders/{id}/edit(id=${profile.id})}"
+                   class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-950">
+                  <i data-lucide="pencil" class="w-4 h-4"></i>
+                  Edit
+                </a>
+                <form th:if="${profile.active and !profile.defaultSender}"
+                      th:action="@{/emails/senders/{id}/disable(id=${profile.id})}"
+                      method="post" onsubmit="return confirm('Disable this sender profile?')">
+                  <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800">Disable</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <form th:action="@{/emails/senders}" method="post"
+              class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5 xl:sticky xl:top-8">
+          <div>
+            <h2 class="font-semibold">Add sender</h2>
+            <p class="text-sm text-slate-500 mt-0.5">Create a reusable identity for people and agents.</p>
+          </div>
+          <div>
+            <label for="new-name" class="block text-sm font-medium text-slate-700 mb-1.5">Display name</label>
+            <input id="new-name" name="name" type="text" required maxlength="200" autocomplete="off"
+                   th:value="${draft != null ? draft.name : ''}"
+                   placeholder="Dynamiq Solutions"
+                   class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]" />
+          </div>
+          <div>
+            <label for="new-address" class="block text-sm font-medium text-slate-700 mb-1.5">Email address</label>
+            <input id="new-address" name="address" type="email" required maxlength="320" autocomplete="off"
+                   th:value="${draft != null ? draft.address : ''}"
+                   placeholder="billing@dynamiq.dev"
+                   class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]" />
+          </div>
+          <div>
+            <div class="flex items-baseline justify-between gap-3 mb-1.5">
+              <label for="new-signature" class="block text-sm font-medium text-slate-700">Signature</label>
+              <span class="text-xs text-slate-400">Optional</span>
+            </div>
+            <div class="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1 mb-2" role="group" aria-label="Signature format">
+              <label class="cursor-pointer">
+                <input type="radio" name="signatureFormat" value="text"
+                       th:checked="${draft == null or draft.signatureFormat == 'text'}" class="sr-only peer" />
+                <span class="block rounded-md px-3 py-1 text-xs font-medium text-slate-500 peer-checked:bg-white peer-checked:text-slate-900 peer-checked:shadow-sm">Text</span>
+              </label>
+              <label class="cursor-pointer">
+                <input type="radio" name="signatureFormat" value="html"
+                       th:checked="${draft != null and draft.signatureFormat == 'html'}" class="sr-only peer" />
+                <span class="block rounded-md px-3 py-1 text-xs font-medium text-slate-500 peer-checked:bg-white peer-checked:text-slate-900 peer-checked:shadow-sm">HTML</span>
+              </label>
+            </div>
+            <textarea id="new-signature" name="signatureHtml" rows="7" maxlength="100000" data-signature-editor
+                      placeholder="Leave blank for a name and email signature."
+                      th:text="${draft != null ? draft.signatureHtml : ''}"
+                      class="w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs leading-5 focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+            <div class="flex items-start justify-between gap-4 mt-1.5">
+              <p class="text-xs text-slate-500">Text keeps line breaks. HTML preserves your formatting.</p>
+              <button type="button"
+                      data-html-preview-trigger
+                      aria-haspopup="dialog"
+                      aria-controls="html-preview-dialog"
+                      data-html-preview-title="Signature preview"
+                      data-html-preview-subtitle="New sender"
+                      data-html-preview-source="#new-signature"
+                      data-html-preview-format="signatureFormat"
+                      class="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-950">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                Preview
+              </button>
+            </div>
+          </div>
+          <label class="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" name="defaultSender" value="true"
+                   th:checked="${draft != null and draft.defaultSender}"
+                   class="mt-0.5 rounded border-slate-300 text-[#ea7c28] focus:ring-[#ea7c28]" />
+            <span>
+              <span class="block text-sm font-medium text-slate-700">Make this the default</span>
+              <span class="block text-xs text-slate-500 mt-0.5">Used when no sender is chosen explicitly.</span>
+            </span>
+          </label>
+          <button type="submit"
+                  class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#ea7c28] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#d66f20] focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/40">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Add sender
+          </button>
+        </form>
+      </div>
+      <div th:replace="~{fragments/html-preview :: dialog}"></div>
+      <script src="/js/ui/html-preview.js" th:src="@{/js/ui/html-preview.js}" defer></script>
+    </section>
+  </body>
+</html>

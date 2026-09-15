@@ -2,18 +2,16 @@ package dev.dynamiq.talli.webhook.resend.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.dynamiq.talli.model.Email;
-import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
-import dev.dynamiq.talli.repository.UserRepository;
 import dev.dynamiq.talli.service.EmailService;
+import dev.dynamiq.talli.service.EmailThreadService;
 import dev.dynamiq.talli.webhook.resend.ResendEventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * Persists inbound (received) emails from Resend's inbound webhook as new Email
@@ -27,17 +25,17 @@ public class InboundEmailHandler implements ResendEventHandler {
 
     private final EmailRepository emailRepository;
     private final ClientRepository clientRepository;
-    private final UserRepository userRepository;
     private final EmailService emailService;
+    private final EmailThreadService threads;
 
     public InboundEmailHandler(EmailRepository emailRepository,
                                ClientRepository clientRepository,
-                               UserRepository userRepository,
-                               EmailService emailService) {
+                               EmailService emailService,
+                               EmailThreadService threads) {
         this.emailRepository = emailRepository;
         this.clientRepository = clientRepository;
-        this.userRepository = userRepository;
         this.emailService = emailService;
+        this.threads = threads;
     }
 
     @Override
@@ -59,6 +57,9 @@ public class InboundEmailHandler implements ResendEventHandler {
         String from = extractAddress(data.path("from"));
         String to = extractAddress(data.path("to"));
         String subject = data.path("subject").asText("");
+        String messageId = text(data, "message_id");
+        String inReplyTo = firstPresent(text(data, "in_reply_to"), header(data.path("headers"), "In-Reply-To"));
+        String references = firstPresent(text(data, "references"), header(data.path("headers"), "References"));
         if (subject.isBlank()) subject = "(no subject)";
 
         if (to == null || to.isBlank()) {
@@ -74,9 +75,19 @@ public class InboundEmailHandler implements ResendEventHandler {
             if (body != null) {
                 if (body.text() != null) text = body.text();
                 if (body.html() != null && !body.html().isBlank()) html = body.html();
+                messageId = firstPresent(messageId, body.messageId());
+                inReplyTo = firstPresent(inReplyTo, body.inReplyTo());
+                references = firstPresent(references, body.references());
             }
         } catch (Exception e) {
             log.warn("Could not fetch body for inbound email {}: {}", resendId, e.getMessage());
+        }
+
+        String normalizedMessageId = EmailThreadService.normalizeMessageId(messageId);
+        if (normalizedMessageId != null && emailRepository
+                .findFirstByMessageIdAndDirectionOrderByIdAsc(normalizedMessageId, "out").isPresent()) {
+            log.info("Skipping returning outbound copy resend_id={} message_id={}", resendId, normalizedMessageId);
+            return;
         }
 
         Email email = new Email();
@@ -89,6 +100,7 @@ public class InboundEmailHandler implements ResendEventHandler {
         email.setStatus("received");
         email.setResendId(resendId);
         email.setReceivedAt(LocalDateTime.now());
+        threads.prepareInbound(email, normalizedMessageId, inReplyTo, references);
 
         // Auto-link to a Client when the sender address matches.
         if (from != null && !from.isBlank()) {
@@ -99,81 +111,18 @@ public class InboundEmailHandler implements ResendEventHandler {
             }
         }
 
-        // Save in its own transaction so forward-to-admins failures can't roll it back.
+        // Persist the message; unread notifications are sent by the daily job.
         Email saved;
         try {
             saved = emailRepository.save(email);
+            threads.ensureThreadRoot(saved);
+            saved = emailRepository.save(saved);
         } catch (Exception e) {
             log.error("Failed to save inbound email from={}: {}", from, e.getMessage(), e);
             return;
         }
         log.info("Saved inbound email id={} from={} to={} subject='{}'", saved.getId(), from, to, subject);
 
-        try {
-            forwardToAdmins(saved);
-        } catch (Exception e) {
-            log.error("Failed to forward inbound email {}: {}", saved.getId(), e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Forward the received email to every enabled admin user so they see it in
-     * their own inbox. We skip any admin whose address matches the original
-     * sender or recipient to avoid re-delivery loops.
-     */
-    private void forwardToAdmins(Email email) {
-        List<User> admins = userRepository.findEnabledByRoleName("admin");
-        if (admins.isEmpty()) return;
-
-        String from = email.getFromAddress() == null ? "(unknown)" : email.getFromAddress();
-        String subject = "Fwd: " + (email.getSubject() == null ? "(no subject)" : email.getSubject());
-
-        // Header block describing the forwarded email
-        String headerText = "---------- Forwarded message ----------\n"
-                + "From: " + from + "\n"
-                + "To: " + email.getToAddress() + "\n"
-                + "Subject: " + (email.getSubject() == null ? "(no subject)" : email.getSubject()) + "\n"
-                + "Date: " + (email.getReceivedAt() == null ? "" : email.getReceivedAt()) + "\n\n";
-
-        String plainBody = headerText + (email.getBody() == null ? "" : email.getBody());
-        String htmlBody = null;
-        if (email.getBodyHtml() != null) {
-            htmlBody = "<div style=\"font:13px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#475569;border-left:3px solid #e2e8f0;padding:6px 0 6px 12px;margin:0 0 16px;\">"
-                    + "<div><strong>Forwarded message</strong></div>"
-                    + "<div>From: " + escapeHtml(from) + "</div>"
-                    + "<div>To: " + escapeHtml(email.getToAddress()) + "</div>"
-                    + "<div>Subject: " + escapeHtml(email.getSubject() == null ? "(no subject)" : email.getSubject()) + "</div>"
-                    + (email.getReceivedAt() == null ? "" : "<div>Date: " + email.getReceivedAt() + "</div>")
-                    + "</div>"
-                    + email.getBodyHtml();
-        }
-
-        for (User admin : admins) {
-            String adminEmail = admin.getEmail();
-            if (adminEmail == null || adminEmail.isBlank()) continue;
-            // Avoid loops: skip if the admin is the original sender or the direct recipient.
-            if (equalsIgnoreCase(adminEmail, from) || equalsIgnoreCase(adminEmail, email.getToAddress())) continue;
-
-            try {
-                if (htmlBody != null) {
-                    emailService.sendHtml(adminEmail, List.of(), subject, plainBody, htmlBody);
-                } else {
-                    emailService.sendPlain(adminEmail, List.of(), subject, plainBody);
-                }
-            } catch (Exception e) {
-                log.warn("Failed to forward inbound email to admin {}: {}", adminEmail, e.getMessage());
-            }
-        }
-    }
-
-    private static boolean equalsIgnoreCase(String a, String b) {
-        return a != null && b != null && a.equalsIgnoreCase(b);
-    }
-
-    private static String escapeHtml(String s) {
-        if (s == null) return "";
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                .replace("\"", "&quot;").replace("'", "&#39;");
     }
 
     /**
@@ -182,7 +131,7 @@ public class InboundEmailHandler implements ResendEventHandler {
      */
     private static String extractAddress(JsonNode node) {
         if (node == null || node.isMissingNode() || node.isNull()) return null;
-        if (node.isTextual()) return node.asText();
+        if (node.isTextual()) return mailbox(node.asText());
         if (node.isArray()) {
             for (JsonNode child : node) {
                 String v = extractAddress(child);
@@ -197,5 +146,34 @@ public class InboundEmailHandler implements ResendEventHandler {
             }
         }
         return null;
+    }
+
+    private static String text(JsonNode node, String field) {
+        JsonNode value = node.path(field);
+        return value.isTextual() ? value.asText() : null;
+    }
+
+    private static String header(JsonNode headers, String name) {
+        if (headers == null || !headers.isObject()) return null;
+        var fields = headers.fields();
+        while (fields.hasNext()) {
+            var entry = fields.next();
+            if (entry.getKey().equalsIgnoreCase(name) && entry.getValue().isTextual()) {
+                return entry.getValue().asText();
+            }
+        }
+        return null;
+    }
+
+    private static String firstPresent(String primary, String fallback) {
+        return primary != null && !primary.isBlank() ? primary : fallback;
+    }
+
+    private static String mailbox(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        int start = trimmed.lastIndexOf('<');
+        int end = trimmed.lastIndexOf('>');
+        return start >= 0 && end > start ? trimmed.substring(start + 1, end).trim() : trimmed;
     }
 }
