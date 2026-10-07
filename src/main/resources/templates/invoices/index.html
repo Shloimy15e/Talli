@@ -130,36 +130,7 @@
       </div>
 
       <!-- Pagination -->
-      <div th:if="${page != null and page.totalPages > 1}"
-           class="mt-4 flex items-center justify-between text-sm">
-        <p class="text-slate-500">
-          Showing <span th:text="${page.number * page.size + 1}">1</span>–<span th:text="${page.number * page.size + page.numberOfElements}">25</span>
-          of <span th:text="${page.totalElements}">100</span>
-        </p>
-        <div class="flex items-center gap-1">
-          <a th:if="${page.number > 0}"
-             th:href="@{/invoices(page=${page.number - 1}, status=${filterStatuses}, search=${filterSearch})}"
-             class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">Prev</a>
-          <span th:if="${page.number == 0}"
-                class="px-3 py-1.5 rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">Prev</span>
-
-          <th:block th:each="p : ${#numbers.sequence(0, page.totalPages - 1)}">
-            <a th:if="${p != page.number}"
-               th:href="@{/invoices(page=${p}, status=${filterStatuses}, search=${filterSearch})}"
-               th:text="${p + 1}"
-               class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">1</a>
-            <span th:if="${p == page.number}"
-                  th:text="${p + 1}"
-                  class="px-3 py-1.5 rounded-lg bg-ui-accent text-ui-accent-foreground font-medium">1</span>
-          </th:block>
-
-          <a th:if="${page.number < page.totalPages - 1}"
-             th:href="@{/invoices(page=${page.number + 1}, status=${filterStatuses}, search=${filterSearch})}"
-             class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">Next</a>
-          <span th:if="${page.number >= page.totalPages - 1}"
-                class="px-3 py-1.5 rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">Next</span>
-        </div>
-      </div>
+      <div th:replace="~{fragments/pagination :: pagination(${page}, @{/invoices(status=${filterStatuses}, search=${filterSearch})})}"></div>
 
     </section>
   </body>

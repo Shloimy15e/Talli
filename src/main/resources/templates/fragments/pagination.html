@@ -1,0 +1,39 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <div th:fragment="pagination(page, baseUrl)" th:if="${page != null}"
+       class="app-pagination">
+    <p class="app-pagination-summary"
+       th:text="|Showing ${page.totalElements == 0 ? 0 : page.number * page.size + 1}–${page.number * page.size + page.numberOfElements} of ${page.totalElements}|">
+      Showing 1–30 of 792
+    </p>
+    <nav th:if="${page.totalPages > 1}" aria-label="Pagination" class="app-pagination-controls"
+         th:with="last=${page.totalPages - 1}, start=${T(java.lang.Math).max(1, page.number - 1)}, end=${T(java.lang.Math).min(last - 1, page.number + 1)}">
+      <a th:if="${page.number > 0}" th:href="@{${baseUrl}(page=${page.number - 1})}"
+         class="app-page-link" aria-label="Previous page" rel="prev">Prev</a>
+      <span th:if="${page.number == 0}" class="app-page-link" aria-disabled="true">Prev</span>
+
+      <th:block th:replace="~{fragments/pagination :: number(0, ${page.number}, ${baseUrl}, false)}"></th:block>
+      <span th:if="${page.number > 1}" class="app-page-ellipsis"
+            th:classappend="${start > 1 ? '' : 'app-page-ellipsis-mobile'}" aria-hidden="true">…</span>
+      <th:block th:if="${start <= end}">
+        <th:block th:each="number : ${#numbers.sequence(start, end)}">
+          <th:block th:replace="~{fragments/pagination :: number(${number}, ${page.number}, ${baseUrl}, ${number != page.number})}"></th:block>
+        </th:block>
+      </th:block>
+      <span th:if="${page.number < last - 1}" class="app-page-ellipsis"
+            th:classappend="${end < last - 1 ? '' : 'app-page-ellipsis-mobile'}" aria-hidden="true">…</span>
+      <th:block th:replace="~{fragments/pagination :: number(${last}, ${page.number}, ${baseUrl}, false)}"></th:block>
+
+      <a th:if="${page.number < last}" th:href="@{${baseUrl}(page=${page.number + 1})}"
+         class="app-page-link" aria-label="Next page" rel="next">Next</a>
+      <span th:if="${page.number >= last}" class="app-page-link" aria-disabled="true">Next</span>
+    </nav>
+  </div>
+  <th:block th:fragment="number(number, current, baseUrl, mobileHidden)">
+    <a th:if="${number != current}" th:href="@{${baseUrl}(page=${number})}"
+       class="app-page-link" th:classappend="${mobileHidden ? 'app-page-neighbor' : ''}"
+       th:aria-label="|Page ${number + 1}|" th:text="${number + 1}">1</a>
+    <span th:if="${number == current}" class="app-page-link" aria-current="page"
+          th:aria-label="|Page ${number + 1}|" th:text="${number + 1}">1</span>
+  </th:block>
+</html>

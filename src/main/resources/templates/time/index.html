@@ -237,36 +237,7 @@
       </div>
 
       <!-- Pagination -->
-      <div th:if="${view.page != null and view.page.totalPages > 1}"
-           class="mt-4 flex items-center justify-between text-sm">
-        <p class="text-slate-500">
-          Showing <span th:text="${view.page.number * view.page.size + 1}">1</span>–<span th:text="${view.page.number * view.page.size + view.page.numberOfElements}">30</span>
-          of <span th:text="${view.page.totalElements}">100</span>
-        </p>
-        <div class="flex items-center gap-1">
-          <a th:if="${view.page.number > 0}"
-             th:href="@{/time(page=${view.page.number - 1}, projectId=${filterProjectIds}, clientId=${filterClientIds}, status=${filterStatuses})}"
-             class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">Prev</a>
-          <span th:if="${view.page.number == 0}"
-                class="px-3 py-1.5 rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">Prev</span>
-
-          <th:block th:each="p : ${#numbers.sequence(0, view.page.totalPages - 1)}">
-            <a th:if="${p != view.page.number}"
-               th:href="@{/time(page=${p}, projectId=${filterProjectIds}, clientId=${filterClientIds}, status=${filterStatuses})}"
-               th:text="${p + 1}"
-               class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">1</a>
-            <span th:if="${p == view.page.number}"
-                  th:text="${p + 1}"
-                  class="px-3 py-1.5 rounded-lg bg-ui-accent text-ui-accent-foreground font-medium">1</span>
-          </th:block>
-
-          <a th:if="${view.page.number < view.page.totalPages - 1}"
-             th:href="@{/time(page=${view.page.number + 1}, projectId=${filterProjectIds}, clientId=${filterClientIds}, status=${filterStatuses})}"
-             class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700">Next</a>
-          <span th:if="${view.page.number >= view.page.totalPages - 1}"
-                class="px-3 py-1.5 rounded-lg border border-slate-100 text-slate-300 cursor-not-allowed">Next</span>
-        </div>
-      </div>
+      <div th:replace="~{fragments/pagination :: pagination(${view.page}, @{/time(projectId=${filterProjectIds}, clientId=${filterClientIds}, status=${filterStatuses})})}"></div>
 
     </section>
   </body>

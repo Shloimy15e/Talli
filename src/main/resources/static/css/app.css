@@ -1043,6 +1043,95 @@ body:not(.mail-app) :where(input, textarea)::placeholder {
   }
 }
 
+/* Shared table pagination stays compact and readable at every viewport width. */
+.app-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.app-pagination-summary {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--ui-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.app-pagination-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.app-page-link {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--ui-line);
+  border-radius: var(--ui-radius-md);
+  color: var(--ui-ink);
+  background: var(--ui-surface);
+  white-space: nowrap;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+}
+
+a.app-page-link:hover {
+  background: var(--ui-hover);
+}
+
+.app-page-link[aria-current="page"] {
+  border-color: var(--ui-accent);
+  background: var(--ui-accent);
+  color: var(--ui-accent-foreground);
+  font-weight: 600;
+}
+
+.app-page-link[aria-disabled="true"] {
+  color: var(--ui-disabled);
+  cursor: not-allowed;
+}
+
+.app-page-ellipsis {
+  padding: 0 4px;
+  color: var(--ui-muted);
+}
+
+.app-page-ellipsis-mobile {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .app-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .app-page-link {
+    min-width: 40px;
+    min-height: 44px;
+  }
+
+  .app-page-neighbor {
+    display: none;
+  }
+
+  .app-page-ellipsis-mobile {
+    display: inline;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app-sidebar,
   .app-main,
