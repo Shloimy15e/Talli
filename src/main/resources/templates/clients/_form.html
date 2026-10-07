@@ -10,19 +10,19 @@
           <div>
             <label for="name" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Name</label>
             <input type="text" id="name" th:field="*{name}" required autofocus
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
           </div>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Email</label>
               <input type="email" id="email" th:field="*{email}"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div>
               <label for="phone" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Phone</label>
               <input type="text" id="phone" th:field="*{phone}"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
           </div>
 
@@ -30,14 +30,14 @@
             <label for="billingAddress" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Billing Address</label>
             <textarea id="billingAddress" th:field="*{billingAddress}" rows="3"
                       placeholder="Street, city, state, postal code, country"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent"></textarea>
           </div>
 
           <div>
             <label for="taxId" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Tax ID</label>
             <input type="text" id="taxId" th:field="*{taxId}"
                    placeholder="EIN, VAT, or company registration number"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
           </div>
 
           <div>
@@ -45,7 +45,7 @@
             <div class="flex items-center gap-2">
               <span class="text-sm text-slate-500">Net</span>
               <input type="number" id="paymentTermsDays" th:field="*{paymentTermsDays}" min="0" max="365"
-                     class="w-24 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-24 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
               <span class="text-sm text-slate-500">days</span>
             </div>
             <p class="text-[11px] text-slate-400 mt-1">Net 30 is US B2B services standard. Used for invoice due dates.</p>
@@ -56,13 +56,13 @@
             <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">Payment reminders</p>
             <label class="flex items-center gap-2 cursor-pointer mb-3">
               <input type="checkbox" th:field="*{remindersEnabled}"
-                     class="w-4 h-4 rounded border-slate-300 text-[#ea7c28] focus:ring-[#ea7c28]/30">
+                     class="w-4 h-4 rounded border-slate-300 text-ui-accent-ink focus:ring-ui-accent/30">
               <span class="text-sm text-slate-700">Auto-send payment reminders for overdue invoices</span>
             </label>
             <div class="flex items-center gap-2">
               <span class="text-sm text-slate-500">Every</span>
               <input type="number" th:field="*{reminderIntervalDays}" min="1" max="365" placeholder="—"
-                     class="w-24 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-24 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
               <span class="text-sm text-slate-500">days (blank = use global default)</span>
             </div>
           </div>
@@ -70,14 +70,14 @@
           <div>
             <label for="notes" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Notes</label>
             <textarea id="notes" th:field="*{notes}" rows="3"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent"></textarea>
           </div>
 
           <div class="flex items-center justify-end gap-3 pt-2">
             <button type="button" @click="$dispatch('close-modal')"
                     class="text-sm text-slate-600 hover:text-slate-900 px-4 py-2">Cancel</button>
             <button type="submit"
-                    class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                    class="bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
               Save
             </button>
           </div>

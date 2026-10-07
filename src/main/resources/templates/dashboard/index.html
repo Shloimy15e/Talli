@@ -25,18 +25,18 @@
              }
            }"
            x-init="tick(); setInterval(() => tick(), 1000)"
-           class="mb-6 p-5 bg-gradient-to-r from-[#ea7c28]/10 to-[#ea7c28]/5 border border-[#ea7c28]/30 rounded-xl flex items-center justify-between">
+           class="mb-6 p-5 bg-ui-selected border border-ui-line rounded-xl flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <div class="w-2.5 h-2.5 bg-[#ea7c28] rounded-full animate-pulse"></div>
+          <div class="w-2.5 h-2.5 bg-ui-accent rounded-full animate-pulse"></div>
           <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-[#ea7c28]">Currently tracking</p>
+            <p class="text-xs font-semibold uppercase tracking-wider text-ui-accent-ink">Currently tracking</p>
             <p class="text-sm font-medium text-slate-900 mt-1">
               <a th:href="@{/projects/{id}(id=${running.project.id})}"
-                 class="hover:text-[#ea7c28] hover:underline"
+                 class="hover:text-ui-accent-ink hover:underline"
                  th:text="${running.project.name}">Project</a>
               <span class="text-slate-400">·</span>
               <a th:href="@{/clients/{id}(id=${running.project.client.id})}"
-                 class="text-slate-500 hover:text-[#ea7c28] hover:underline"
+                 class="text-slate-500 hover:text-ui-accent-ink hover:underline"
                  th:text="${running.project.client.name}">Client</a>
             </p>
           </div>
@@ -52,7 +52,7 @@
       </div>
 
       <!-- Stat cards -->
-      <div class="grid grid-cols-4 gap-4 mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
         <a th:href="@{/clients}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Clients</p>
@@ -77,7 +77,7 @@
 
         <a th:href="@{/time}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Unbilled</p>
-          <p class="text-3xl font-semibold text-[#ea7c28] mt-2 font-mono tabular-nums">
+          <p class="text-3xl font-semibold text-ui-accent-ink mt-2 font-mono tabular-nums">
             <span th:text="${unbilledHours}">0</span><span class="text-xl">h</span>
             <span class="ml-1" th:text="${unbilledMinutesRemainder}">0</span><span class="text-xl">m</span>
           </p>
@@ -86,12 +86,12 @@
       </div>
 
       <!-- Financial tiles -->
-      <div class="grid grid-cols-4 gap-4 mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
 
         <a th:href="@{/invoices(status=unpaid,status=overdue)}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Receivables</p>
           <p class="text-3xl font-semibold mt-2 font-mono tabular-nums"
-             th:classappend="${totalReceivables.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
+             th:classappend="${totalReceivables.signum() > 0} ? 'text-ui-accent-ink' : 'text-emerald-600'"
              th:text="'$' + ${#numbers.formatDecimal(totalReceivables, 1, 'COMMA', 2, 'POINT')}">$0.00</p>
           <p class="text-xs text-slate-500 mt-1">outstanding</p>
           <p th:if="${creditsHeld != null and creditsHeld.signum() > 0}"
@@ -119,7 +119,7 @@
         <a th:href="@{/subscriptions}" class="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-sm transition block">
           <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Subscriptions Due</p>
           <p class="text-3xl font-semibold mt-2 tabular-nums"
-             th:classappend="${subsDueThisWeekCount > 0} ? 'text-[#ea7c28]' : 'text-slate-900'">
+             th:classappend="${subsDueThisWeekCount > 0} ? 'text-ui-accent-ink' : 'text-slate-900'">
             <span th:text="${subsDueThisWeekCount}">0</span>
             <span class="text-xl text-slate-500 font-normal">this week</span>
           </p>
@@ -128,9 +128,9 @@
       </div>
 
       <!-- Charts -->
-      <div class="grid grid-cols-3 gap-4 mb-6">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
 
-        <div class="col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+        <div class="xl:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-sm font-semibold">Time tracked (last 14 days)</h2>
             <span class="text-xs text-slate-500">hours per day</span>
@@ -143,7 +143,7 @@
           <canvas id="chartBillable" th:attr="data-chart=${billableBreakdownJson}" height="200"></canvas>
         </div>
 
-        <div class="col-span-2 bg-white rounded-xl border border-slate-200 p-5">
+        <div class="xl:col-span-2 bg-white rounded-xl border border-slate-200 p-5">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-sm font-semibold">Invoiced, received & expenses (last 6 months)</h2>
           </div>
@@ -155,7 +155,7 @@
           <canvas id="chartTimePerProject" th:attr="data-chart=${timePerProjectJson}" height="200"></canvas>
         </div>
 
-        <div class="col-span-3 bg-white rounded-xl border border-slate-200 p-5">
+        <div class="xl:col-span-3 bg-white rounded-xl border border-slate-200 p-5">
           <h2 class="text-sm font-semibold mb-4">Quarterly revenue</h2>
           <canvas id="chartQuarterly" th:attr="data-chart=${quarterlyRevenueJson}" height="80"></canvas>
         </div>
@@ -166,13 +166,14 @@
       <script>
         (function () {
           const read = id => JSON.parse(document.getElementById(id).dataset.chart);
-          const orange = '#ea7c28';
-          const navy = '#161f30';
+          const tokens = getComputedStyle(document.documentElement);
+          const orange = tokens.getPropertyValue('--ui-accent').trim();
+          const navy = tokens.getPropertyValue('--ui-rail').trim();
           const slate = '#64748b';
           const green = '#10b981';
           const red = '#ef4444';
 
-          Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+          Chart.defaults.font.family = tokens.getPropertyValue('--ui-font').trim();
           Chart.defaults.color = slate;
 
           const fmtMinutes = m => {
@@ -306,31 +307,32 @@
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
           <h2 class="text-sm font-semibold">Recent time entries</h2>
-          <a th:href="@{/time}" class="text-xs text-[#ea7c28] hover:underline">View all</a>
+          <a th:href="@{/time}" class="text-xs text-ui-accent-ink hover:underline">View all</a>
         </div>
 
         <div th:if="${#lists.isEmpty(recentEntries)}" class="p-12 text-center">
           <p class="text-sm text-slate-500">No time logged yet.</p>
-          <a th:href="@{/time}" class="text-[#ea7c28] hover:underline text-sm mt-2 inline-block">Log your first entry</a>
+          <a th:href="@{/time}" class="text-ui-accent-ink hover:underline text-sm mt-2 inline-block">Log your first entry</a>
         </div>
 
-        <table th:unless="${#lists.isEmpty(recentEntries)}" class="w-full">
+        <div class="overflow-x-auto">
+        <table th:unless="${#lists.isEmpty(recentEntries)}" class="w-full min-w-[640px]">
           <tbody>
-            <tr th:each="e : ${recentEntries}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition">
+            <tr data-row-action th:each="e : ${recentEntries}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50 transition">
               <td class="px-6 py-3 text-sm text-slate-500 w-32">
                 <span th:replace="~{fragments/_time :: timeago(${e.startedAt})}"></span>
               </td>
               <td class="px-6 py-3 text-sm">
                 <a th:href="@{/projects/{id}(id=${e.project.id})}"
-                   class="font-medium hover:text-[#ea7c28] hover:underline"
-                   th:text="${e.project.name}">Project</a>
+                   class="font-medium hover:text-ui-accent-ink hover:underline"
+                   th:text="${e.project.name}" data-row-primary>Project</a>
                 <span class="text-slate-400 mx-1">·</span>
                 <a th:href="@{/clients/{id}(id=${e.project.client.id})}"
-                   class="text-slate-500 hover:text-[#ea7c28] hover:underline"
+                   class="text-slate-500 hover:text-ui-accent-ink hover:underline"
                    th:text="${e.project.client.name}">Client</a>
               </td>
               <td class="px-6 py-3 text-sm text-slate-500" th:text="${e.description} ?: ''">desc</td>
-              <td class="px-6 py-3 font-mono text-sm text-[#ea7c28] text-right w-24">
+              <td class="px-6 py-3 font-mono text-sm text-ui-accent-ink text-right w-24">
                 <span th:if="${e.durationMinutes != null}"
                       th:text="${e.durationMinutes / 60} + 'h ' + ${e.durationMinutes % 60} + 'm'">1h 30m</span>
                 <span th:if="${e.durationMinutes == null}" class="text-slate-400">—</span>
@@ -338,6 +340,7 @@
             </tr>
           </tbody>
         </table>
+        </div>
       </div>
 
     </section>

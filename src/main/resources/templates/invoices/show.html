@@ -69,12 +69,12 @@
           <div class="min-w-0">
             <div class="flex items-center gap-3 mb-2">
               <h1 class="font-mono text-2xl font-semibold tracking-tight" th:text="${invoice.reference}">INV-1001</h1>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
-                    th:classappend="${invoice.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${invoice.status == 'overdue'} ? 'bg-red-50 text-red-700' : (${invoice.status == 'void' or invoice.status == 'written_off'} ? 'bg-slate-100 text-slate-500' : 'bg-[#ea7c28]/10 text-[#ea7c28]'))"
+              <span class="app-status capitalize"
+                    th:classappend="${invoice.status == 'paid'} ? 'app-status-success' : (${invoice.status == 'overdue'} ? 'app-status-danger' : (${invoice.status == 'void' or invoice.status == 'written_off'} ? 'app-status-neutral' : 'app-status-warning'))"
                     th:text="${invoice.status == 'written_off' ? 'Written off' : invoice.status}">unpaid</span>
             </div>
             <a th:href="@{/clients/{id}(id=${invoice.client.id})}"
-               class="text-sm text-slate-600 hover:text-[#ea7c28] hover:underline"
+               class="text-sm text-slate-600 hover:text-ui-accent-ink hover:underline"
                th:text="${invoice.client.name}">Client</a>
           </div>
 
@@ -98,7 +98,7 @@
           <!-- Mercury payment page is the primary customer payment option. -->
           <a th:if="${mercuryPaymentUrl != null and open}"
              th:href="${mercuryPaymentUrl}" target="_blank" rel="noopener"
-             class="inline-flex items-center gap-2 text-sm bg-[#ea7c28] hover:bg-[#d66f20] text-white px-3 py-1.5 rounded-lg transition">
+             class="inline-flex items-center gap-2 text-sm bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground px-3 py-1.5 rounded-lg transition">
             <i data-lucide="credit-card" class="w-4 h-4"></i>
             Pay with ACH
           </a>
@@ -108,7 +108,7 @@
                 sec:authorize="hasAuthority('manage-invoices')">
             <button type="submit"
                     th:classappend="${primaryAction == 'pdf'}
-                      ? 'bg-[#ea7c28] hover:bg-[#d66f20] text-white'
+                      ? 'bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground'
                       : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-700'"
                     class="inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg transition">
               <i data-lucide="download" class="w-4 h-4"></i>
@@ -122,7 +122,7 @@
                   th:disabled="${noPdf or !hasClientEmail}"
                   th:title="${noPdf ? 'Generate a PDF first' : (!hasClientEmail ? 'Client has no email address' : '')}"
                   th:classappend="${primaryAction == 'email'}
-                    ? 'bg-[#ea7c28] hover:bg-[#d66f20] text-white'
+                    ? 'bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground'
                     : 'bg-white hover:bg-slate-100 border border-slate-200 text-slate-700'"
                   class="inline-flex items-center gap-2 text-sm disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition">
             <i data-lucide="mail" class="w-4 h-4"></i>
@@ -163,7 +163,7 @@
 
         <form th:action="@{/invoices/{id}/mercury-link(id=${invoice.id})}" method="post"
               sec:authorize="hasAuthority('manage-invoices')"
-              class="px-8 py-4 border-b border-slate-200 bg-orange-50/40 flex items-end gap-3">
+              class="px-8 py-4 border-b border-slate-200 bg-ui-selected flex items-end gap-3">
           <div class="flex-1">
             <label for="mercuryPaymentUrl" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
               Mercury payment link
@@ -171,7 +171,7 @@
             <input type="url" id="mercuryPaymentUrl" name="paymentUrl"
                    th:value="${mercuryPaymentUrl}"
                    placeholder="https://app.mercury.com/pay/..."
-                   class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                   class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
           </div>
           <button type="submit"
                   class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-sm px-4 py-2 rounded-lg transition">
@@ -249,7 +249,7 @@
         </div>
 
         <!-- Meta grid -->
-        <div class="px-8 py-5 border-b border-slate-200 grid grid-cols-3 gap-6 text-sm">
+        <div class="px-8 py-5 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Period</p>
             <p class="tabular-nums"
@@ -265,7 +265,7 @@
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Balance</p>
             <p class="font-mono tabular-nums font-medium"
-               th:classappend="${balance.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
+               th:classappend="${balance.signum() > 0} ? 'text-ui-accent-ink' : 'text-emerald-600'"
                th:text="${csym.apply(invoice.currency)} + ${#numbers.formatDecimal(balance, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
           </div>
         </div>
@@ -276,7 +276,8 @@
 
           <div th:if="${#lists.isEmpty(items)}" class="text-sm text-slate-400 italic">No line items.</div>
 
-          <table th:unless="${#lists.isEmpty(items)}" class="w-full text-sm">
+          <div class="overflow-x-auto">
+          <table th:unless="${#lists.isEmpty(items)}" class="w-full text-sm min-w-[640px]">
             <thead>
               <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                 <th class="text-left py-2 pr-4">Description</th>
@@ -319,11 +320,12 @@
               <tr th:if="${balance.signum() != 0}">
                 <td colspan="3" class="pb-4 text-right text-xs uppercase tracking-wider text-slate-500 font-semibold">Balance</td>
                 <td class="pb-4 pl-3 text-right font-mono tabular-nums font-semibold"
-                    th:classappend="${balance.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
+                    th:classappend="${balance.signum() > 0} ? 'text-ui-accent-ink' : 'text-emerald-600'"
                     th:text="${csym.apply(invoice.currency)} + ${#numbers.formatDecimal(balance, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
               </tr>
             </tfoot>
           </table>
+          </div>
         </div>
 
         <!-- Notes -->
@@ -346,14 +348,14 @@
                 sec:authorize="hasAuthority('manage-invoices')"
                 class="mt-4 space-y-3">
             <textarea name="notes" rows="4"
-                      class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"
+                      class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent"
                       placeholder="Optional invoice notes, terms, or client-facing details"
                       th:text="${invoice.notes}"></textarea>
             <div class="flex justify-end gap-2">
               <button type="button" @click="notesOpen = false"
                       class="text-sm text-slate-600 hover:text-slate-900 px-3 py-2">Cancel</button>
               <button type="submit"
-                      class="inline-flex items-center gap-1.5 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                      class="inline-flex items-center gap-1.5 bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
                 <i data-lucide="save" class="w-3.5 h-3.5"></i> Save
               </button>
             </div>
@@ -372,7 +374,7 @@
             <span class="text-slate-400">paid</span>
             <span class="text-slate-400">·</span>
             <span class="font-mono tabular-nums"
-                  th:classappend="${balance.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
+                  th:classappend="${balance.signum() > 0} ? 'text-ui-accent-ink' : 'text-emerald-600'"
                   th:text="${csym.apply(invoice.currency)} + ${#numbers.formatDecimal(balance, 1, 'COMMA', 2, 'POINT')}">USD 0.00</span>
             <span class="text-slate-400">balance</span>
           </span>
@@ -442,8 +444,8 @@
         </div>
         <ul th:unless="${#lists.isEmpty(emailHistory)}" class="divide-y divide-slate-100">
           <li th:each="e : ${emailHistory}" class="px-6 py-3 flex items-start gap-3">
-            <span class="mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0"
-                  th:classappend="${e.status == 'sent'} ? 'bg-emerald-50 text-emerald-700' : (${e.status == 'failed'} ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600')"
+            <span class="app-status mt-0.5 shrink-0"
+                  th:classappend="${e.status == 'sent'} ? 'app-status-success' : (${e.status == 'failed'} ? 'app-status-danger' : 'app-status-neutral')"
                   th:text="${e.status}">sent</span>
             <div class="flex-1 min-w-0">
               <p class="text-sm">
@@ -601,7 +603,7 @@
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Credit</label>
               <select name="creditId" x-model="creditId" required @change="onSelect($event)"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                 <option value="" disabled selected>Pick a credit…</option>
                 <option th:each="ac : ${availableCredits}"
                         th:value="${ac.credit.id}"
@@ -615,17 +617,17 @@
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Date</label>
                 <input type="date" name="paidAt"
                        th:value="${#temporals.format(#temporals.createNowForTimeZone('UTC'), 'yyyy-MM-dd')}"
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
               </div>
               <div>
                 <label class="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
                   <span>Amount</span>
-                  <button type="button" class="text-[10px] text-[#ea7c28] hover:underline normal-case tracking-normal font-medium"
+                  <button type="button" class="text-[10px] text-ui-accent-ink hover:underline normal-case tracking-normal font-medium"
                           @click="setMax()" x-show="creditId">Max</button>
                 </label>
                 <input type="number" step="0.01" min="0.01" name="amount" x-model="amount" required
                        :max="applicable()"
-                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                 <p class="text-[10px] text-slate-400 mt-1" x-show="creditId">
                   Max <span class="font-mono tabular-nums" x-text="applicable().toFixed(2)">0.00</span>
                 </p>
@@ -635,7 +637,7 @@
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Notes</label>
               <textarea name="notes" rows="2" placeholder="Optional"
-                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+                        class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent"></textarea>
             </div>
 
             <div class="text-xs text-slate-500 px-3 py-2 rounded bg-slate-50 border border-slate-200">
@@ -648,7 +650,7 @@
               <button type="button" @click="creditModal = false"
                       class="text-sm text-slate-600 hover:text-slate-900 px-4 py-2">Cancel</button>
               <button type="submit"
-                      class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                      class="bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
                 Apply
               </button>
             </div>
@@ -735,7 +737,7 @@
                     class="text-sm text-slate-600 hover:text-slate-900 px-4 py-2">Cancel</button>
             <form th:action="@{/invoices/{id}/email(id=${invoice.id}, _csrf=${_csrf.token})}" method="post">
               <button type="submit"
-                      class="inline-flex items-center gap-2 text-sm bg-[#ea7c28] hover:bg-[#d66f20] text-white font-medium px-4 py-2 rounded-lg transition">
+                      class="inline-flex items-center gap-2 text-sm bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground font-medium px-4 py-2 rounded-lg transition">
                 <i data-lucide="send" class="w-4 h-4"></i>
                 Send now
               </button>

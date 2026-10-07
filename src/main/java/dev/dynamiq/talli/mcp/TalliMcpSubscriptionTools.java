@@ -44,7 +44,7 @@ public class TalliMcpSubscriptionTools {
     }
 
     @McpTool(name = "create_subscription", title = "Create a subscription",
-            description = "Create an active recurring-expense template. If a project is supplied, its client is used and any supplied client_id must match.",
+            description = "Create an active recurring-expense template. If a project is supplied, its client is used and any supplied clientId must match.",
             annotations = @McpTool.McpAnnotations(title = "Create a subscription", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-expenses')")
@@ -59,7 +59,7 @@ public class TalliMcpSubscriptionTools {
             @McpToolParam(description = "Optional client ID", required = false) Long clientId,
             @McpToolParam(description = "Optional project ID", required = false) Long projectId,
             @McpToolParam(description = "Optional description", required = false) String description,
-            @McpToolParam(description = "Optional next due date, YYYY-MM-DD; defaults to started_on", required = false) String nextDueOn,
+            @McpToolParam(description = "Optional next due date, YYYY-MM-DD; defaults to startedOn", required = false) String nextDueOn,
             @McpToolParam(description = "Optional subscription management URL", required = false) String manageUrl,
             @McpToolParam(description = "Optional cancellation URL", required = false) String cancelUrl,
             @McpToolParam(description = "Optional payment method", required = false) String paymentMethod) {
@@ -85,7 +85,7 @@ public class TalliMcpSubscriptionTools {
     }
 
     @McpTool(name = "update_subscription", title = "Update a subscription",
-            description = "Update future subscription settings. Existing expenses are unchanged. Blank optional text clears it; client_id or project_id 0 clears that association. Use cancel_subscription or reactivate_subscription for lifecycle changes.",
+            description = "Update future subscription settings. Existing expenses are unchanged. Blank optional text clears it; clientId or projectId 0 clears that association. Use cancel_subscription or reactivate_subscription for lifecycle changes.",
             annotations = @McpTool.McpAnnotations(title = "Update a subscription", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-expenses')")
@@ -175,7 +175,7 @@ public class TalliMcpSubscriptionTools {
     @Transactional
     public McpViews.SubscriptionView reactivateSubscription(
             @McpToolParam(description = "Existing subscription ID", required = true) Long subscriptionId,
-            @McpToolParam(description = "Optional next due date, YYYY-MM-DD; defaults to today or started_on if later", required = false) String nextDueOn) {
+            @McpToolParam(description = "Optional next due date, YYYY-MM-DD; defaults to today or startedOn if later", required = false) String nextDueOn) {
         if (subscriptionId == null) throw new IllegalArgumentException("subscription_id is required");
         Subscription subscription = findSubscription(subscriptionId);
         LocalDate defaultDueDate = LocalDate.now().isAfter(subscription.getStartedOn())

@@ -102,7 +102,7 @@ public class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity http, PersistentTokenRepository persistentTokenRepository) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/logo.svg", "/favicon.ico", "/css/**", "/js/**", "/login", "/invite/**").permitAll()
+                .requestMatchers("/logo.svg", "/favicon.ico", "/css/**", "/js/**", "/brand/**", "/fonts/**", "/login", "/invite/**").permitAll()
 
                 // Portal — client-facing
                 .requestMatchers("/portal/**").hasAuthority("portal-access")

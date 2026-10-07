@@ -2,28 +2,28 @@
 name: Talli
 description: A calm operational design foundation for client work, billing, and communications.
 colors:
-  ink: "#202936"
-  muted: "#637083"
-  rail: "#141c2a"
+  ink: "#0f2a44"
+  muted: "#6b7280"
+  rail: "#0f2a44"
   surface: "#ffffff"
-  subtle: "#f7f8fa"
-  canvas: "#f5f6f8"
-  line: "#e5e9ee"
-  border-strong: "#cfd5dc"
-  accent: "#ea7c28"
-  accent-hover: "#d46819"
+  subtle: "#f1f5f9"
+  canvas: "#fafafa"
+  line: "#e5e7eb"
+  border-strong: "#94a3b8"
+  accent: "#f97316"
+  accent-hover: "#0f2a44"
   accent-foreground: "#ffffff"
-  accent-ink: "#9e4510"
-  focus: "#b65316"
+  accent-ink: "#a84308"
+  focus: "#a84308"
   selected: "#fff1e7"
-  hover: "#e9ecf0"
-  active: "#e6e9ee"
-  rail-ink: "#aeb9ca"
-  rail-hover: "#253044"
-  rail-active: "#303245"
-  rail-accent: "#ffb57d"
-  selection: "#ffe1c9"
-  selection-ink: "#52280f"
+  hover: "#f1f5f9"
+  active: "#e5e7eb"
+  rail-ink: "#cbd5e1"
+  rail-hover: "#193a57"
+  rail-active: "#234663"
+  rail-accent: "#fb923c"
+  selection: "#ffedd5"
+  selection-ink: "#0f2a44"
   success-surface: "#edf8f1"
   success: "#386545"
   success-line: "#dceee2"
@@ -37,31 +37,31 @@ colors:
   disabled-surface: "#d6dae0"
 typography:
   headline:
-    fontFamily: "Inter var, Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+    fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
     fontSize: "24px"
     fontWeight: 600
     lineHeight: 1.4
     letterSpacing: "-0.65px"
   title:
-    fontFamily: "Inter var, Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+    fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
     fontSize: "16px"
     fontWeight: 650
     lineHeight: 1.25
     letterSpacing: "-0.35px"
   body:
-    fontFamily: "Inter var, Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+    fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
     fontSize: "14px"
     fontWeight: 400
     lineHeight: 1.85
     letterSpacing: "normal"
   label:
-    fontFamily: "Inter var, Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+    fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
     fontSize: "12px"
     fontWeight: 600
     lineHeight: 1.4
     letterSpacing: "normal"
   metadata:
-    fontFamily: "Inter var, Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+    fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
     fontSize: "10px"
     fontWeight: 500
     lineHeight: 1.4
@@ -122,7 +122,7 @@ components:
 
 Talli should feel like a finely made work tool: calm enough for sustained use, compact enough for real operations, and familiar on first contact. Apple’s interface discipline is a useful reference—clear hierarchy, restrained chrome, native-feeling controls, and content that receives more visual weight than the interface—translated into Talli’s Inter typography and warm orange identity.
 
-The shared foundation is implemented in `src/main/resources/static/css/design-tokens.css`; Mail is its first complete reference surface. Other Talli screens have not yet been migrated. Reusable controls belong in generic `ui-*` assets and must stay free of mail-domain assumptions. Inbox rows, the conversation reader, and the composer remain Mail patterns. Evidence also comes from `PRODUCT.md`, `.impeccable/surfaces/mail.md`, the mail layout and email templates, and the implemented Mail CSS and JavaScript.
+The shared foundation is implemented in `src/main/resources/static/css/design-tokens.css`; Mail is its first complete reference surface. The operational screens, sign-in, invitations, and client portal share this foundation through semantic Tailwind utilities in `js/ui/theme.js`. Reusable controls belong in generic `ui-*` assets and must stay free of mail-domain assumptions. Inbox rows, the conversation reader, and the composer remain Mail patterns. Evidence also comes from `PRODUCT.md`, `.impeccable/surfaces/mail.md`, the mail layout and email templates, and the implemented Mail CSS and JavaScript.
 
 **Key Characteristics:**
 
@@ -139,8 +139,8 @@ The palette is a quiet cool-neutral field with one warm action family. These sem
 
 ### Primary
 
-- **Dynamiq Orange** (`accent`): The canonical `#ea7c28` brand fill for primary actions, selection marks, checks, and form accents.
-- **Dynamiq Orange Pressed** (`accent-hover`): A firmer orange for hover and active brand surfaces.
+- **Dynamiq Orange** (`accent`): The canonical `#F97316` brand fill for primary actions, selection marks, checks, and form accents.
+- **Dynamiq Navy Hover** (`accent-hover`): Navy for primary-action hover, matching the approved Developers button treatment.
 - **Accent Foreground** (`accent-foreground`): White text and icons on orange fills, matching the chosen Dynamiq brand treatment for Compose and Send.
 - **Accent Ink** (`accent-ink`): Dark orange for links and small foreground marks on light surfaces.
 - **Warm Selection** (`selected`): Selected list or control state; its calm filled treatment replaces ornamental indicators.
@@ -251,6 +251,7 @@ Borders are cool 1px hairlines. Selection uses a calm warm tinted surface withou
 
 - **Search:** Soft neutral fill, hairline border, compact search icon, and a warm focus treatment. `/` focuses it when the user is outside an editor or field.
 - **Composer fields:** Borderless inputs arranged on divided rows. Labels remain aligned in a narrow first column; Cc, Bcc, client, and template controls disclose only when needed.
+- **Checkboxes:** Real form inputs use a restrained 16px square, 4px corners, and a crisp neutral border. Checked and indeterminate states use the canonical orange fill with a white check or dash. Keyboard focus uses the shared outline; disabled states remain visibly muted. Mobile labels provide a comfortable target, and forced-color mode uses native checkbox rendering.
 - **Error / Disabled:** Errors use the danger pair and `role="alert"`; asynchronous status uses quiet neutral feedback. Sending stays disabled while sender data, attachments, or submission state are unresolved.
 
 ### Selects
@@ -303,3 +304,7 @@ Keyboard shortcuts are `C` for compose, `R` for reply, `/` for search, and Up/Do
 - **Don't** expose provider references, delivery diagnostics, or full recipient metadata before the user asks for details.
 - **Don't** imply cloud draft sync, successful delivery, reply threading, or retained attachment files unless the implementation proves it.
 - **Don't** add decorative accent colors, gratuitous motion, or oversized marketing typography to this operating surface.
+
+## Dynamiq brand integration
+
+The approved Dynamiq Developers brand supplies navy #0F2A44, orange #F97316, off-white #FAFAFA, the local Inter variable font, and unchanged SVG marks. Talli keeps its product name and Mail's compact operational layout. Primary buttons use white text and icons on orange, changing to navy with white foreground on hover, as implemented in the Developers site's shared button style. Inline links use the darker accent-ink role. Checkboxes retain native form and keyboard behavior with orange selection and a white check. The brand mark appears in navigation and authentication, with the horizontal wordmark as attribution. Shared tables use quiet headers and contained horizontal scrolling; summary grids adapt to smaller screens.

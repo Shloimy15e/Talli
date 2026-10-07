@@ -29,12 +29,12 @@
               <label for="vendor" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Vendor</label>
               <input type="text" id="vendor" name="vendor" required
                      th:value="${subscription.vendor}" placeholder="e.g., GitHub, Figma"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div>
               <label for="category" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Category</label>
               <select id="category" name="category" required
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                 <option th:each="c : ${expenseCategories}"
                         th:value="${c}" th:text="${c}" th:selected="${subscription.category == c}">software</option>
               </select>
@@ -47,18 +47,18 @@
               <label for="amount" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Amount</label>
               <input type="number" id="amount" name="amount" step="0.01" min="0" required
                      th:value="${subscription.amount}" placeholder="0.00"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div>
               <label for="currency" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Currency</label>
               <input type="text" id="currency" name="currency" maxlength="3"
                      th:value="${subscription.currency ?: 'USD'}" placeholder="USD"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div>
               <label for="cycle" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Cycle</label>
               <select id="cycle" name="cycle" required
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                 <option value="monthly" th:selected="${subscription.cycle == 'monthly'}">monthly</option>
                 <option value="yearly" th:selected="${subscription.cycle == 'yearly'}">yearly</option>
               </select>
@@ -71,13 +71,13 @@
               <label for="startedOn" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Started on</label>
               <input type="date" id="startedOn" name="startedOn" required
                      th:value="${subscription.startedOn}"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div>
               <label for="nextDueOn" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Next charge</label>
               <input type="date" id="nextDueOn" name="nextDueOn"
                      th:value="${subscription.nextDueOn}"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
               <p class="text-xs text-slate-400 mt-1">Leave blank to use start date</p>
             </div>
           </div>
@@ -87,13 +87,13 @@
             <label for="manageUrl" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Manage URL</label>
             <input type="url" id="manageUrl" name="manageUrl"
                    th:value="${subscription.manageUrl}" placeholder="https://github.com/settings/billing"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
           </div>
           <div>
             <label for="cancelUrl" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Cancel URL</label>
             <input type="url" id="cancelUrl" name="cancelUrl"
                    th:value="${subscription.cancelUrl}" placeholder="Direct link to cancel flow"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
           </div>
 
           <!-- Payment method -->
@@ -101,7 +101,7 @@
             <label for="paymentMethod" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Payment method</label>
             <input type="text" id="paymentMethod" name="paymentMethod"
                    th:value="${subscription.paymentMethod}" placeholder="e.g., Amex 1234"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
           </div>
 
           <!-- Optional tagging -->
@@ -109,7 +109,7 @@
             <div>
               <label for="clientId" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Client (optional)</label>
               <select id="clientId" name="clientId"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                 <option value="" th:selected="${subscription.client == null}">—</option>
                 <option th:each="c : ${clients}" th:value="${c.id}"
                         th:selected="${subscription.client != null and subscription.client.id == c.id}"
@@ -119,7 +119,7 @@
             <div>
               <label for="projectId" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Project (optional)</label>
               <select id="projectId" name="projectId"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                 <option value="" th:selected="${subscription.project == null}">—</option>
                 <option th:each="p : ${projects}" th:value="${p.id}"
                         th:selected="${subscription.project != null and subscription.project.id == p.id}"
@@ -134,14 +134,14 @@
             <textarea id="description" name="description" rows="2"
                       placeholder="What's this for?"
                       th:text="${subscription.description}"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent"></textarea>
           </div>
 
           <div class="flex items-center justify-end gap-3 pt-2">
             <button type="button" @click="$dispatch('close-modal')"
                     class="text-sm text-slate-600 hover:text-slate-900 px-4 py-2">Cancel</button>
             <button type="submit"
-                    class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                    class="bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
               Save
             </button>
           </div>

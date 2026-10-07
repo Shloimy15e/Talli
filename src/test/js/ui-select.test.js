@@ -26,6 +26,25 @@ const options = [
   { index: 4, label: 'Dynamiq Solutions <billing@dynamiq.dev>', primary: 'Dynamiq Solutions', secondary: 'billing@dynamiq.dev', disabled: false }
 ];
 
+test('website single selects enhance automatically while standalone controls require opt-in', () => {
+  const select = {
+    multiple: false,
+    size: 0,
+    hasAttribute: () => false,
+    closest: () => ({})
+  };
+  assert.equal(picker.isEligible(select), true);
+  assert.equal(picker.isEligible({ ...select, closest: () => null }), false);
+  assert.equal(picker.isEligible({ ...select, closest: () => null, hasAttribute: (name) => name === 'data-ui-select' }), true);
+});
+
+test('native opt-out and multi-selection listboxes retain their native behavior', () => {
+  const select = { multiple: false, size: 0, hasAttribute: () => false, closest: () => ({}) };
+  assert.equal(picker.isEligible({ ...select, multiple: true }), false);
+  assert.equal(picker.isEligible({ ...select, size: 4 }), false);
+  assert.equal(picker.isEligible({ ...select, hasAttribute: (name) => name === 'data-ui-select-native' }), false);
+});
+
 test('sender labels expose the address as distinct secondary text', () => {
   assert.deepEqual(
     { ...picker.splitLabel('Dynamiq Solutions <billing@dynamiq.dev>') },

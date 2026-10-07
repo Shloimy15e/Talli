@@ -370,7 +370,7 @@ class TalliMcpWriteToolsTest {
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("finance@dynamiq.dev", null));
         when(agentEmailService.preview("finance@dynamiq.dev", 7L, "Invoice update",
-                "Hello", "branded", true, false, "billing@dynamiq.dev", null))
+                "Hello", "branded", true, false, "billing@dynamiq.dev", null, null))
                 .thenReturn(new AgentEmailService.Preview(7L, "billing@dynamiq.dev", "Dynamiq Billing",
                         "billing@acme.test",
                         null, null, "Invoice update", "Hello", "<html>Preview</html>",
@@ -382,13 +382,13 @@ class TalliMcpWriteToolsTest {
         email.setSubject("Invoice update");
         email.setStatus("sent");
         when(agentEmailService.send("finance@dynamiq.dev", 7L, "Invoice update",
-                "Hello", "branded", true, false, "billing@dynamiq.dev", "preview-token", true, null))
+                "Hello", "branded", true, false, "billing@dynamiq.dev", "preview-token", true, null, null))
                 .thenReturn(new AgentEmailService.SendResult(email, "Dynamiq Billing", "branded", true));
 
         var preview = tools.previewClientEmail(7L, "Invoice update", "Hello",
-                "billing@dynamiq.dev", "branded", null, null, null);
+                "billing@dynamiq.dev", "branded", null, null, null, null);
         var result = tools.sendClientEmail(7L, "Invoice update", "Hello",
-                "billing@dynamiq.dev", "branded", null, null, preview.previewToken(), true, null);
+                "billing@dynamiq.dev", "branded", null, null, preview.previewToken(), true, null, null);
 
         assertThat(preview.fromAddress()).isEqualTo("billing@dynamiq.dev");
         assertThat(preview.ccAddress()).isNull();
@@ -398,7 +398,35 @@ class TalliMcpWriteToolsTest {
         assertThat(result.ccAddress()).isNull();
         assertThat(result.signatureIncluded()).isTrue();
         verify(agentEmailService).send("finance@dynamiq.dev", 7L, "Invoice update",
-                "Hello", "branded", true, false, "billing@dynamiq.dev", "preview-token", true, null);
+                "Hello", "branded", true, false, "billing@dynamiq.dev", "preview-token", true, null, null);
+    }
+
+    @Test
+    void previewsThenSendsStandaloneEmailWithoutClient() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("finance@dynamiq.dev", null));
+        when(agentEmailService.preview("finance@dynamiq.dev", null, "Hello", "Body",
+                null, true, false, null, null, "new@example.test"))
+                .thenReturn(new AgentEmailService.Preview(null, "info@dynamiq.dev", "Dynamiq",
+                        "new@example.test", null, null, "Hello", "Body", null, null, true,
+                        null, null, null, null, "preview-token"));
+        Email email = new Email();
+        email.setId(12L);
+        email.setToAddress("new@example.test");
+        email.setStatus("sent");
+        when(agentEmailService.send("finance@dynamiq.dev", null, "Hello", "Body", null,
+                true, false, null, "preview-token", true, null, "new@example.test"))
+                .thenReturn(new AgentEmailService.SendResult(email, "Dynamiq", null, true));
+
+        var preview = tools.previewClientEmail(null, "Hello", "Body", null, null, null, null,
+                null, "new@example.test");
+        var sent = tools.sendClientEmail(null, "Hello", "Body", null, null, null, null,
+                preview.previewToken(), true, null, "new@example.test");
+
+        assertThat(preview.clientId()).isNull();
+        assertThat(sent.clientId()).isNull();
+        assertThat(sent.toAddress()).isEqualTo("new@example.test");
+        assertThat(sent.status()).isEqualTo("sent");
     }
 
     @Test

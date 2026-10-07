@@ -69,7 +69,7 @@
     </div>
 
     <!-- KPI cards -->
-    <div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-xl border border-slate-200 p-5">
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total billed</p>
             <p class="font-mono text-xl font-semibold tabular-nums mt-2"
@@ -83,7 +83,7 @@
         <div class="bg-white rounded-xl border border-slate-200 p-5">
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold">Outstanding</p>
             <p class="font-mono text-xl font-semibold tabular-nums mt-2"
-               th:classappend="${outstanding.signum() > 0} ? 'text-[#ea7c28]' : 'text-slate-700'"
+               th:classappend="${outstanding.signum() > 0} ? 'text-ui-accent-ink' : 'text-slate-700'"
                th:text="${csym.apply(summaryCurrency)} + ${#numbers.formatDecimal(outstanding, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 p-5">
@@ -116,7 +116,7 @@
                 <div>
                     <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">61–90 days</p>
                     <p class="font-mono tabular-nums font-medium"
-                       th:classappend="${aging.days61to90.signum() > 0} ? 'text-[#ea7c28]' : ''"
+                       th:classappend="${aging.days61to90.signum() > 0} ? 'text-ui-accent-ink' : ''"
                        th:text="${csym.apply(summaryCurrency)} + ${#numbers.formatDecimal(aging.days61to90, 1, 'COMMA', 2, 'POINT')}">0.00</p>
                 </div>
                 <div>
@@ -145,7 +145,7 @@
                 <p class="text-xs text-slate-500 mt-0.5">
                     Cash received and held for future invoices. Available balance:
                     <span class="font-mono tabular-nums font-semibold"
-                          th:classappend="${creditAvailable.signum() > 0} ? 'text-[#ea7c28]' : 'text-slate-500'"
+                          th:classappend="${creditAvailable.signum() > 0} ? 'text-ui-accent-ink' : 'text-slate-500'"
                           th:text="${csym.apply(currency)} + ${#numbers.formatDecimal(creditAvailable, 1, 'COMMA', 2, 'POINT')}">0.00</span>
                 </p>
             </div>
@@ -170,12 +170,12 @@
                     <div class="col-span-2">
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Amount</label>
                         <input type="number" step="0.01" min="0.01" name="amount" required
-                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                     </div>
                     <div class="col-span-2">
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Currency</label>
                         <select name="currency" required
-                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                             <option value="USD" th:selected="${currency == 'USD'}">USD</option>
                             <option value="ILS" th:selected="${currency == 'ILS'}">ILS</option>
                             <option value="EUR" th:selected="${currency == 'EUR'}">EUR</option>
@@ -186,12 +186,12 @@
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Received</label>
                         <input type="date" name="receivedAt" required
                                th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
-                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                     </div>
                     <div class="col-span-6">
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Project (optional)</label>
                         <select name="projectId"
-                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                             <option value="">— General client credit —</option>
                             <option th:each="p : ${projects}" th:value="${p.id}"
                                     th:text="${p.name} + ' (' + ${p.rateType} + ')'">Project</option>
@@ -202,12 +202,12 @@
                     <div class="flex-1">
                         <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Description</label>
                         <input type="text" name="description" placeholder="e.g. Phase 2 deposit"
-                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                     </div>
                     <button type="button" @click="adding = false"
                             class="text-sm text-slate-600 hover:text-slate-900 px-3 py-2">Cancel</button>
                     <button type="submit"
-                            class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">Save</button>
+                            class="bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">Save</button>
                 </div>
             </form>
         </div>
@@ -216,7 +216,8 @@
             No deposits on file.
         </div>
 
-        <table th:unless="${#lists.isEmpty(credits)}" class="w-full text-sm">
+        <div class="overflow-x-auto">
+        <table th:unless="${#lists.isEmpty(credits)}" class="w-full text-sm min-w-[640px]">
             <thead>
                 <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                     <th class="text-left px-6 py-2">Received</th>
@@ -224,33 +225,34 @@
                     <th class="text-left px-6 py-2">Description</th>
                     <th class="text-right px-6 py-2">Amount</th>
                     <th class="text-right px-6 py-2">Remaining</th>
-                    <th class="text-right px-6 py-2"></th>
+                    <th class="text-right px-6 py-2 app-row-actions-cell" style="--app-row-action-count: 1" aria-label="Actions"></th>
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="cp : ${credits}" th:with="c=${cp.credit}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
+                <tr data-row-action th:each="cp : ${credits}" th:with="c=${cp.credit}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
                     <td class="px-6 py-3 tabular-nums text-slate-600"
                         th:text="${#temporals.format(c.receivedAt, 'MMM d, yyyy')}">Apr 14, 2026</td>
                     <td class="px-6 py-3">
                         <a th:if="${c.project != null}" th:href="@{/projects/{id}(id=${c.project.id})}"
-                           class="text-[#ea7c28] hover:underline" th:text="${c.project.name}">Project</a>
+                           class="text-ui-accent-ink hover:underline" th:text="${c.project.name}" data-row-primary>Project</a>
                         <span th:if="${c.project == null}" class="text-slate-400 italic">General</span>
                     </td>
                     <td class="px-6 py-3" th:text="${c.description ?: '—'}">desc</td>
                     <td class="px-6 py-3 text-right font-mono tabular-nums"
                         th:text="${csym.apply(c.currency)} + ${#numbers.formatDecimal(c.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
-                    <td class="px-6 py-3 text-right font-mono tabular-nums text-[#ea7c28]"
+                    <td class="px-6 py-3 text-right font-mono tabular-nums text-ui-accent-ink"
                         th:text="${csym.apply(c.currency)} + ${#numbers.formatDecimal(cp.remaining, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
-                    <td class="px-6 py-3 text-right">
-                        <form th:action="@{/clients/{id}/credits/{cid}/delete(id=${client.id}, cid=${c.id})}" method="post" class="inline"
+                    <td class="px-6 py-3 text-right app-row-actions-cell" style="--app-row-action-count: 1">
+                        <form th:action="@{/clients/{id}/credits/{cid}/delete(id=${client.id}, cid=${c.id})}" method="post"
                               sec:authorize="hasAuthority('manage-payments')"
-                              onsubmit="return confirm('Delete this credit? Only allowed if nothing has been applied from it.')">
-                            <button type="submit" class="text-xs text-slate-400 hover:text-red-600">Delete</button>
+                              onsubmit="return confirm('Delete this credit? Only allowed if nothing has been applied from it.')" class="app-row-actions">
+                            <button type="submit" title="Delete credit" aria-label="Delete credit" class="app-icon-button app-icon-button-danger"><i data-lucide="trash-2" aria-hidden="true"></i></button>
                         </form>
                     </td>
                 </tr>
             </tbody>
         </table>
+        </div>
     </div>
 
     <!-- Projects -->
@@ -261,7 +263,8 @@
             </h2>
         </div>
         <div th:if="${#lists.isEmpty(projects)}" class="px-6 py-8 text-center text-sm text-slate-400">No projects yet.</div>
-        <table th:unless="${#lists.isEmpty(projects)}" class="w-full text-sm">
+        <div class="overflow-x-auto">
+        <table th:unless="${#lists.isEmpty(projects)}" class="w-full text-sm min-w-[640px]">
             <thead>
                 <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                     <th class="text-left px-6 py-3">Name</th>
@@ -272,23 +275,24 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="p : ${projects}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
+                <tr data-row-action th:each="p : ${projects}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
                     <td class="px-6 py-3 font-medium">
                         <a th:href="@{/projects/{id}(id=${p.id})}"
-                           class="hover:text-[#ea7c28] hover:underline" th:text="${p.name}">Project</a>
+                           class="hover:text-ui-accent-ink hover:underline" th:text="${p.name}" data-row-primary>Project</a>
                     </td>
                     <td class="px-6 py-3 text-slate-600 capitalize" th:text="${p.rateType}">hourly</td>
                     <td class="px-6 py-3 text-right font-mono tabular-nums text-slate-600"
                         th:text="${csym.apply(p.currency)} + ${#numbers.formatDecimal(p.currentRate, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
                     <td class="px-6 py-3 text-slate-600 capitalize" th:text="${p.billingFrequency ?: '—'}">monthly</td>
                     <td class="px-6 py-3">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
-                              th:classappend="${p.status == 'active'} ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+                        <span class="app-status capitalize"
+                              th:classappend="${p.status == 'active'} ? 'app-status-success' : 'app-status-neutral'"
                               th:text="${p.status}">active</span>
                     </td>
                 </tr>
             </tbody>
         </table>
+        </div>
     </div>
 
     <!-- Invoices -->
@@ -299,7 +303,8 @@
             </h2>
         </div>
         <div th:if="${#lists.isEmpty(invoices)}" class="px-6 py-8 text-center text-sm text-slate-400">No invoices yet.</div>
-        <table th:unless="${#lists.isEmpty(invoices)}" class="w-full text-sm">
+        <div class="overflow-x-auto">
+        <table th:unless="${#lists.isEmpty(invoices)}" class="w-full text-sm min-w-[640px]">
             <thead>
                 <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                     <th class="text-left px-6 py-3">Reference</th>
@@ -311,10 +316,10 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="inv : ${invoices}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
+                <tr data-row-action th:each="inv : ${invoices}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
                     <td class="px-6 py-3 font-mono">
                         <a th:href="@{/invoices/{id}(id=${inv.id})}"
-                           class="text-[#ea7c28] hover:underline" th:text="${inv.reference}">INV-1001</a>
+                           class="text-ui-accent-ink hover:underline" th:text="${inv.reference}" data-row-primary>INV-1001</a>
                     </td>
                     <td class="px-6 py-3 text-slate-600 tabular-nums" th:text="${#temporals.format(inv.issuedAt, 'MMM d, yyyy')}">—</td>
                     <td class="px-6 py-3 text-slate-600 tabular-nums"
@@ -322,16 +327,17 @@
                     <td class="px-6 py-3 text-right font-mono tabular-nums"
                         th:text="${csym.apply(inv.currency)} + ${#numbers.formatDecimal(inv.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
                     <td class="px-6 py-3 text-right font-mono tabular-nums"
-                        th:classappend="${inv.balance().signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
+                        th:classappend="${inv.balance().signum() > 0} ? 'text-ui-accent-ink' : 'text-emerald-600'"
                         th:text="${csym.apply(inv.currency)} + ${#numbers.formatDecimal(inv.balance(), 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
                     <td class="px-6 py-3">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
-                              th:classappend="${inv.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${inv.status == 'overdue'} ? 'bg-red-50 text-red-700' : (${inv.status == 'void' or inv.status == 'written_off'} ? 'bg-slate-100 text-slate-500' : 'bg-[#ea7c28]/10 text-[#ea7c28]'))"
+                        <span class="app-status capitalize"
+                              th:classappend="${inv.status == 'paid'} ? 'app-status-success' : (${inv.status == 'overdue'} ? 'app-status-danger' : (${inv.status == 'void' or inv.status == 'written_off'} ? 'app-status-neutral' : 'app-status-warning'))"
                               th:text="${inv.status == 'written_off' ? 'Written off' : inv.status}">unpaid</span>
                     </td>
                 </tr>
             </tbody>
         </table>
+        </div>
     </div>
 
     <!-- Expenses -->
@@ -342,7 +348,8 @@
             </h2>
         </div>
         <div th:if="${#lists.isEmpty(expenses)}" class="px-6 py-8 text-center text-sm text-slate-400">No expenses recorded.</div>
-        <table th:unless="${#lists.isEmpty(expenses)}" class="w-full text-sm">
+        <div class="overflow-x-auto">
+        <table th:unless="${#lists.isEmpty(expenses)}" class="w-full text-sm min-w-[640px]">
             <thead>
                 <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                     <th class="text-left px-6 py-3">Date</th>
@@ -361,13 +368,14 @@
                     <td class="px-6 py-3 text-right font-mono tabular-nums"
                         th:text="${csym.apply(ex.currency)} + ${#numbers.formatDecimal(ex.amount, 1, 'COMMA', 2, 'POINT')}">USD 0.00</td>
                     <td class="px-6 py-3">
-                        <span th:if="${ex.billed}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700">billed</span>
-                        <span th:if="${!ex.billed and ex.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[#ea7c28]/10 text-[#ea7c28]">billable</span>
-                        <span th:if="${!ex.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-50 text-slate-400">internal</span>
+                        <span th:if="${ex.billed}" class="app-status app-status-success ">billed</span>
+                        <span th:if="${!ex.billed and ex.billable}" class="app-status app-status-warning ">billable</span>
+                        <span th:if="${!ex.billable}" class="app-status app-status-neutral ">internal</span>
                     </td>
                 </tr>
             </tbody>
         </table>
+        </div>
     </div>
 
     <!-- Recent time entries -->
@@ -378,7 +386,8 @@
             </h2>
         </div>
         <div th:if="${#lists.isEmpty(timeEntries)}" class="px-6 py-8 text-center text-sm text-slate-400">No time logged yet.</div>
-        <table th:unless="${#lists.isEmpty(timeEntries)}" class="w-full text-sm">
+        <div class="overflow-x-auto">
+        <table th:unless="${#lists.isEmpty(timeEntries)}" class="w-full text-sm min-w-[640px]">
             <thead>
                 <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                     <th class="text-left px-6 py-3">Date</th>
@@ -389,27 +398,28 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="t : ${timeEntries}" th:if="${tStat.index < 25}"
+                <tr data-row-action th:each="t : ${timeEntries}" th:if="${tStat.index < 25}"
                     class="border-b border-slate-100 last:border-b-0">
                     <td class="px-6 py-3 text-slate-600 tabular-nums">
                       <span th:replace="~{fragments/_time :: datetime(${t.startedAt}, 'md')}"></span>
                     </td>
                     <td class="px-6 py-3 text-slate-600">
                         <a th:href="@{/projects/{id}(id=${t.project.id})}"
-                           class="hover:text-[#ea7c28] hover:underline" th:text="${t.project.name}">Project</a>
+                           class="hover:text-ui-accent-ink hover:underline" th:text="${t.project.name}" data-row-primary>Project</a>
                     </td>
                     <td class="px-6 py-3 text-slate-500 truncate max-w-xs" th:text="${t.description ?: '—'}">—</td>
                     <td class="px-6 py-3 text-right font-mono tabular-nums"
                         th:text="${t.durationMinutes != null ? #numbers.formatDecimal(t.durationMinutes / 60.0, 1, 'COMMA', 2, 'POINT') + ' h' : '—'}">—</td>
                     <td class="px-6 py-3">
-                        <span th:if="${t.endedAt == null}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700">running</span>
-                        <span th:if="${t.endedAt != null and t.billed}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">billed</span>
-                        <span th:if="${t.unbilled}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[#ea7c28]/10 text-[#ea7c28]">unbilled</span>
-                        <span th:if="${t.endedAt != null and !t.billable}" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-slate-50 text-slate-400 text-nowrap">non-billable</span>
+                        <span th:if="${t.endedAt == null}" class="app-status app-status-success ">running</span>
+                        <span th:if="${t.endedAt != null and t.billed}" class="app-status app-status-neutral ">billed</span>
+                        <span th:if="${t.unbilled}" class="app-status app-status-warning ">unbilled</span>
+                        <span th:if="${t.endedAt != null and !t.billable}" class="app-status app-status-neutral ">non-billable</span>
                     </td>
                 </tr>
             </tbody>
         </table>
+        </div>
     </div>
 
 </section>

@@ -95,7 +95,7 @@
                        th:data-section-label="${section.label}"
                        class="cms-section overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                 <div class="border-b border-slate-200 px-5 py-4">
-                  <p class="text-xs font-semibold uppercase tracking-wider text-[#ea7c28]" th:text="${section.label}">Section</p>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-ui-accent-ink" th:text="${section.label}">Section</p>
                   <h2 class="mt-1 text-lg font-semibold text-slate-950" th:text="${section.title}">Section title</h2>
                 </div>
 
@@ -107,12 +107,12 @@
                           <span class="mb-2 block text-sm font-semibold text-slate-700" th:text="${field.label}">Field</span>
                           <textarea th:name="${field.name}" th:rows="${field.rows}" th:text="${field.value}" th:placeholder="${field.placeholder}"
                                     th:attr="data-publish-required=${field.requiredMessage}"
-                                    class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-[#ea7c28] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100"></textarea>
+                                    class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-ui-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-ui-accent/20"></textarea>
                         </label>
 
                         <div th:case="'richText'" data-rich-text-field class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
                           <span class="mb-2 block text-sm font-semibold text-slate-700" th:text="${field.label}">Field</span>
-                          <div class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 shadow-sm focus-within:border-[#ea7c28] focus-within:bg-white focus-within:ring-2 focus-within:ring-orange-100">
+                          <div class="overflow-hidden rounded-lg border border-slate-200 bg-slate-50 shadow-sm focus-within:border-ui-accent focus-within:bg-white focus-within:ring-2 focus-within:ring-ui-accent/20">
                             <div class="flex items-center gap-2 border-b border-slate-200 bg-white px-2 py-1.5">
                               <button th:if="${field.supportsMark('accent')}" type="button" data-rich-text-command="accent"
                                       class="cms-rich-text-button inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
@@ -136,7 +136,7 @@
                             <input type="text" data-color-value th:name="${field.name}" th:value="${field.value}" th:placeholder="${field.placeholder}"
                                    pattern="#[0-9A-Fa-f]{6}" maxlength="7"
                                    th:attr="data-publish-required=${field.requiredMessage},data-publish-color=${field.invalidMessage}"
-                                   class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm text-slate-900 uppercase shadow-sm focus:border-[#ea7c28] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100">
+                                   class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 font-mono text-sm text-slate-900 uppercase shadow-sm focus:border-ui-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-ui-accent/20">
                           </span>
                         </label>
 
@@ -153,7 +153,7 @@
                           <span class="mb-2 block text-sm font-semibold text-slate-700" th:text="${field.label}">Field</span>
                           <input th:type="${field.kind == 'email'} ? 'email' : 'text'" th:name="${field.name}" th:value="${field.value}" th:placeholder="${field.placeholder}"
                                  th:attr="data-publish-required=${field.requiredMessage},data-publish-email=${field.emailMessage}"
-                                 class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-[#ea7c28] focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-100">
+                                 class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 shadow-sm focus:border-ui-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-ui-accent/20">
                         </label>
                       </th:block>
                     </div>
@@ -197,7 +197,7 @@
 
                               <div th:case="'richText'" data-rich-text-field class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
                                 <span class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500" th:text="${field.label}">Field</span>
-                                <div class="overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-[#ea7c28] focus-within:ring-2 focus-within:ring-orange-100">
+                                <div class="overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-ui-accent focus-within:ring-2 focus-within:ring-ui-accent/20">
                                   <div class="flex items-center gap-2 border-b border-slate-200 bg-white px-2 py-1.5">
                                     <button th:if="${field.supportsMark('accent')}" type="button" data-rich-text-command="accent"
                                             class="cms-rich-text-button inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
@@ -297,7 +297,7 @@
 
                               <div th:case="'richText'" data-rich-text-field class="block" th:classappend="${field.width == 'full'} ? ' md:col-span-2' : ''">
                                 <span class="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500" th:text="${field.label}">Field</span>
-                                <div class="overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-[#ea7c28] focus-within:ring-2 focus-within:ring-orange-100">
+                                <div class="overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-ui-accent focus-within:ring-2 focus-within:ring-ui-accent/20">
                                   <div class="flex items-center gap-2 border-b border-slate-200 bg-white px-2 py-1.5">
                                     <button th:if="${field.supportsMark('accent')}" type="button" data-rich-text-command="accent"
                                             class="cms-rich-text-button inline-flex h-8 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
@@ -407,7 +407,7 @@
           <div data-publish-review class="fixed inset-0 z-30 hidden items-center justify-center bg-slate-950/30 px-4 py-8">
             <div class="w-full max-w-md rounded-lg border border-slate-200 bg-white p-5 shadow-xl">
               <div class="flex items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 text-[#ea7c28]">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ui-selected text-ui-accent-ink">
                   <i data-lucide="upload-cloud" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0">
@@ -422,7 +422,7 @@
                   Keep editing
                 </button>
                 <button type="button" data-confirm-publish
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#ea7c28] px-4 text-sm font-semibold text-white shadow-sm hover:bg-[#d66f20] focus:outline-none focus:ring-2 focus:ring-orange-200">
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ui-accent px-4 text-sm font-semibold text-ui-accent-foreground shadow-sm hover:bg-ui-accent-hover focus:outline-none focus:ring-2 focus:ring-ui-accent/30">
                   <i data-lucide="upload-cloud" class="h-4 w-4" aria-hidden="true"></i>
                   <span>Publish to website</span>
                 </button>
@@ -433,7 +433,7 @@
           <div data-editor-toast class="fixed inset-x-0 bottom-20 z-30 hidden px-4">
             <div class="mx-auto flex max-w-md items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-lg">
               <span data-toast-message>Item removed.</span>
-              <button type="button" data-toast-undo class="text-sm font-semibold text-[#ea7c28] hover:text-[#c7611b]">Undo</button>
+              <button type="button" data-toast-undo class="text-sm font-semibold text-ui-accent-ink hover:text-ui-accent-ink">Undo</button>
             </div>
           </div>
 
@@ -451,7 +451,7 @@
                   <i data-lucide="redo-2" class="h-4 w-4" aria-hidden="true"></i>
                   <span>Redo</span>
                 </button>
-                <button type="submit" data-submit-button class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-[#ea7c28] px-5 text-sm font-semibold text-white shadow-sm hover:bg-[#d66f20] focus:outline-none focus:ring-2 focus:ring-orange-200">
+                <button type="submit" data-submit-button class="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-ui-accent px-5 text-sm font-semibold text-ui-accent-foreground shadow-sm hover:bg-ui-accent-hover focus:outline-none focus:ring-2 focus:ring-ui-accent/30">
                   <i data-lucide="upload-cloud" class="h-4 w-4" aria-hidden="true"></i>
                   <span data-submit-label>Publish changes</span>
                 </button>

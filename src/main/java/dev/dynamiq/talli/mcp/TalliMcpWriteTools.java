@@ -146,7 +146,7 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "create_project", title = "Create a project",
-            description = "Create an active project for an existing client. rate_type must be hourly, fixed, or retainer.",
+            description = "Create an active project for an existing client. rateType must be hourly, fixed, or retainer.",
             annotations = @McpTool.McpAnnotations(title = "Create a project", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-projects')")
@@ -189,7 +189,7 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "update_project", title = "Update a project",
-            description = "Patch a project without moving it to another client. Omitted values stay unchanged; blank optional text clears it. Changing current_rate requires rate_change_reason and records the change in project notes.",
+            description = "Patch a project without moving it to another client. Omitted values stay unchanged; blank optional text clears it. Changing currentRate requires rateChangeReason and records the change in project notes.",
             annotations = @McpTool.McpAnnotations(title = "Update a project", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-projects')")
@@ -199,7 +199,7 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Optional new name", required = false) String name,
             @McpToolParam(description = "Optional rate type: hourly, fixed, or retainer", required = false) String rateType,
             @McpToolParam(description = "Optional new rate or contract amount", required = false) BigDecimal currentRate,
-            @McpToolParam(description = "Reason required when current_rate changes", required = false) String rateChangeReason,
+            @McpToolParam(description = "Reason required when currentRate changes", required = false) String rateChangeReason,
             @McpToolParam(description = "Optional three-letter currency code", required = false) String currency,
             @McpToolParam(description = "Optional billing frequency; blank clears it", required = false) String billingFrequency,
             @McpToolParam(description = "Optional status: active, paused, completed, or cancelled", required = false) String status,
@@ -245,7 +245,7 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "log_time", title = "Log completed time",
-            description = "Log completed work. duration_minutes is required. If started_at is omitted, the entry ends now; otherwise use an ISO local date-time such as 2026-08-13T09:00:00.",
+            description = "Log completed work. durationMinutes is required. If startedAt is omitted, the entry ends now; otherwise use an ISO local date-time such as 2026-08-13T09:00:00.",
             annotations = @McpTool.McpAnnotations(title = "Log completed time", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-time')")
@@ -289,7 +289,7 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "stop_timer", title = "Stop a timer",
-            description = "Stop a running timer by ID. If timer_id is omitted, stops the current running timer.",
+            description = "Stop a running timer by ID. If timerId is omitted, stops the current running timer.",
             annotations = @McpTool.McpAnnotations(title = "Stop a timer", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-time')")
@@ -302,7 +302,7 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "update_time_entry", title = "Update a time entry",
-            description = "Update selected fields on an unbilled time entry. Use either ended_at or duration_minutes, not both. A blank ended_at restarts the timer and blank description clears it.",
+            description = "Update selected fields on an unbilled time entry. Use either endedAt or durationMinutes, not both. A blank endedAt restarts the timer and blank description clears it.",
             annotations = @McpTool.McpAnnotations(title = "Update a time entry", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-time')")
@@ -312,7 +312,7 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Optional existing project ID", required = false) Long projectId,
             @McpToolParam(description = "Optional ISO local start date-time", required = false) String startedAt,
             @McpToolParam(description = "Optional ISO local end date-time; blank makes the entry a running timer", required = false) String endedAt,
-            @McpToolParam(description = "Optional completed duration in minutes, 1-10080; cannot be combined with ended_at", required = false) Integer durationMinutes,
+            @McpToolParam(description = "Optional completed duration in minutes, 1-10080; cannot be combined with endedAt", required = false) Integer durationMinutes,
             @McpToolParam(description = "Optional description; blank clears it", required = false) String description,
             @McpToolParam(description = "Optional billable state", required = false) Boolean billable) {
         if (timeEntryId == null) throw new IllegalArgumentException("time_entry_id is required");
@@ -383,7 +383,7 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "log_expense", title = "Log an expense",
-            description = "Log an expense in Talli. If a project is supplied, its client is used and any supplied client_id must match.",
+            description = "Log an expense in Talli. If a project is supplied, its client is used and any supplied clientId must match.",
             annotations = @McpTool.McpAnnotations(title = "Log an expense", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-expenses')")
@@ -436,7 +436,7 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "update_expense", title = "Update an expense",
-            description = "Update selected fields on an unbilled expense. Blank optional text clears it; client_id or project_id 0 clears that association. A project's client always wins.",
+            description = "Update selected fields on an unbilled expense. Blank optional text clears it; clientId or projectId 0 clears that association. A project's client always wins.",
             annotations = @McpTool.McpAnnotations(title = "Update an expense", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-expenses')")
@@ -530,7 +530,7 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "record_payment", title = "Record an invoice payment",
-            description = "Record a settled payment from any bank or payment provider. provider plus transaction_id is the idempotency key, so repeat calls do not duplicate a payment.",
+            description = "Record a settled payment from any bank or payment provider. provider plus transactionId is the idempotency key, so repeat calls do not duplicate a payment.",
             annotations = @McpTool.McpAnnotations(title = "Record an invoice payment", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-payments')")
@@ -542,7 +542,7 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Stable provider slug such as mercury or chase", required = true) String provider,
             @McpToolParam(description = "Provider's stable transaction ID", required = true) String transactionId,
             @McpToolParam(description = "Optional payment method such as ACH, wire, check, card, or cash", required = false) String method,
-            @McpToolParam(description = "Optional visible bank reference; defaults to transaction_id", required = false) String reference,
+            @McpToolParam(description = "Optional visible bank reference; defaults to transactionId", required = false) String reference,
             @McpToolParam(description = "Optional internal notes", required = false) String notes) {
         if (invoiceId == null) throw new IllegalArgumentException("invoice_id is required");
         Invoice invoice = invoices.findById(invoiceId)
@@ -622,25 +622,25 @@ public class TalliMcpWriteTools {
                 .toList();
     }
 
-    @McpTool(name = "preview_client_email", title = "Preview a client email",
-            description = "Render a no-send preview addressed to an existing Talli client's saved email. Optionally reply to a recorded email in the same RFC thread. Returns the selected From address, oversight and saved reply recipients, plain and HTML bodies, threading headers, and a token binding the exact sender, recipients, content, template, signature, and reply target for send_client_email.",
-            annotations = @McpTool.McpAnnotations(title = "Preview a client email", readOnlyHint = true,
+    @McpTool(name = "preview_client_email", title = "Preview an email",
+            description = "Render a no-send email preview. Provide clientId to use a client's saved email, or omit clientId and provide toAddress for a standalone email to any recipient without creating or linking a client. Optionally reply to a recorded email in the same RFC thread. Returns the selected From address, oversight and saved reply recipients, plain and HTML bodies, threading headers, and a token binding the exact sender, recipients, content, template, signature, and reply target for send_client_email.",
+            annotations = @McpTool.McpAnnotations(title = "Preview an email", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('send-emails') and (#replyToEmailId == null or hasRole('admin'))")
     public EmailPreview previewClientEmail(
-            @McpToolParam(description = "Existing client ID; preview uses that client's saved email address", required = true) Long clientId,
+            @McpToolParam(description = "Optional existing client ID; uses the client's saved email. Omit for standalone email and provide toAddress", required = false) Long clientId,
             @McpToolParam(description = "Email subject", required = true) String subject,
             @McpToolParam(description = "Plain-text email body", required = true) String body,
             @McpToolParam(description = "Optional active From address from list_email_senders; defaults to the current default profile", required = false) String senderEmail,
             @McpToolParam(description = "Optional template: branded, branded-notice, formal, or minimal", required = false) String templateId,
             @McpToolParam(description = "Include the selected sender's matching signature; defaults to true", required = false) Boolean includeSignature,
             @McpToolParam(description = "CC the configured owner oversight address; defaults to false and is omitted when already To or From", required = false) Boolean includeOversightCc,
-            @McpToolParam(description = "Optional existing email ID to reply to in the same email thread", required = false) Long replyToEmailId) {
-        if (clientId == null) throw new IllegalArgumentException("client_id is required");
+            @McpToolParam(description = "Optional existing email ID to reply to in the same email thread", required = false) Long replyToEmailId,
+            @McpToolParam(description = "One recipient email address; required when clientId is omitted, otherwise must match the client's saved email", required = false) String toAddress) {
         AgentEmailService.Preview preview = agentEmailService.preview(
                 authenticatedEmail(), clientId, subject, body, templateId,
                 includeSignature == null || includeSignature, Boolean.TRUE.equals(includeOversightCc),
-                senderEmail, replyToEmailId);
+                senderEmail, replyToEmailId, toAddress);
         return new EmailPreview(preview.clientId(), preview.fromAddress(), preview.fromName(),
                 preview.toAddress(), preview.ccAddress(), preview.bccAddress(),
                 preview.subject(), preview.body(), preview.bodyHtml(), preview.templateId(),
@@ -648,13 +648,13 @@ public class TalliMcpWriteTools {
                 preview.referencesHeader(), preview.previewToken());
     }
 
-    @McpTool(name = "send_client_email", title = "Send a client email",
-            description = "Send an explicitly approved client email exactly as returned by preview_client_email and audit its MCP source, initiating account, provider ID, status, and delivery lifecycle in Talli. A reply preserves saved CC/BCC recipients plus In-Reply-To and References headers. Requires the matching previewToken and confirmSend=true. When includeOversightCc=true, the configured MCP_EMAIL_CC owner oversight address is visibly CCed unless already To or From.",
-            annotations = @McpTool.McpAnnotations(title = "Send a client email", readOnlyHint = false,
+    @McpTool(name = "send_client_email", title = "Send an email",
+            description = "Send an explicitly approved email exactly as returned by preview_client_email. Supports a client's saved email via clientId or a standalone recipient via toAddress with clientId omitted. Audit its MCP source, initiating account, provider ID, status, and delivery lifecycle in Talli. A reply preserves saved CC/BCC recipients plus In-Reply-To and References headers. Requires the matching previewToken and confirmSend=true. When includeOversightCc=true, the configured MCP_EMAIL_CC owner oversight address is visibly CCed unless already To or From.",
+            annotations = @McpTool.McpAnnotations(title = "Send an email", readOnlyHint = false,
                     destructiveHint = true, idempotentHint = false, openWorldHint = true))
     @PreAuthorize("hasAuthority('send-emails') and (#replyToEmailId == null or hasRole('admin'))")
     public SentEmail sendClientEmail(
-            @McpToolParam(description = "Existing client ID; email is sent only to that client's saved email address", required = true) Long clientId,
+            @McpToolParam(description = "Optional client ID used in the approved preview; omit for standalone email", required = false) Long clientId,
             @McpToolParam(description = "Approved email subject", required = true) String subject,
             @McpToolParam(description = "Approved plain-text email body", required = true) String body,
             @McpToolParam(description = "Approved From address used in preview_client_email; omit only when the default sender was previewed", required = false) String senderEmail,
@@ -663,14 +663,13 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "CC the configured owner oversight address approved in the preview; defaults to false", required = false) Boolean includeOversightCc,
             @McpToolParam(description = "Token returned by preview_client_email for these exact inputs", required = true) String previewToken,
             @McpToolParam(description = "Must be true only after a human approves this exact recipient, subject, and body", required = true) Boolean confirmSend,
-            @McpToolParam(description = "Optional email ID returned by the matching preview when replying", required = false) Long replyToEmailId) {
-        if (clientId == null) throw new IllegalArgumentException("client_id is required");
-
+            @McpToolParam(description = "Optional email ID returned by the matching preview when replying", required = false) Long replyToEmailId,
+            @McpToolParam(description = "Recipient address used in the approved preview; required without clientId, otherwise must match the client's saved email", required = false) String toAddress) {
         AgentEmailService.SendResult result = agentEmailService.send(
                 authenticatedEmail(), clientId, subject, body, templateId,
                 includeSignature == null || includeSignature, Boolean.TRUE.equals(includeOversightCc),
                 senderEmail, previewToken,
-                Boolean.TRUE.equals(confirmSend), replyToEmailId);
+                Boolean.TRUE.equals(confirmSend), replyToEmailId, toAddress);
         var email = result.email();
         return new SentEmail(email.getId(), clientId, email.getFromAddress(), result.fromName(),
                 email.getToAddress(), email.getCc(),

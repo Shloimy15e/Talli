@@ -32,11 +32,11 @@
           <div>
             <div class="flex items-center gap-3 mb-2">
               <h1 class="text-2xl font-semibold tracking-tight" th:text="${project.name}">Project</h1>
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
-                    th:classappend="${project.status == 'active' ? 'bg-green-100 text-green-700' : (project.status == 'paused' ? 'bg-amber-100 text-amber-700' : (project.status == 'completed' ? 'bg-slate-100 text-slate-600' : 'bg-red-100 text-red-700'))}"
+              <span class="app-status capitalize"
+                    th:classappend="${project.status == 'active' ? 'app-status-success' : (project.status == 'paused' ? 'app-status-warning' : (project.status == 'completed' ? 'app-status-neutral' : 'app-status-danger'))}"
                     th:text="${project.status}">status</span>
               <span th:unless="${project.billable}"
-                    class="inline-flex items-center gap-1 px-2 py-0.5 text-nowrap rounded-full text-xs font-medium bg-slate-100 text-slate-600"
+                    class="app-status app-status-neutral gap-1"
                     title="Personal / non-billable project">
                 <i data-lucide="lock" class="w-3 h-3"></i>
                 Non-billable
@@ -44,7 +44,7 @@
             </div>
             <p class="text-sm text-slate-600">
               <a th:href="@{/clients/{id}(id=${project.client.id})}"
-                 class="hover:text-[#ea7c28] hover:underline"
+                 class="hover:text-ui-accent-ink hover:underline"
                  th:text="${project.client.name}">Client</a>
               <th:block th:if="${project.billable}">
                 <span class="text-slate-400 mx-2">·</span>
@@ -60,7 +60,7 @@
             <button th:if="${project.billable and project.rateType == 'fixed'}"
                     @click="depositInvoice = !depositInvoice; editing = false; billing = false; depositing = false"
                     sec:authorize="hasAuthority('manage-invoices')"
-                    class="inline-flex items-center gap-1.5 text-sm font-medium bg-[#ea7c28] hover:bg-[#d66f20] text-white px-3 py-1.5 rounded-lg transition">
+                    class="inline-flex items-center gap-1.5 text-sm font-medium bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground px-3 py-1.5 rounded-lg transition">
               <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> Invoice deposit
             </button>
             <button th:if="${project.billable and project.rateType == 'fixed'}"
@@ -97,19 +97,19 @@
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">New amount</label>
               <input type="number" step="0.01" name="newAmount" required
                      th:value="${project.currentRate}"
-                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div class="col-span-7">
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Reason (optional)</label>
               <input type="text" name="reason"
                      placeholder="e.g. scope expanded — additional auth module"
-                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div class="col-span-2 flex gap-2">
               <button type="button" @click="editing = false"
                       class="text-sm text-slate-600 hover:text-slate-900 px-3 py-2">Cancel</button>
               <button type="submit"
-                      class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">Save</button>
+                      class="bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">Save</button>
             </div>
           </form>
           <p class="text-xs text-slate-500 mt-2">A dated change-order line will be appended to the project notes.</p>
@@ -128,7 +128,7 @@
                       th:text="${csym.apply(project.currency)}">$</span>
                 <input type="number" step="0.01" min="0.01" name="amount" required
                        th:value="${summary != null and summary.remaining != null ? summary.remaining : project.currentRate}"
-                       class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                       class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
               </div>
               <p class="text-xs text-slate-500 mt-1" th:if="${summary != null and summary.remaining != null}">
                 Remaining on contract:
@@ -140,11 +140,11 @@
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Description (optional)</label>
               <input type="text" name="description"
                      th:placeholder="${project.name} + ' - deposit'"
-                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <label class="col-span-2 flex items-start gap-2 text-sm text-slate-700">
               <input type="checkbox" name="nonRefundable" value="true" checked
-                     class="mt-1 rounded border-slate-300 text-[#ea7c28] focus:ring-[#ea7c28]">
+                     class="mt-1 rounded border-slate-300 text-ui-accent-ink focus:ring-ui-accent">
               <span>
                 <span class="block font-medium">Non-refundable once work starts</span>
                 <span class="block text-xs text-slate-500">Applied toward the project balance.</span>
@@ -154,13 +154,13 @@
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Notes (optional)</label>
               <textarea name="notes" rows="2"
                         placeholder="Additional client-facing notes for this deposit invoice"
-                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent"></textarea>
             </div>
             <div class="col-span-2 flex gap-2">
               <button type="button" @click="depositInvoice = false"
                       class="text-sm text-slate-600 hover:text-slate-900 px-3 py-2">Cancel</button>
               <button type="submit"
-                      class="inline-flex items-center gap-1.5 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                      class="inline-flex items-center gap-1.5 bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
                 <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> Create
               </button>
             </div>
@@ -180,7 +180,7 @@
                       th:text="${csym.apply(project.currency)}">$</span>
                 <input type="number" step="0.01" min="0.01" name="amount" required
                        th:value="${summary != null and summary.remaining != null ? summary.remaining : project.currentRate}"
-                       class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                       class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
               </div>
               <p class="text-xs text-slate-500 mt-1" th:if="${summary != null and summary.remaining != null}">
                 Remaining on contract:
@@ -192,19 +192,19 @@
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Description (optional)</label>
               <input type="text" name="description"
                      th:placeholder="${project.name} + ' — contract work'"
-                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div class="col-span-10">
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Notes (optional)</label>
               <textarea name="notes" rows="2"
                         placeholder="Client-facing notes, terms, or delivery details for this invoice"
-                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+                        class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent"></textarea>
             </div>
             <div class="col-span-2 flex gap-2">
               <button type="button" @click="billing = false"
                       class="text-sm text-slate-600 hover:text-slate-900 px-3 py-2">Cancel</button>
               <button type="submit"
-                      class="inline-flex items-center gap-1.5 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                      class="inline-flex items-center gap-1.5 bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
                 <i data-lucide="file-plus" class="w-3.5 h-3.5"></i> Generate
               </button>
             </div>
@@ -226,25 +226,25 @@
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-mono"
                       th:text="${csym.apply(project.currency)}">$</span>
                 <input type="number" step="0.01" min="0.01" name="amount" required
-                       class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                       class="w-full pl-8 pr-3 py-2 bg-white border border-slate-200 rounded-lg font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
               </div>
             </div>
             <div class="col-span-3">
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Received on</label>
               <input type="date" name="receivedAt" required
                      th:value="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}"
-                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div class="col-span-4">
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Description</label>
               <input type="text" name="description" placeholder="e.g. Phase 2 deposit"
-                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div class="col-span-2 flex gap-2">
               <button type="button" @click="depositing = false"
                       class="text-sm text-slate-600 hover:text-slate-900 px-3 py-2">Cancel</button>
               <button type="submit"
-                      class="inline-flex items-center gap-1.5 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                      class="inline-flex items-center gap-1.5 bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
                 <i data-lucide="wallet" class="w-3.5 h-3.5"></i> Record
               </button>
             </div>
@@ -255,7 +255,7 @@
         </div>
       </div>
 
-      <div th:if="${project.billable and summary != null}" class="grid grid-cols-4 gap-4 mb-6">
+      <div th:if="${project.billable and summary != null}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-xl border border-slate-200 px-5 py-4">
           <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Billed to date</p>
           <p class="font-mono text-xl tabular-nums"
@@ -263,7 +263,7 @@
         </div>
         <div th:if="${summary.unbilledValue != null}" class="bg-white rounded-xl border border-slate-200 px-5 py-4">
           <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Unbilled value</p>
-          <p class="font-mono text-xl tabular-nums text-[#ea7c28]"
+          <p class="font-mono text-xl tabular-nums text-ui-accent-ink"
              th:text="${csym.apply(project.currency)} + ${#numbers.formatDecimal(summary.unbilledValue, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
         </div>
         <div th:if="${summary.remaining != null}" class="bg-white rounded-xl border border-slate-200 px-5 py-4">
@@ -292,7 +292,8 @@
             <div th:if="${#lists.isEmpty(invoices)}" class="px-6 py-8 text-sm text-slate-400 italic">
               No invoices reference this project yet.
             </div>
-            <table th:unless="${#lists.isEmpty(invoices)}" class="w-full text-sm">
+            <div class="overflow-x-auto">
+            <table th:unless="${#lists.isEmpty(invoices)}" class="w-full text-sm min-w-[640px]">
               <thead>
                 <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                   <th class="text-left px-6 py-2">Reference</th>
@@ -302,16 +303,16 @@
                 </tr>
               </thead>
               <tbody>
-                <tr th:each="inv : ${invoices}" class="border-b border-slate-100 hover:bg-slate-50">
+                <tr data-row-action th:each="inv : ${invoices}" class="border-b border-slate-100 hover:bg-slate-50">
                   <td class="px-6 py-3 font-mono">
                     <a th:href="@{/invoices/{id}(id=${inv.id})}"
-                       class="text-[#ea7c28] hover:underline" th:text="${inv.reference}">INV-1001</a>
+                       class="text-ui-accent-ink hover:underline" th:text="${inv.reference}" data-row-primary>INV-1001</a>
                   </td>
                   <td class="px-6 py-3 tabular-nums text-slate-600"
                       th:text="${#temporals.format(inv.issuedAt, 'MMM d, yyyy')}">Apr 14, 2026</td>
                   <td class="px-6 py-3">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize"
-                          th:classappend="${inv.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${inv.status == 'overdue'} ? 'bg-red-50 text-red-700' : (${inv.status == 'void' or inv.status == 'written_off'} ? 'bg-slate-100 text-slate-500' : 'bg-[#ea7c28]/10 text-[#ea7c28]'))"
+                    <span class="app-status capitalize"
+                          th:classappend="${inv.status == 'paid'} ? 'app-status-success' : (${inv.status == 'overdue'} ? 'app-status-danger' : (${inv.status == 'void' or inv.status == 'written_off'} ? 'app-status-neutral' : 'app-status-warning'))"
                           th:text="${inv.status == 'written_off' ? 'Written off' : inv.status}">unpaid</span>
                   </td>
                   <td class="px-6 py-3 text-right font-mono tabular-nums"
@@ -319,6 +320,7 @@
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
 
           <!-- Time entries -->
@@ -331,7 +333,8 @@
             <div th:if="${#lists.isEmpty(timeEntries)}" class="px-6 py-8 text-sm text-slate-400 italic">
               No time logged yet.
             </div>
-            <table th:unless="${#lists.isEmpty(timeEntries)}" class="w-full text-sm">
+            <div class="overflow-x-auto">
+            <table th:unless="${#lists.isEmpty(timeEntries)}" class="w-full text-sm min-w-[640px]">
               <thead>
                 <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500">
                   <th class="text-left px-6 py-2">Date</th>
@@ -341,7 +344,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr th:each="e : ${timeEntries}" class="border-b border-slate-100 hover:bg-slate-50">
+                <tr data-row-action th:each="e : ${timeEntries}" class="border-b border-slate-100 hover:bg-slate-50">
                   <td class="px-6 py-3 tabular-nums text-slate-600">
                     <span th:replace="~{fragments/_time :: datetime(${e.startedAt}, 'date')}"></span>
                   </td>
@@ -350,23 +353,24 @@
                       th:text="${e.durationMinutes != null ? #numbers.formatDecimal(e.durationMinutes / 60.0, 1, 'COMMA', 2, 'POINT') : '—'}">0.00</td>
                   <td th:if="${project.billable}" class="px-6 py-3 text-right">
                     <span th:if="${e.billed}"
-                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-emerald-50 text-emerald-700">
+                          class="app-status app-status-success ">
                       <a th:if="${e.invoice != null}" th:href="@{/invoices/{id}(id=${e.invoice.id})}"
-                         class="hover:underline" th:text="${e.invoice.reference}">Billed</a>
+                         class="hover:underline" th:text="${e.invoice.reference}" data-row-primary>Billed</a>
                       <span th:unless="${e.invoice != null}">Billed</span>
                     </span>
                     <span th:if="${e.unbilled}"
-                          class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-[#ea7c28]/10 text-[#ea7c28]">
+                          class="app-status app-status-warning ">
                       Unbilled
                     </span>
                     <span th:if="${!e.billable}"
-                          class="inline-flex text-nowrap items-center px-2 py-0.5 rounded-full text-xs bg-slate-100 text-slate-500">
+                          class="app-status app-status-neutral ">
                       Non-billable
                     </span>
                   </td>
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
 
         </div>
@@ -384,7 +388,7 @@
             <div class="px-6 py-4 space-y-3 text-sm">
               <div th:if="${project.websitePublicUrl}">
                 <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Live site</p>
-                <a th:href="${project.websitePublicUrl}" target="_blank" class="text-[#ea7c28] hover:underline break-all"
+                <a th:href="${project.websitePublicUrl}" target="_blank" class="text-ui-accent-ink hover:underline break-all"
                    th:text="${project.websitePublicUrl}">https://example.com</a>
               </div>
               <div>
@@ -402,7 +406,7 @@
               <form th:action="@{/projects/{id}/website/connect(id=${project.id})}" method="post"
                     sec:authorize="hasAuthority('manage-projects')">
                 <button type="submit"
-                        class="inline-flex items-center gap-1.5 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-xs font-medium px-3 py-1.5 rounded-lg">
+                        class="inline-flex items-center gap-1.5 bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-xs font-medium px-3 py-1.5 rounded-lg">
                   <i data-lucide="plug" class="w-3.5 h-3.5"></i> Connect GitHub
                 </button>
               </form>
@@ -418,7 +422,7 @@
               <div th:each="m : ${sows}"
                    class="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-lg text-sm">
                 <a th:href="@{/media/{id}(id=${m.id})}" target="_blank"
-                   class="text-[#ea7c28] hover:underline truncate flex-1">
+                   class="text-ui-accent-ink hover:underline truncate flex-1">
                   <span th:text="${m.filename}">sow.pdf</span>
                   <span class="text-slate-400 text-xs ml-2"
                         th:text="${#numbers.formatDecimal(m.sizeBytes / 1024.0, 1, 'COMMA', 1, 'POINT') + ' KB'}">12 KB</span>

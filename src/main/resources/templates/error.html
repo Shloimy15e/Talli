@@ -7,8 +7,8 @@
       <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-10">
 
         <div class="flex items-center gap-3 mb-6">
-          <div class="w-10 h-10 rounded-full bg-[#ea7c28]/10 flex items-center justify-center">
-            <span class="text-2xl text-[#ea7c28] leading-none">!</span>
+          <div class="w-10 h-10 rounded-full bg-ui-accent/10 flex items-center justify-center">
+            <span class="text-2xl text-ui-accent-ink leading-none">!</span>
           </div>
           <span class="font-mono text-sm text-slate-400 tabular-nums"
                 th:text="${status} + ' · ' + (${error} ?: 'Error')">500 · Internal Server Error</span>
@@ -34,7 +34,7 @@
                   @click="navigator.clipboard.writeText($refs.msg.textContent.trim()).then(() => { copied = true; setTimeout(() => copied = false, 1500); })"
                   class="absolute top-2 right-2 text-[10px] uppercase tracking-wider font-semibold text-slate-400 hover:text-slate-900 bg-white border border-slate-200 rounded px-2 py-1 transition">
             <span x-show="!copied">Copy</span>
-            <span x-show="copied" x-cloak class="text-[#ea7c28]">Copied</span>
+            <span x-show="copied" x-cloak class="text-ui-accent-ink">Copied</span>
           </button>
         </div>
 
@@ -48,7 +48,7 @@
                     @click="navigator.clipboard.writeText($refs.trace.textContent).then(() => { copied = true; setTimeout(() => copied = false, 1500); })"
                     class="absolute top-2 right-6 z-10 text-[10px] uppercase tracking-wider font-semibold text-slate-100 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded px-2 py-1 transition">
               <span x-show="!copied">Copy</span>
-              <span x-show="copied" x-cloak class="text-[#ea7c28]">Copied</span>
+              <span x-show="copied" x-cloak class="text-ui-accent-ink">Copied</span>
             </button>
             <pre x-ref="trace"
                  class="p-3 bg-slate-900 text-slate-100 rounded-lg text-[11px] font-mono overflow-x-auto max-h-80 leading-relaxed"
@@ -58,7 +58,7 @@
 
         <div class="flex items-center gap-3">
           <a th:href="@{/dashboard}"
-             class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+             class="bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
             Back to dashboard
           </a>
           <a href="javascript:history.back()"

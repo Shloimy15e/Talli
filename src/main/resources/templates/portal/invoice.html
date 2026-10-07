@@ -14,7 +14,7 @@
           <div>
             <h1 class="font-mono text-2xl font-semibold tracking-tight" th:text="${invoice.reference}">INV-1001</h1>
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize mt-2"
-                  th:classappend="${invoice.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${invoice.status == 'overdue'} ? 'bg-red-50 text-red-700' : (${invoice.status == 'void' or invoice.status == 'written_off'} ? 'bg-slate-100 text-slate-500' : 'bg-[#ea7c28]/10 text-[#ea7c28]'))"
+                  th:classappend="${invoice.status == 'paid'} ? 'bg-emerald-50 text-emerald-700' : (${invoice.status == 'overdue'} ? 'bg-red-50 text-red-700' : (${invoice.status == 'void' or invoice.status == 'written_off'} ? 'bg-slate-100 text-slate-500' : 'bg-ui-accent/10 text-ui-accent-ink'))"
                   th:text="${invoice.status == 'written_off' ? 'Written off' : invoice.status}">unpaid</span>
           </div>
           <div class="text-right">
@@ -32,13 +32,13 @@
             <p class="text-sm text-slate-600 mt-1">Use Mercury's secure payment page.</p>
           </div>
           <a th:href="${mercuryPaymentUrl}" target="_blank" rel="noopener"
-             class="inline-flex items-center justify-center bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition shrink-0">
+             class="inline-flex items-center justify-center bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-semibold px-5 py-2.5 rounded-lg transition shrink-0">
             Pay invoice
           </a>
         </div>
 
         <!-- Meta -->
-        <div class="px-8 py-5 border-b border-slate-200 grid grid-cols-3 gap-6 text-sm">
+        <div class="px-8 py-5 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-6 text-sm">
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Issued</p>
             <p class="tabular-nums" th:text="${#temporals.format(invoice.issuedAt, 'MMM d, yyyy')}">—</p>
@@ -54,7 +54,7 @@
           <div>
             <p class="text-xs uppercase tracking-wider text-slate-500 font-semibold mb-1">Balance</p>
             <p class="font-mono tabular-nums font-medium"
-               th:classappend="${balance.signum() > 0} ? 'text-[#ea7c28]' : 'text-emerald-600'"
+               th:classappend="${balance.signum() > 0} ? 'text-ui-accent-ink' : 'text-emerald-600'"
                th:text="${csym.apply(invoice.currency)} + ${#numbers.formatDecimal(balance, 1, 'COMMA', 2, 'POINT')}">USD 0.00</p>
           </div>
         </div>

@@ -4,6 +4,87 @@
   const STORAGE_KEY = 'talli.sidebar.collapsed';
   const DESKTOP_QUERY = '(min-width: 1024px)';
 
+  const BRAND_LINKS = '.app-content a.hover\\:underline:not(.app-icon-button):not([class*="bg-"]), '
+    + '.portal-app a.hover\\:underline:not(.app-icon-button):not([class*="bg-"]), '
+    + '.auth-page a.hover\\:underline:not([class*="bg-"]), '
+    + '.app-nav-link, .mail-text-link, .mail-conversation-context a, .mail-folders-bottom a';
+
+  function initializeBrandLinks(root) {
+    const links = Array.from(root.querySelectorAll(BRAND_LINKS));
+    if (root.matches?.(BRAND_LINKS)) links.unshift(root);
+    links.forEach((link) => {
+      if (link.querySelector('.app-link-glyph') || link.closest('[role="menu"], .ui-select')) return;
+      const label = link.querySelector('.app-nav-label') || link;
+      const walker = document.createTreeWalker(label, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) {
+        const node = walker.currentNode;
+        if (node.textContent.trim() && !node.parentElement.closest('svg, [aria-hidden="true"], .sr-only')) nodes.push(node);
+      }
+      if (!nodes.length) return;
+      const style = window.getComputedStyle(label);
+      link.style.setProperty('--app-link-rest', style.color);
+      link.style.setProperty('--app-link-weight', style.fontWeight);
+      const length = nodes.reduce((total, node) => total + Array.from(node.textContent.replace(/\s+/g, ' ')).length, 0);
+      const step = Math.min(18, 180 / Math.max(length - 1, 1));
+      let index = 0;
+      nodes.forEach((node) => {
+        const text = node.textContent.replace(/\s+/g, ' ');
+        const accessible = document.createElement('span');
+        accessible.className = 'app-link-accessible';
+        accessible.textContent = text;
+        const visual = document.createElement('span');
+        visual.setAttribute('aria-hidden', 'true');
+        text.split(/(\s+)/).forEach((word) => {
+          const wordSpan = document.createElement('span');
+          wordSpan.className = 'app-link-word';
+          Array.from(word).forEach((letter) => {
+            const character = document.createElement('span');
+            character.className = 'app-link-letter';
+            character.style.setProperty('--letter-in', `${index * step}ms`);
+            character.style.setProperty('--letter-out', `${(length - 1 - index) * step}ms`);
+            index++;
+            const width = document.createElement('span');
+            width.className = 'app-link-width';
+            width.textContent = letter;
+            const glyph = document.createElement('span');
+            glyph.className = 'app-link-glyph';
+            glyph.textContent = letter;
+            character.append(width, glyph);
+            wordSpan.append(character);
+          });
+          visual.append(wordSpan);
+        });
+        node.replaceWith(accessible, visual);
+      });
+      link.classList.add('app-brand-link');
+    });
+  }
+
+  document.addEventListener('htmx:afterSwap', (event) => initializeBrandLinks(event.detail.target));
+
+  // Keep record navigation on its real link or editor button, including HTMX swaps.
+  document.addEventListener('click', (event) => {
+    if (event.defaultPrevented || event.button !== 0
+      || event.target.closest('a,button,input,select,textarea,label,form,summary,[contenteditable="true"],[role="button"]')
+      || window.getSelection()?.toString()) return;
+
+    const row = event.target.closest('[data-row-action]');
+    const primary = row?.querySelector('[data-row-primary]');
+    if (!primary || primary.matches(':disabled, [aria-disabled="true"]')) return;
+    if (primary.tagName !== 'A' && (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
+
+    primary.dispatchEvent(new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey,
+      shiftKey: event.shiftKey,
+      altKey: event.altKey,
+    }));
+  });
+
   function storedCollapsed() {
     try {
       return window.localStorage.getItem(STORAGE_KEY) === 'true';
@@ -144,8 +225,12 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeShell, { once: true });
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeBrandLinks(document);
+      initializeShell();
+    }, { once: true });
   } else {
+    initializeBrandLinks(document);
     initializeShell();
   }
 })();

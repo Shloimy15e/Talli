@@ -63,7 +63,7 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "find_clients", title = "Find clients",
-            description = "Find Talli clients by name, email, phone, notes, or ID. Returns at most 100 records.",
+            description = "Search clients by name, email, phone, notes, or ID, or omit query to list all clients. Returns contact details, billing address, payment terms, and notes, sorted by name. Each page contains at most 100 records; increase offset to continue.",
             annotations = @McpTool.McpAnnotations(title = "Find clients", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('view-clients')")
@@ -82,7 +82,7 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "find_client_emails", title = "Find client emails",
-            description = "List up to 100 email messages recorded for one client, newest first, including source, initiating account, provider ID, send status, errors, bounce reason, and delivery-event timestamps when known. Use get_email_conversation to read the full local thread before replying.",
+            description = "List recorded incoming and outgoing client emails, newest first, with subject, body excerpt, sender/recipient, source, initiating account, provider ID, send status, errors, bounce reason, and delivery-event timestamps when known. Returns nextOffset for another page. Use get_email_conversation for full plain-text and HTML bodies and the local thread before replying. Requires an admin account.",
             annotations = @McpTool.McpAnnotations(title = "Find client emails", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasRole('admin')")
@@ -100,7 +100,7 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "get_email_conversation", title = "Get an email conversation",
-            description = "Return one oldest-first page of locally recorded messages in the selected email conversation, including full bodies, source, initiating account, provider ID, send status, errors, bounce reason, and delivery-event timestamps when known. Returns next_offset when more messages remain; an email without saved threading metadata returns only itself.",
+            description = "Read full plain-text and HTML bodies of locally recorded incoming and outgoing messages in an email conversation, oldest first, with threading headers, source, initiating account, provider ID, send status, errors, bounce reason, and delivery-event timestamps when known. Returns nextOffset for another page; an email without saved threading metadata returns only itself. Requires an admin account.",
             annotations = @McpTool.McpAnnotations(title = "Get an email conversation", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasRole('admin')")
@@ -121,7 +121,7 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "find_projects", title = "Find projects",
-            description = "Find projects by name/client with optional client and status filters. Returns at most 100 records.",
+            description = "Search projects by project/client name with optional clientId and status filters, or omit filters to list all projects. Returns client, rate type and amount, currency, billing frequency, status, billable state, and notes. Each name-sorted page contains at most 100 records; increase offset to continue.",
             annotations = @McpTool.McpAnnotations(title = "Find projects", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('view-projects')")
@@ -145,7 +145,7 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "find_time_entries", title = "Find time entries",
-            description = "Query time entries by client, project, date range, billable state, and billed state. Dates are inclusive ISO dates.",
+            description = "List completed time entries and running timers with client/project, start/end times, durationMinutes, running state, work description, billable/billed states, and invoiceId. Combine optional clientId, projectId, inclusive start-date range, billable, and billed filters; omit filters to list all. Newest first; use offset and limit to page through results.",
             annotations = @McpTool.McpAnnotations(title = "Find time entries", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('view-time')")
@@ -183,7 +183,7 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "find_expenses", title = "Find expenses",
-            description = "Query expenses by client, project, subscription linkage, date range, category, billable state, and billed state. Dates are inclusive ISO dates.",
+            description = "List expenses with amount/currency, category, vendor, description, payment method, receipt URL, client/project/subscription links, billable/billed states, and invoiceId. Combine optional association, inclusive incurred-date range, category, and billing filters; omit filters to list all. Newest first; use offset and limit to page through results.",
             annotations = @McpTool.McpAnnotations(title = "Find expenses", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('view-expenses')")
@@ -219,7 +219,7 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "find_invoices", title = "Find invoices",
-            description = "Query invoices by client, status, and inclusive issued-date range. Invoice writes are intentionally unavailable.",
+            description = "List invoices with reference, client, amount, amountPaid, outstanding balance, currency, status, notes, billing period, and issue/due/payment dates. Combine optional clientId, status, and inclusive issued-date range filters; omit filters to list all. Newest first; use offset and limit to continue. Use get_invoice for line items and payment records, record_payment/delete_payment to manage payments, and set_invoice_ach_link to manage the ACH link.",
             annotations = @McpTool.McpAnnotations(title = "Find invoices", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('view-invoices')")
@@ -243,7 +243,7 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "get_invoice", title = "Get invoice details",
-            description = "Get one invoice with its line items and payments.",
+            description = "Get one invoice's totals, paid amount, outstanding balance, status, and dates together with all line items and payment records. Line items include project, description, unit price/count, and total; payments include id, date, amount, method, reference, notes, source, and external provider/transaction IDs. Use a payment's id as paymentId in delete_payment.",
             annotations = @McpTool.McpAnnotations(title = "Get invoice details", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('view-invoices') and hasAuthority('view-payments')")
@@ -257,7 +257,7 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "find_subscriptions", title = "Find subscriptions",
-            description = "Query recurring expenses by client, project, and active state.",
+            description = "List recurring-expense subscriptions with vendor, amount/currency, category, monthly/yearly cycle, start/cancellation/next-due dates, client/project links, payment method, management/cancellation URLs, and active state. Omit active to include both active and cancelled subscriptions. Vendor-sorted; use offset and limit to continue. Manage templates with create_subscription/update_subscription and lifecycle tools; use find_expenses with subscriptionId to read recorded charges.",
             annotations = @McpTool.McpAnnotations(title = "Find subscriptions", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('view-expenses')")
@@ -278,7 +278,7 @@ public class TalliMcpReadTools {
     }
 
     @McpTool(name = "run_report", title = "Run a Talli report",
-            description = "Run an existing Talli report. report_type: financial_trend, client_profit_loss, time_utilization, accounts_receivable_aging, revenue_by_project, expenses_by_category, payment_history, or outstanding_invoices.",
+            description = "Run financial reports with reportType: financial_trend (monthly, quarterly, and yearly invoiced/received/expense totals), client_profit_loss, time_utilization, accounts_receivable_aging, revenue_by_project, expenses_by_category, payment_history, or outstanding_invoices. financial_trend uses months; aging and outstanding invoices show the current position. Other reports use the inclusive from/to date range. Returns reportType, date range, and report data.",
             annotations = @McpTool.McpAnnotations(title = "Run a Talli report", readOnlyHint = true,
                     destructiveHint = false, idempotentHint = true, openWorldHint = false))
     @PreAuthorize("hasAuthority('view-reports')")

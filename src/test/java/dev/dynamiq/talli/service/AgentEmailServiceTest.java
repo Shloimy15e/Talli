@@ -60,15 +60,99 @@ class AgentEmailServiceTest {
     }
 
     @Test
+    void sendsApprovedStandaloneEmailWithSignatureOversightAndAudit() {
+        var preview = service.preview("operator@example.test", null, "Introduction", "Hello",
+                "branded", true, true, "billing@dynamiq.dev", null, "new@example.test");
+        verify(emails, never()).save(any());
+        verify(emailService, never()).sendMessage(any(), anyString(), anyList(), anyList(), anyString(),
+                anyString(), any(), anyList(), any());
+
+        var result = service.send("operator@example.test", null, "Introduction", "Hello",
+                "branded", true, true, "billing@dynamiq.dev", preview.previewToken(), true, null,
+                "new@example.test");
+
+        assertThat(preview.clientId()).isNull();
+        assertThat(preview.bodyHtml()).contains("Dynamiq Billing");
+        assertThat(result.email().getClient()).isNull();
+        assertThat(result.email().getToAddress()).isEqualTo("new@example.test");
+        assertThat(result.email().getCc()).isEqualTo("shloimy@dynamiq.dev");
+        assertThat(result.email().getStatus()).isEqualTo("sent");
+        assertThat(result.email().getSource()).isEqualTo("mcp");
+        assertThat(result.email().getInitiatedBy()).isEqualTo("operator@example.test");
+        assertThat(result.email().getResendId()).isEqualTo("msg-plain");
+        verify(clients, never()).findById(any());
+        verify(emailService).sendMessage(eq(sender("billing@dynamiq.dev")), eq("new@example.test"),
+                eq(List.of("shloimy@dynamiq.dev")), eq(List.of()), eq("Introduction"), eq("Hello"),
+                eq(preview.bodyHtml()), eq(List.of()), eq(Map.of()));
+    }
+
+    @Test
+    void standaloneEmailRequiresOneValidRecipient() {
+        for (String address : new String[]{null, "", "invalid", "one@example.test, two@example.test", "one@example.test\r\nBcc: two@example.test"}) {
+            assertThatThrownBy(() -> service.preview("operator@example.test", null, "Hello", "Body",
+                    null, false, false, null, null, address))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("toAddress");
+        }
+        verify(emails, never()).save(any());
+    }
+
+    @Test
+    void standaloneSendRejectsChangedRecipientOrClientAssociationAndMissingApproval() {
+        var preview = service.preview("operator@example.test", null, "Hello", "Body",
+                null, false, false, null, null, "billing@acme.test");
+        assertThatThrownBy(() -> service.send("operator@example.test", null, "Hello", "Body",
+                null, false, false, null, preview.previewToken(), true, null, "other@example.test"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("does not match");
+        assertThatThrownBy(() -> service.send("operator@example.test", 7L, "Hello", "Body",
+                null, false, false, null, preview.previewToken(), true, null, "billing@acme.test"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("does not match");
+        assertThatThrownBy(() -> service.send("operator@example.test", null, "Hello", "Body",
+                null, false, false, null, preview.previewToken(), false, null, "billing@acme.test"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("Explicit approval");
+        verify(emails, never()).save(any());
+        verify(emailService, never()).sendMessage(any(), anyString(), anyList(), anyList(), anyString(),
+                anyString(), any(), anyList(), any());
+    }
+
+    @Test
+    void explicitRecipientCannotOverrideClientSavedAddress() {
+        assertThatThrownBy(() -> service.preview("operator@example.test", 7L, "Hello", "Body",
+                null, false, false, null, null, "other@example.test"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("must match");
+    }
+
+    @Test
+    void standaloneReplyPreservesThreadAndChecksRecipient() {
+        when(threads.replyContext(22L)).thenReturn(new EmailThreadService.ReplyContext(22L, 1L,
+                "<parent@example.test>", "<parent@example.test>", "Re: Introduction",
+                "new@example.test", "support@dynamiq.dev", "teammate@example.test", "archive@example.test"));
+        when(emails.findById(22L)).thenReturn(Optional.of(new Email()));
+        var preview = service.preview("operator@example.test", null, "Introduction", "Reply body",
+                null, false, false, "support@dynamiq.dev", 22L, "new@example.test");
+        var result = service.send("operator@example.test", null, "Introduction", "Reply body",
+                null, false, false, "support@dynamiq.dev", preview.previewToken(), true, 22L, "new@example.test");
+
+        assertThat(result.email().getClient()).isNull();
+        verify(threads).prepareOutgoing(any(Email.class), eq(22L), isNull());
+        verify(emailService).sendMessage(eq(sender("support@dynamiq.dev")), eq("new@example.test"),
+                eq(List.of("teammate@example.test")), eq(List.of("archive@example.test")),
+                eq("Re: Introduction"), eq("Reply body"), isNull(), eq(List.of()),
+                eq(Map.of("In-Reply-To", "<parent@example.test>", "References", "<parent@example.test>")));
+        assertThatThrownBy(() -> service.preview("operator@example.test", null, "Hello", "Body",
+                null, false, false, null, 22L, "other@example.test"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("different recipient");
+    }
+
+    @Test
     void sendsTemplatedEmailWithSelectedSenderSignature() {
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         var preview = service.preview("finance@dynamiq.dev", 7L,
                 "Invoice update", "Amount < $100", "branded", true, true,
-                "billing@dynamiq.dev", null);
+                "billing@dynamiq.dev", null, null);
 
         AgentEmailService.SendResult result = service.send("finance@dynamiq.dev", 7L,
                 "Invoice update", "Amount < $100", "branded", true, true,
-                "billing@dynamiq.dev", preview.previewToken(), true, null);
+                "billing@dynamiq.dev", preview.previewToken(), true, null, null);
 
         verify(emailService).sendMessage(eq(sender("billing@dynamiq.dev")), eq("billing@acme.test"),
                 eq(List.of("shloimy@dynamiq.dev")), eq(List.of()), eq("Invoice update"),
@@ -83,9 +167,9 @@ class AgentEmailServiceTest {
     @Test
     void sendsPlainEmailWithoutTemplateOrSignature() {
         var preview = service.preview("finance@dynamiq.dev", 7L,
-                "Quick note", "Hello", null, false, false, null, null);
+                "Quick note", "Hello", null, false, false, null, null, null);
         AgentEmailService.SendResult result = service.send("finance@dynamiq.dev", 7L,
-                "Quick note", "Hello", null, false, false, null, preview.previewToken(), true, null);
+                "Quick note", "Hello", null, false, false, null, preview.previewToken(), true, null, null);
 
         verify(emailService).sendMessage(eq(sender(null)), eq("billing@acme.test"),
                 eq(List.of()), eq(List.of()), eq("Quick note"), eq("Hello"),
@@ -100,10 +184,10 @@ class AgentEmailServiceTest {
                 anyString(), anyString(), any(), anyList(), any()))
                 .thenThrow(new IllegalStateException("Provider unavailable"));
         var preview = service.preview("operator@example.test", 7L,
-                "Quick note", "Hello", null, false, false, null, null);
+                "Quick note", "Hello", null, false, false, null, null, null);
 
         AgentEmailService.SendResult result = service.send("operator@example.test", 7L,
-                "Quick note", "Hello", null, false, false, null, preview.previewToken(), true, null);
+                "Quick note", "Hello", null, false, false, null, preview.previewToken(), true, null, null);
 
         assertThat(result.email().getStatus()).isEqualTo("failed");
         assertThat(result.email().getSource()).isEqualTo("mcp");
@@ -119,10 +203,10 @@ class AgentEmailServiceTest {
         owner.setEmail("shloimy@dynamiq.dev");
         when(clients.findById(7L)).thenReturn(Optional.of(owner));
         var preview = service.preview("operator@example.test", 7L,
-                "Owner note", "Hello", null, false, true, null, null);
+                "Owner note", "Hello", null, false, true, null, null, null);
 
         AgentEmailService.SendResult result = service.send("operator@example.test", 7L,
-                "Owner note", "Hello", null, false, true, null, preview.previewToken(), true, null);
+                "Owner note", "Hello", null, false, true, null, preview.previewToken(), true, null, null);
 
         assertThat(preview.ccAddress()).isNull();
         assertThat(result.email().getCc()).isNull();
@@ -134,11 +218,11 @@ class AgentEmailServiceTest {
     @Test
     void omitsOversightCopyWhenOwnerIsTheSender() {
         var preview = service.preview("operator@example.test", 7L,
-                "Owner note", "Hello", null, false, true, "shloimy@dynamiq.dev", null);
+                "Owner note", "Hello", null, false, true, "shloimy@dynamiq.dev", null, null);
 
         service.send("operator@example.test", 7L,
                 "Owner note", "Hello", null, false, true, "shloimy@dynamiq.dev",
-                preview.previewToken(), true, null);
+                preview.previewToken(), true, null, null);
 
         assertThat(preview.ccAddress()).isNull();
         verify(emailService).sendMessage(eq(sender("shloimy@dynamiq.dev")), eq("billing@acme.test"),
@@ -150,10 +234,10 @@ class AgentEmailServiceTest {
     void sendsTemplatedEmailWithoutSignature() {
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         var preview = service.preview("finance@dynamiq.dev", 7L,
-                "Notice", "Hello", "minimal", false, false, null, null);
+                "Notice", "Hello", "minimal", false, false, null, null, null);
 
         service.send("finance@dynamiq.dev", 7L, "Notice", "Hello",
-                "minimal", false, false, null, preview.previewToken(), true, null);
+                "minimal", false, false, null, preview.previewToken(), true, null, null);
 
         verify(emailService).sendMessage(eq(sender(null)), eq("billing@acme.test"),
                 eq(List.of()), eq(List.of()), eq("Notice"), eq("Hello"),
@@ -166,10 +250,10 @@ class AgentEmailServiceTest {
     void sendsSignedEmailWithoutTemplate() {
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         var preview = service.preview("finance@dynamiq.dev", 7L,
-                "Signed note", "Hello", null, true, false, null, null);
+                "Signed note", "Hello", null, true, false, null, null, null);
 
         service.send("finance@dynamiq.dev", 7L, "Signed note", "Hello",
-                null, true, false, null, preview.previewToken(), true, null);
+                null, true, false, null, preview.previewToken(), true, null, null);
 
         verify(emailService).sendMessage(eq(sender(null)), eq("billing@acme.test"),
                 eq(List.of()), eq(List.of()), eq("Signed note"), eq("Hello"),
@@ -181,7 +265,7 @@ class AgentEmailServiceTest {
     @Test
     void refusesToSendWithoutExplicitApproval() {
         assertThatThrownBy(() -> service.send("finance@dynamiq.dev", 7L,
-                "Unapproved", "Hello", null, false, false, null, "preview", false, null))
+                "Unapproved", "Hello", null, false, false, null, "preview", false, null, null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Explicit approval");
 
@@ -194,11 +278,11 @@ class AgentEmailServiceTest {
     void usesSignatureMatchingSelectedSender() {
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
         var preview = service.preview("finance@dynamiq.dev", 7L,
-                "Signed", "Hello", null, true, false, "finance@dynamiq.dev", null);
+                "Signed", "Hello", null, true, false, "finance@dynamiq.dev", null, null);
 
         service.send("finance@dynamiq.dev", 7L,
                 "Signed", "Hello", null, true, false, "finance@dynamiq.dev",
-                preview.previewToken(), true, null);
+                preview.previewToken(), true, null, null);
 
         verify(emailService).sendMessage(eq(sender("finance@dynamiq.dev")), eq("billing@acme.test"),
                 eq(List.of()), eq(List.of()), eq("Signed"), eq("Hello"),
@@ -210,10 +294,10 @@ class AgentEmailServiceTest {
     @Test
     void refusesChangedContentAfterPreview() {
         var preview = service.preview("finance@dynamiq.dev", 7L,
-                "Approved subject", "Approved body", null, false, false, null, null);
+                "Approved subject", "Approved body", null, false, false, null, null, null);
 
         assertThatThrownBy(() -> service.send("finance@dynamiq.dev", 7L,
-                "Changed subject", "Approved body", null, false, false, null, preview.previewToken(), true, null))
+                "Changed subject", "Approved body", null, false, false, null, preview.previewToken(), true, null, null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("does not match");
         verify(emailService, never()).sendMessage(any(), anyString(), anyList(), anyList(), anyString(),
@@ -223,11 +307,11 @@ class AgentEmailServiceTest {
     @Test
     void refusesChangedOversightChoiceAfterPreview() {
         var preview = service.preview("finance@dynamiq.dev", 7L,
-                "Approved subject", "Approved body", null, false, false, null, null);
+                "Approved subject", "Approved body", null, false, false, null, null, null);
 
         assertThatThrownBy(() -> service.send("finance@dynamiq.dev", 7L,
                 "Approved subject", "Approved body", null, false, true, null,
-                preview.previewToken(), true, null))
+                preview.previewToken(), true, null, null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("does not match");
         verify(emailService, never()).sendMessage(any(), anyString(), anyList(), anyList(), anyString(),
@@ -237,11 +321,11 @@ class AgentEmailServiceTest {
     @Test
     void refusesChangedSenderAfterPreview() {
         var preview = service.preview("finance@dynamiq.dev", 7L,
-                "Approved subject", "Approved body", null, false, false, "billing@dynamiq.dev", null);
+                "Approved subject", "Approved body", null, false, false, "billing@dynamiq.dev", null, null);
 
         assertThatThrownBy(() -> service.send("finance@dynamiq.dev", 7L,
                 "Approved subject", "Approved body", null, false, false,
-                "finance@dynamiq.dev", preview.previewToken(), true, null))
+                "finance@dynamiq.dev", preview.previewToken(), true, null, null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("does not match");
 
@@ -255,11 +339,11 @@ class AgentEmailServiceTest {
         EmailSender changed = new EmailSender("info@dynamiq.dev", "Dynamiq Solutions", "<p>Changed signature</p>");
         when(senders.resolve(any())).thenReturn(initial, changed);
         var preview = service.preview("finance@dynamiq.dev", 7L,
-                "Approved subject", "Approved body", null, true, false, null, null);
+                "Approved subject", "Approved body", null, true, false, null, null, null);
 
         assertThatThrownBy(() -> service.send("finance@dynamiq.dev", 7L,
                 "Approved subject", "Approved body", null, true, false, null,
-                preview.previewToken(), true, null))
+                preview.previewToken(), true, null, null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("does not match");
         verify(emailService, never()).sendMessage(any(), anyString(), anyList(), anyList(), anyString(),
@@ -278,11 +362,11 @@ class AgentEmailServiceTest {
         when(threads.replyContext(22L)).thenReturn(reply);
         when(emails.findById(22L)).thenReturn(Optional.of(target));
         var preview = service.preview("finance@dynamiq.dev", 7L,
-                "Ignored when replying", "Reply body", null, false, true, "billing@dynamiq.dev", 22L);
+                "Ignored when replying", "Reply body", null, false, true, "billing@dynamiq.dev", 22L, null);
 
         AgentEmailService.SendResult result = service.send("finance@dynamiq.dev", 7L,
                 "Ignored when replying", "Reply body", null, false, true, "billing@dynamiq.dev",
-                preview.previewToken(), true, 22L);
+                preview.previewToken(), true, 22L, null);
 
         verify(threads).prepareOutgoing(any(Email.class), eq(22L), isNull());
         verify(emailService).sendMessage(eq(sender("billing@dynamiq.dev")), eq("billing@acme.test"),
@@ -306,11 +390,11 @@ class AgentEmailServiceTest {
         when(threads.replyContext(22L)).thenReturn(reply);
         when(emails.findById(22L)).thenReturn(Optional.of(target));
         var preview = service.preview("operator@example.test", 7L,
-                "Ignored", "Reply body", null, false, true, "support@dynamiq.dev", 22L);
+                "Ignored", "Reply body", null, false, true, "support@dynamiq.dev", 22L, null);
 
         AgentEmailService.SendResult result = service.send("operator@example.test", 7L,
                 "Ignored", "Reply body", null, false, true, "support@dynamiq.dev",
-                preview.previewToken(), true, 22L);
+                preview.previewToken(), true, 22L, null);
 
         assertThat(preview.ccAddress()).isEqualTo("shloimy@dynamiq.dev, teammate@example.test");
         assertThat(preview.bccAddress()).isEqualTo("archive@example.test");
@@ -337,11 +421,11 @@ class AgentEmailServiceTest {
         when(threads.replyContext(22L)).thenReturn(reply);
         when(emails.findById(22L)).thenReturn(Optional.of(target));
         var preview = service.preview("operator@example.test", 7L,
-                "Ignored", "Reply body", null, false, false, "support@dynamiq.dev", 22L);
+                "Ignored", "Reply body", null, false, false, "support@dynamiq.dev", 22L, null);
 
         AgentEmailService.SendResult result = service.send("operator@example.test", 7L,
                 "Ignored", "Reply body", null, false, false, "support@dynamiq.dev",
-                preview.previewToken(), true, 22L);
+                preview.previewToken(), true, 22L, null);
 
         assertThat(preview.ccAddress()).isEqualTo("teammate@example.test");
         assertThat(preview.bccAddress()).isEqualTo("archive@example.test");
@@ -366,9 +450,9 @@ class AgentEmailServiceTest {
         when(emails.findById(22L)).thenReturn(Optional.of(target));
 
         var preview = service.preview("finance@dynamiq.dev", 7L,
-                "Edited subject", "Reply body", null, true, true, "billing@dynamiq.dev", 22L);
+                "Edited subject", "Reply body", null, true, true, "billing@dynamiq.dev", 22L, null);
         service.send("finance@dynamiq.dev", 7L, "Edited subject", "Reply body", null,
-                true, true, "billing@dynamiq.dev", preview.previewToken(), true, 22L);
+                true, true, "billing@dynamiq.dev", preview.previewToken(), true, 22L, null);
 
         assertThat(preview.subject()).isEqualTo("Edited subject");
         assertThat(preview.inReplyTo()).isNull();
@@ -387,7 +471,7 @@ class AgentEmailServiceTest {
         when(threads.replyContext(22L)).thenReturn(reply);
 
         assertThatThrownBy(() -> service.preview("finance@dynamiq.dev", 7L,
-                "Invoice update", "Hello", null, true, false, null, 22L))
+                "Invoice update", "Hello", null, true, false, null, 22L, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("different recipient");
     }
@@ -405,7 +489,7 @@ class AgentEmailServiceTest {
         when(emails.findById(22L)).thenReturn(Optional.of(target));
 
         assertThatThrownBy(() -> service.preview("finance@dynamiq.dev", 7L,
-                "Invoice update", "Hello", null, true, false, null, 22L))
+                "Invoice update", "Hello", null, true, false, null, 22L, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("different client");
     }

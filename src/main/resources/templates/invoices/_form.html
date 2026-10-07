@@ -16,12 +16,12 @@
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Reference</label>
               <input type="text" name="reference" required th:value="${form.reference}"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28] font-mono">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent font-mono">
             </div>
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Client</label>
               <select name="clientId" required
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                 <option value="">—</option>
                 <option th:each="c : ${clients}" th:value="${c.id}"
                         th:selected="${form.clientId != null and form.clientId == c.id}"
@@ -30,26 +30,26 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Issued</label>
               <input type="date" name="issuedAt" required th:value="${form.issuedAt}"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Due</label>
               <input type="date" name="dueAt" th:value="${form.dueAt}"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Period Start</label>
               <input type="date" name="periodStart" th:value="${form.periodStart}"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Period End</label>
               <input type="date" name="periodEnd" th:value="${form.periodEnd}"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
           </div>
 
@@ -57,12 +57,12 @@
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Currency</label>
               <input type="text" name="currency" maxlength="3" th:value="${form.currency ?: 'USD'}"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div class="col-span-2">
               <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Status</label>
               <select name="status"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                 <option th:each="s : ${ {'unpaid', 'paid', 'overdue', 'void'} }"
                         th:value="${s}" th:text="${s}"
                         th:selected="${form.status == s}">unpaid</option>
@@ -75,24 +75,24 @@
             <div class="flex items-center justify-between mb-3">
               <label class="text-xs font-semibold uppercase tracking-wider text-slate-500">Line Items</label>
               <button type="button" @click="addRow()"
-                      class="text-xs text-[#ea7c28] hover:underline font-medium">+ Add item</button>
+                      class="text-xs text-ui-accent-ink hover:underline font-medium">+ Add item</button>
             </div>
 
             <template x-for="(_, idx) in rows" :key="idx">
               <div class="grid grid-cols-12 gap-2 mb-2 items-start">
                 <select :name="`items[${idx}].projectId`"
-                        class="col-span-3 px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
+                        class="col-span-3 px-2 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent/30">
                   <option value="">—</option>
                   <option th:each="p : ${projects}" th:value="${p.id}" th:text="${p.name}">Project</option>
                 </select>
                 <input type="text" :name="`items[${idx}].description`" placeholder="Description"
-                       class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
+                       class="col-span-4 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent/30">
                 <input type="number" step="0.01" :name="`items[${idx}].unitCount`" placeholder="Qty"
-                       class="col-span-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
+                       class="col-span-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ui-accent/30">
                 <input type="text" :name="`items[${idx}].unit`" placeholder="hr"
-                       class="col-span-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
+                       class="col-span-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent/30">
                 <input type="number" step="0.01" :name="`items[${idx}].unitPrice`" placeholder="Price"
-                       class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30">
+                       class="col-span-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ui-accent/30">
                 <button type="button" @click="removeRow(idx)"
                         class="col-span-1 text-slate-400 hover:text-red-600 text-lg leading-none py-2">×</button>
               </div>
@@ -118,14 +118,14 @@
           <div>
             <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Notes</label>
             <textarea name="notes" rows="2" th:text="${form.notes}"
-                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]"></textarea>
+                      class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent"></textarea>
           </div>
 
           <div class="flex items-center justify-end gap-3 pt-2">
             <button type="button" @click="$dispatch('close-modal')"
                     class="text-sm text-slate-600 hover:text-slate-900 px-4 py-2">Cancel</button>
             <button type="submit"
-                    class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                    class="bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
               Save
             </button>
           </div>

@@ -80,6 +80,28 @@
 
 .ui-select-shell.is-compact { width: auto; }
 
+.ui-select-shell.is-field { max-width: 100%; }
+.ui-select-shell.is-field:not(.w-full) { width: auto; }
+.ui-select-shell[hidden] { display: none; }
+.ui-select-shell.is-field .ui-select-trigger {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--ui-line);
+  background: var(--ui-surface);
+  color: var(--ui-ink);
+  font-size: 13px;
+}
+.ui-select-shell.is-field .ui-select-trigger:hover:not(:disabled) { border-color: var(--ui-border-strong); }
+.ui-select-shell.is-field .ui-select-trigger:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+.ui-select-shell.is-field .ui-select-trigger:disabled {
+  background: var(--ui-disabled-surface);
+  color: var(--ui-disabled);
+}
+.ui-select-shell.is-field .ui-select-value { flex: 1; }
+
 .ui-select-shell.is-compact .ui-select-trigger {
   width: auto;
   min-width: 5.2rem;

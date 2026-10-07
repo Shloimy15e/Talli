@@ -20,7 +20,7 @@
         <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
           <h2 class="text-sm font-semibold">Account</h2>
           <span th:each="r : ${user.roles}"
-                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#ea7c28]/10 text-[#ea7c28] capitalize ml-1"
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-ui-accent/10 text-ui-accent-ink capitalize ml-1"
                 th:text="${r.name}">admin</span>
         </div>
 
@@ -28,16 +28,16 @@
           <div>
             <label for="name" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Name</label>
             <input type="text" id="name" name="name" required th:value="${user.name}"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
           </div>
           <div>
             <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Email</label>
             <input type="email" id="email" name="email" required th:value="${user.email}"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
           </div>
           <div class="flex justify-end">
             <button type="submit"
-                    class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                    class="bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
               Save Changes
             </button>
           </div>
@@ -67,24 +67,24 @@
           <div>
             <label for="currentPassword" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Current Password</label>
             <input type="password" id="currentPassword" name="currentPassword" required autocomplete="current-password"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label for="newPassword" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">New Password</label>
               <input type="password" id="newPassword" name="newPassword" required minlength="8" autocomplete="new-password"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
             <div>
               <label for="confirmPassword" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Confirm Password</label>
               <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8" autocomplete="new-password"
-                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                     class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
             </div>
           </div>
           <p class="text-xs text-slate-500">Minimum 8 characters.</p>
           <div class="flex justify-end">
             <button type="submit"
-                    class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+                    class="bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition">
               Change Password
             </button>
           </div>
@@ -119,23 +119,24 @@
           <div class="flex-1">
             <label for="tokenName" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Token Name</label>
             <input type="text" id="tokenName" name="tokenName" required placeholder="e.g. Chrome Extension"
-                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28] text-sm">
+                   class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent text-sm">
           </div>
           <button type="submit"
-                  class="bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-4 py-2 rounded-lg transition whitespace-nowrap">
+                  class="bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-4 py-2 rounded-lg transition whitespace-nowrap">
             Generate Token
           </button>
         </form>
 
         <!-- Existing tokens -->
         <div th:if="${!tokens.isEmpty()}" class="px-6 pb-4">
-          <table class="w-full text-sm">
+          <div class="overflow-x-auto">
+          <table class="w-full text-sm min-w-[640px]">
             <thead>
               <tr class="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                 <th class="pb-2">Name</th>
                 <th class="pb-2">Created</th>
                 <th class="pb-2">Last Used</th>
-                <th class="pb-2"></th>
+                <th class="pb-2 app-row-actions-cell" style="--app-row-action-count: 1" aria-label="Actions"></th>
               </tr>
             </thead>
             <tbody>
@@ -149,15 +150,16 @@
                         th:replace="~{fragments/_time :: timeago(${t.lastUsedAt})}"></span>
                   <span th:if="${t.lastUsedAt == null}" class="text-slate-400">Never</span>
                 </td>
-                <td class="py-2.5 text-right">
+                <td class="py-2.5 text-right app-row-actions-cell" style="--app-row-action-count: 1">
                   <form th:action="@{/profile/tokens/{id}/revoke(id=${t.id})}" method="post"
-                        onsubmit="return confirm('Revoke this token? Any app using it will stop working.')">
-                    <button type="submit" class="text-xs text-red-600 hover:text-red-800 font-medium">Revoke</button>
+                        onsubmit="return confirm('Revoke this token? Any app using it will stop working.')" class="app-row-actions">
+                    <button type="submit" title="Revoke token" aria-label="Revoke token" class="app-icon-button app-icon-button-danger"><i data-lucide="key-round" aria-hidden="true"></i></button>
                   </form>
                 </td>
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
 
         <div th:if="${tokens.isEmpty()}" class="px-6 pb-4 text-sm text-slate-400">

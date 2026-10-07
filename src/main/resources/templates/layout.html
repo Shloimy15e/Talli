@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title th:text="${title}">Talli</title>
-    <link rel="icon" href="/logo.svg" th:href="@{/logo.svg}" type="image/svg+xml" />
+    <link rel="icon" href="/brand/dynamiq-icon.svg" th:href="@{/brand/dynamiq-icon.svg}" type="image/svg+xml" />
     <script>
       try {
         if (localStorage.getItem('talli.sidebar.collapsed') === 'true') {
@@ -37,6 +37,7 @@
          so data-tippy-content is populated in device tz before tooltips attach). -->
     <script src="/js/time.js" th:src="@{/js/time.js}"></script>
     <link rel="stylesheet" href="/css/design-tokens.css" th:href="@{/css/design-tokens.css}" />
+    <script src="/js/ui/theme.js" th:src="@{/js/ui/theme.js}"></script>
     <link rel="stylesheet" href="/css/app.css" th:href="@{/css/app.css}" />
     <link rel="stylesheet" href="/css/mail.css" th:href="@{/css/mail.css}" />
     <link rel="stylesheet" href="/css/mail-composer.css" th:href="@{/css/mail-composer.css}" />
@@ -69,17 +70,9 @@
       });
     </script>
 
-    <link rel="preconnect" href="https://rsms.me/" />
-    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
-
     <style>
       html {
-        font-family: "Inter", sans-serif;
-      }
-      @supports (font-variation-settings: normal) {
-        html {
-          font-family: "Inter var", sans-serif;
-        }
+        font-family: var(--ui-font);
       }
       [x-cloak] {
         display: none !important;

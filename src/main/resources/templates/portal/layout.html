@@ -5,31 +5,35 @@
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title th:text="${title} + ' — Talli'">Talli</title>
-    <link rel="icon" href="/logo.svg" type="image/svg+xml"/>
+    <link rel="icon" href="/brand/dynamiq-icon.svg" type="image/svg+xml"/>
+    <link rel="stylesheet" href="/css/design-tokens.css"/>
+    <link rel="stylesheet" href="/css/app.css"/>
+    <link rel="stylesheet" href="/css/ui/select.css"/>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/ui/theme.js"></script>
+    <script defer src="/js/ui/select.js"></script>
+    <script defer src="/js/app-shell.js"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
     <style>
-      body { font-family: 'Inter', sans-serif; }
       .portal-add-button {
         display: inline-flex;
         align-items: center;
         gap: 0.375rem;
         height: 2rem;
         padding: 0 0.625rem;
-        border: 1px solid #fed7aa;
+        border: 1px solid var(--ui-line);
         border-radius: 0.375rem;
-        background: #fff7ed;
-        color: #c05621;
+        background: var(--ui-selected);
+        color: var(--ui-accent-ink);
         font-size: 0.75rem;
         font-weight: 600;
         line-height: 1;
         transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
       }
       .portal-add-button:hover {
-        border-color: #fb923c;
-        background: #ffedd5;
-        color: #9a3412;
+        border-color: var(--ui-accent);
+        background: var(--ui-selection);
+        color: var(--ui-accent-ink);
       }
       .portal-add-button svg {
         width: 0.875rem;
@@ -53,7 +57,7 @@
       }
       .portal-add-button:focus-visible,
       .portal-icon-button:focus-visible {
-        outline: 2px solid #ea7c28;
+        outline: 2px solid var(--ui-focus);
         outline-offset: 2px;
       }
       .portal-icon-button svg {
@@ -63,29 +67,30 @@
     </style>
   </head>
 
-  <body th:fragment="portal(content)">
+  <body th:fragment="portal(content)" class="portal-app">
     <div class="min-h-screen bg-slate-100 w-full">
 
       <!-- Top bar -->
-      <header class="bg-[#161f30] text-white">
+      <header class="bg-ui-rail text-white">
         <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <img src="/logo.svg" alt="Talli" class="w-6 h-6"/>
+            <img src="/brand/dynamiq-icon-reverse.svg" alt="Dynamiq" class="w-6 h-6"/>
             <span class="font-semibold">Talli</span>
           </div>
           <div class="flex items-center gap-4">
-            <a href="/portal/statement" class="text-xs text-slate-300 hover:text-white">Download Statement</a>
+            <a href="/portal/statement" class="text-xs text-ui-rail-ink hover:text-white">Download Statement</a>
             <form th:action="@{/logout}" method="post">
-              <button type="submit" class="text-xs text-slate-400 hover:text-white">Sign out</button>
+              <button type="submit" class="text-xs text-ui-rail-ink hover:text-white">Sign out</button>
             </form>
           </div>
         </div>
       </header>
 
       <!-- Content -->
-      <main class="max-w-7xl mx-auto px-6 py-8">
+      <main class="ui-surface-content max-w-7xl mx-auto px-6 py-8">
         <th:block th:replace="${content}"></th:block>
       </main>
+      <footer class="pb-8 text-center"><img src="/brand/dynamiq-horizontal.svg" alt="Dynamiq" class="w-28 h-auto mx-auto"/></footer>
 
     </div>
     <script>

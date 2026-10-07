@@ -1,28 +1,36 @@
 /* Shared Talli design tokens. Components and product surfaces consume semantic roles. */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/Inter-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --ui-font: "Inter var", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  --ui-ink: #202936;
-  --ui-muted: #637083;
-  --ui-line: #e5e9ee;
-  --ui-border-strong: #cfd5dc;
+  --ui-font: "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --ui-ink: #0f2a44;
+  --ui-muted: #6b7280;
+  --ui-line: #e5e7eb;
+  --ui-border-strong: #94a3b8;
   --ui-surface: #ffffff;
-  --ui-canvas: #f5f6f8;
-  --ui-subtle: #f7f8fa;
-  --ui-accent: #ea7c28;
-  --ui-accent-hover: #d46819;
+  --ui-canvas: #fafafa;
+  --ui-subtle: #f1f5f9;
+  --ui-accent: #f97316;
+  --ui-accent-hover: #0f2a44;
   --ui-accent-foreground: #ffffff;
-  --ui-accent-ink: #9e4510;
+  --ui-accent-ink: #a84308;
   --ui-selected: #fff1e7;
-  --ui-focus: #b65316;
-  --ui-hover: #e9ecf0;
-  --ui-active: #e6e9ee;
-  --ui-rail: #141c2a;
-  --ui-rail-ink: #aeb9ca;
-  --ui-rail-hover: #253044;
-  --ui-rail-active: #303245;
-  --ui-rail-accent: #ffb57d;
-  --ui-selection: #ffe1c9;
-  --ui-selection-ink: #52280f;
+  --ui-focus: #a84308;
+  --ui-hover: #f1f5f9;
+  --ui-active: #e5e7eb;
+  --ui-rail: #0f2a44;
+  --ui-rail-ink: #cbd5e1;
+  --ui-rail-hover: #193a57;
+  --ui-rail-active: #234663;
+  --ui-rail-accent: #fb923c;
+  --ui-selection: #ffedd5;
+  --ui-selection-ink: #0f2a44;
   --ui-success: #386545;
   --ui-success-surface: #edf8f1;
   --ui-success-line: #dceee2;

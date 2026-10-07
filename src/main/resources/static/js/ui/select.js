@@ -5,6 +5,11 @@
   let openSelect = null;
   let nextId = 0;
 
+  function isEligible(select) {
+    return !select.multiple && select.size <= 1 && !select.hasAttribute('data-ui-select-native')
+      && (select.hasAttribute('data-ui-select') || Boolean(select.closest('.app-shell, .portal-app, .auth-page')));
+  }
+
   function splitLabel(label) {
     const match = label.match(/^(.+?)\s*<([^>]+)>$/);
     return match ? { primary: match[1].trim(), secondary: match[2].trim() } : { primary: label, secondary: '' };
@@ -95,10 +100,17 @@
       this.labelListeners = [];
       this.query = '';
       this.searchPlaceholder = select.dataset.uiSelectSearch || '';
+      this.field = !select.hasAttribute('data-ui-select') || select.hasAttribute('data-ui-select-field');
+      this.originalTabIndex = select.getAttribute('tabindex');
+      this.originalAriaHidden = select.getAttribute('aria-hidden');
 
       this.shell = document.createElement('span');
       this.compact = select.hasAttribute('data-ui-select-compact');
-      this.shell.className = `ui-select-shell${this.compact ? ' is-compact' : ''}`;
+      this.shell.className = `ui-select-shell${this.compact ? ' is-compact' : ''}${this.field ? ' is-field' : ''}`;
+      if (this.field) {
+        Array.from(select.classList).filter((name) => /^(?:(?:sm|md|lg|xl):)?(?:w-|min-w-|max-w-|col-span-|flex-|grow|shrink|basis-)/.test(name))
+          .forEach((name) => this.shell.classList.add(name));
+      }
       select.parentNode.insertBefore(this.shell, select.nextSibling);
 
       this.trigger = document.createElement('button');
@@ -135,12 +147,21 @@
       };
       this.onViewportChange = () => this.schedulePosition();
       this.onRefresh = () => this.refresh();
+      this.onInvalid = (event) => {
+        event.preventDefault();
+        this.trigger.setAttribute('aria-invalid', 'true');
+        this.trigger.focus();
+        this.open();
+      };
+      this.onReset = () => window.requestAnimationFrame(() => this.refresh());
       this.trigger.addEventListener('click', this.onTriggerClick);
       this.trigger.addEventListener('mousedown', this.onTriggerMouseDown);
       this.trigger.addEventListener('keydown', this.onKeyDown);
       select.addEventListener('change', this.onSelectChange);
       select.addEventListener('input', this.onSelectChange);
       select.addEventListener('ui-select:refresh', this.onRefresh);
+      select.addEventListener('invalid', this.onInvalid);
+      select.form?.addEventListener('reset', this.onReset);
       Array.from(select.labels || []).forEach((labelElement) => {
         const handler = (event) => {
           event.preventDefault();
@@ -152,6 +173,16 @@
       this.observer = new MutationObserver(() => this.refresh());
       this.observer.observe(select, { attributes: true, childList: true, characterData: true, subtree: true });
       this.refresh();
+      this.bindModel();
+    }
+
+    bindModel() {
+      const model = this.select.getAttribute('x-model');
+      if (!model || this.modelEffect || !window.Alpine) return;
+      this.modelEffect = window.Alpine.effect(() => {
+        window.Alpine.evaluate(this.select, model);
+        window.queueMicrotask(() => { if (this.select.isConnected) this.refresh(); });
+      });
     }
 
     refresh() {
@@ -160,8 +191,11 @@
       this.value.replaceChildren();
       addLabelContent(this.value, selected);
       this.trigger.title = this.select.title || selected?.label || '';
-      this.trigger.disabled = this.select.disabled;
-      if (this.select.disabled && this === openSelect) this.close();
+      this.trigger.disabled = this.select.matches(':disabled');
+      this.trigger.setAttribute('aria-required', String(this.select.required));
+      if (this.select.validity.valid) this.trigger.removeAttribute('aria-invalid');
+      this.shell.hidden = this.select.hidden || this.select.style.display === 'none';
+      if ((this.trigger.disabled || this.shell.hidden) && this === openSelect) this.close();
       if (this.popup) this.renderOptions();
     }
 
@@ -172,6 +206,7 @@
     }
 
     open(preferredIndex) {
+      if (this.trigger.disabled || this.shell.hidden) return;
       if (openSelect && openSelect !== this) openSelect.close();
       this.refresh();
       this.popup = document.createElement('div');
@@ -348,7 +383,8 @@
     focusAdjacent(backwards) {
       const selector = 'a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
       const focusable = Array.from(document.querySelectorAll(selector)).filter((element) => {
-        return element !== this.searchInput && !element.hidden && element.getClientRects().length;
+        return element !== this.searchInput && !element.classList.contains('ui-select-native')
+          && element.tabIndex !== -1 && !element.hidden && element.getClientRects().length;
       });
       const index = focusable.indexOf(this.trigger);
       const target = focusable[index + (backwards ? -1 : 1)];
@@ -400,22 +436,27 @@
       this.select.removeEventListener('change', this.onSelectChange);
       this.select.removeEventListener('input', this.onSelectChange);
       this.select.removeEventListener('ui-select:refresh', this.onRefresh);
+      this.select.removeEventListener('invalid', this.onInvalid);
+      this.select.form?.removeEventListener('reset', this.onReset);
+      if (this.modelEffect) window.Alpine?.release(this.modelEffect);
       this.labelListeners.forEach(([label, handler]) => label.removeEventListener('click', handler));
       this.select.classList.remove('ui-select-native');
-      this.select.removeAttribute('aria-hidden');
+      if (this.originalAriaHidden === null) this.select.removeAttribute('aria-hidden');
+      else this.select.setAttribute('aria-hidden', this.originalAriaHidden);
       this.select.removeAttribute('data-ui-select-ready');
-      this.select.removeAttribute('tabindex');
+      if (this.originalTabIndex === null) this.select.removeAttribute('tabindex');
+      else this.select.setAttribute('tabindex', this.originalTabIndex);
       this.shell.remove();
       instances.delete(this);
     }
   }
 
   function initialize(root) {
-    const selects = root.matches?.('select[data-ui-select]')
+    const selects = root.matches?.('select')
       ? [root]
-      : Array.from(root.querySelectorAll?.('select[data-ui-select]') || []);
+      : Array.from(root.querySelectorAll?.('select') || []);
     selects.forEach((select) => {
-      if (!select.dataset.uiSelectReady) instances.add(new SelectControl(select));
+      if (isEligible(select) && !select.dataset.uiSelectReady) instances.add(new SelectControl(select));
     });
   }
 
@@ -425,10 +466,24 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', () => initialize(document));
+  document.addEventListener('DOMContentLoaded', () => {
+    initialize(document);
+    const observer = new MutationObserver((records) => {
+      records.forEach((record) => {
+        record.addedNodes.forEach((node) => {
+          if (node.nodeType === 1 && !node.matches('.ui-select-shell, .ui-select-popup')) initialize(node);
+        });
+        record.removedNodes.forEach((node) => {
+          if (node.nodeType === 1 && !node.isConnected) cleanup(node);
+        });
+      });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+  document.addEventListener('alpine:initialized', () => instances.forEach((instance) => instance.bindModel()));
   document.addEventListener('htmx:afterSwap', (event) => window.requestAnimationFrame(() => initialize(event.target)));
   document.addEventListener('htmx:beforeCleanupElement', (event) => cleanup(event.target));
 
   window.TalliSelect = { cleanup, initialize };
-  window.TalliSelectTest = { edgeEnabledIndex, filterOptions, nextEnabledIndex, popupPlacement, splitLabel, typeaheadIndex };
+  window.TalliSelectTest = { edgeEnabledIndex, filterOptions, isEligible, nextEnabledIndex, popupPlacement, splitLabel, typeaheadIndex };
 })();

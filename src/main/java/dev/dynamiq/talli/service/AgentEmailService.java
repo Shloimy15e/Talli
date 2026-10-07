@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Locale;
 
-/** Composes, sends, and audits client email initiated through an authenticated agent. */
+/** Composes, sends, and audits email initiated through an authenticated agent. */
 @Service
 public class AgentEmailService {
 
@@ -52,20 +52,23 @@ public class AgentEmailService {
     @Transactional
     public Preview preview(String actorEmail, Long clientId, String subject, String body,
                            String templateId, boolean includeSignature, boolean includeOversightCc,
-                           String senderEmail,
-                           Long replyToEmailId) {
-        Client client = clients.findById(clientId)
+                           String senderEmail, Long replyToEmailId, String toAddress) {
+        Client client = clientId == null ? null : clients.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found: " + clientId));
         EmailSender sender = senders.resolve(senderEmail);
-        String recipient = clientEmail(client);
+        String recipient = client == null ? validEmail(toAddress, "toAddress") : clientEmail(client);
+        if (client != null && toAddress != null
+                && !recipient.equalsIgnoreCase(validEmail(toAddress, "toAddress"))) {
+            throw new IllegalArgumentException("toAddress must match the client's saved email address");
+        }
         EmailThreadService.ReplyContext reply = replyToEmailId == null ? null : threads.replyContext(replyToEmailId);
         if (reply != null && !recipient.equalsIgnoreCase(required(reply.recipientAddress(), "reply recipient"))) {
-            throw new IllegalArgumentException("replyToEmailId belongs to a different recipient than this client.");
+            throw new IllegalArgumentException("replyToEmailId belongs to a different recipient than the requested email.");
         }
         if (reply != null) {
             Email replyTarget = emails.findById(replyToEmailId)
                     .orElseThrow(() -> new IllegalArgumentException("Email not found: " + replyToEmailId));
-            if (replyTarget.getClient() != null && !clientId.equals(replyTarget.getClient().getId())) {
+            if (clientId != null && replyTarget.getClient() != null && !clientId.equals(replyTarget.getClient().getId())) {
                 throw new IllegalArgumentException("replyToEmailId belongs to a different client.");
             }
         }
@@ -95,20 +98,21 @@ public class AgentEmailService {
 
     @Transactional
     public SendResult send(String actorEmail, Long clientId, String subject, String body,
-                            String templateId, boolean includeSignature, boolean includeOversightCc,
-                            String senderEmail, String previewToken, boolean confirmed, Long replyToEmailId) {
+                           String templateId, boolean includeSignature, boolean includeOversightCc,
+                           String senderEmail, String previewToken, boolean confirmed, Long replyToEmailId,
+                           String toAddress) {
         if (!confirmed) {
             throw new IllegalStateException("Explicit approval is required before sending email.");
         }
         Preview preview = preview(actorEmail, clientId, subject, body, templateId,
-                includeSignature, includeOversightCc, senderEmail, replyToEmailId);
+                includeSignature, includeOversightCc, senderEmail, replyToEmailId, toAddress);
         if (previewToken == null || !preview.previewToken().equals(previewToken.trim())) {
             throw new IllegalStateException(
                     "previewToken does not match this email. Preview the exact email before sending.");
         }
 
         Email email = new Email();
-        email.setClient(clients.findById(clientId).orElseThrow());
+        email.setClient(clientId == null ? null : clients.findById(clientId).orElseThrow());
         email.setFromAddress(preview.fromAddress());
         email.setToAddress(preview.toAddress());
         email.setCc(preview.ccAddress());
@@ -215,7 +219,7 @@ public class AgentEmailService {
                                         String subject, String body, String bodyHtml, String templateId,
                                         boolean includeSignature, EmailThreadService.ReplyContext reply) {
         String value = String.join("\u001f", required(actorEmail, "authenticated user"),
-                clientId.toString(), sender.address(), sender.name(), recipient,
+                clientId == null ? "" : clientId.toString(), sender.address(), sender.name(), recipient,
                 cc == null ? "" : cc, bcc == null ? "" : bcc, subject, body,
                 bodyHtml == null ? "" : bodyHtml,
                 templateId == null ? "" : templateId, Boolean.toString(includeSignature),

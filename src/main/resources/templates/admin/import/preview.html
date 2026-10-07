@@ -38,7 +38,7 @@
               <div class="flex items-center gap-3">
                 <span class="text-sm font-mono text-slate-700 truncate w-40" th:text="${header}">Column</span>
                 <select th:name="'map_' + ${header}"
-                        class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#ea7c28]/30 focus:border-[#ea7c28]">
+                        class="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent">
                   <option value="">— skip —</option>
                   <option th:each="f : ${fields}" th:if="${!#strings.isEmpty(f)}"
                           th:value="${f}" th:text="${f}"
@@ -77,7 +77,7 @@
         <div class="flex items-center justify-between">
           <a href="/admin/import" class="text-sm text-slate-500 hover:text-slate-900">Cancel</a>
           <button type="submit"
-                  class="inline-flex items-center gap-2 bg-[#ea7c28] hover:bg-[#d66f20] text-white text-sm font-medium px-5 py-2 rounded-lg transition"
+                  class="inline-flex items-center gap-2 bg-ui-accent hover:bg-ui-accent-hover text-ui-accent-foreground text-sm font-medium px-5 py-2 rounded-lg transition"
                   onclick="return confirm('Import all ' + document.querySelector('[data-total]').dataset.total + ' rows as expenses?')">
             <i data-lucide="download" class="w-4 h-4"></i>
             <span>Import <span th:text="${totalRows}" data-total th:attr="data-total=${totalRows}">0</span> rows</span>
