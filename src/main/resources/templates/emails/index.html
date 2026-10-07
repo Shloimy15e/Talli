@@ -8,13 +8,22 @@
       <span hidden th:if="${sentDraftKey != null}" data-sent-draft-key th:attr="data-key=${sentDraftKey}"></span>
       <aside class="mail-folders" aria-label="Mailboxes">
         <div class="mail-folder-heading"><h1>Mail</h1><button type="button" class="mail-icon-button mail-mobile-only" data-toggle-folders aria-label="Close mailboxes"><i data-lucide="x"></i></button></div>
-        <button type="button" class="mail-compose-button" hx-get="/emails/new" hx-target="#modal" hx-swap="innerHTML"><i data-lucide="square-pen"></i>Compose</button>
+        <button type="button" class="mail-compose-button" th:attr="hx-get=@{/emails/new(mailboxAddress=${mailboxAddress})}" hx-target="#modal" hx-swap="innerHTML"><i data-lucide="square-pen"></i>Compose</button>
+        <form method="get" action="/emails" class="mail-inbox-selector" hx-get="/emails" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML" hx-push-url="true" hx-trigger="change">
+          <label for="mail-inbox">Inboxes</label>
+          <select id="mail-inbox" name="mailboxAddress" class="w-full" data-ui-select data-ui-select-field th:attr="aria-label='Select inbox: ' + ${mailboxLabel}">
+            <option value="" th:selected="${mailboxAddress.isBlank()}">All inboxes</option>
+            <option th:each="inbox : ${mailboxes}" th:value="${inbox.address}" th:text="${inbox.name} + ' &lt;' + ${inbox.address} + '&gt;'" th:selected="${#strings.equalsIgnoreCase(mailboxAddress, inbox.address)}">Business inbox</option>
+          </select>
+          <input type="hidden" name="folder" th:value="${folder}"/>
+          <button type="submit" class="mail-sr-only">Open inbox</button>
+        </form>
         <nav class="mail-folder-list">
           <a th:each="entry : ${ {'all':'All mail','inbox':'Inbox','sent':'Sent','starred':'Starred','archive':'Archive'} }"
-             th:href="@{/emails(folder=${entry.key})}" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML"
+             th:href="@{/emails(folder=${entry.key},mailboxAddress=${mailboxAddress})}" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML"
              class="mail-folder" th:classappend="${folder == entry.key} ? 'is-active' : ''" th:attr="aria-current=${folder == entry.key ? 'page' : null}">
             <i th:attr="data-lucide=${entry.key == 'all' ? 'mails' : (entry.key == 'inbox' ? 'inbox' : (entry.key == 'sent' ? 'send' : (entry.key == 'starred' ? 'star' : 'archive')))}"></i>
-            <span th:text="${entry.value}">All mail</span><span class="mail-folder-count" th:text="${folderCounts[entry.key]}">0</span>
+            <span th:text="${entry.value}">All mail</span><span class="mail-folder-count" th:text="${folderCounts[entry.key]}" th:title="${entry.key == 'inbox' ? 'Unread conversations' : 'Conversations'}">0</span>
           </a>
         </nav>
         <div class="mail-folders-bottom"><a href="/emails/senders"><i data-lucide="sliders-horizontal"></i>Sender profiles</a><a href="/dashboard"><i data-lucide="arrow-left"></i>Back to workspace</a></div>
@@ -24,32 +33,32 @@
         <header class="mail-list-header">
           <div class="mail-list-title"><button type="button" class="mail-icon-button mail-mobile-only" data-toggle-folders aria-label="Show mailboxes"><i data-lucide="panel-left"></i></button><h2 th:text="${folder == 'inbox' ? 'Inbox' : (folder == 'sent' ? 'Sent' : (folder == 'starred' ? 'Starred' : (folder == 'archive' ? 'Archive' : 'All mail')))}">All mail</h2><span th:text="${mailRows.totalElements}">0</span><button type="button" class="mail-icon-button mail-refresh" data-refresh-mail aria-label="Refresh mail" title="Refresh mail"><i data-lucide="rotate-cw"></i></button></div>
           <form method="get" action="/emails" class="mail-search" hx-get="/emails" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML" hx-push-url="true">
-            <i data-lucide="search"></i><label for="mail-search" class="mail-sr-only">Search mail</label><input id="mail-search" type="search" name="search" placeholder="Search mail" th:value="${search}" autocomplete="off" /><input type="hidden" name="folder" th:value="${folder}" /><button type="submit" class="mail-sr-only">Search</button>
+            <i data-lucide="search"></i><label for="mail-search" class="mail-sr-only">Search mail</label><input id="mail-search" type="search" name="search" placeholder="Search mail" th:value="${search}" autocomplete="off" /><input type="hidden" name="mailboxAddress" th:value="${mailboxAddress}"/><input type="hidden" name="folder" th:value="${folder}" /><button type="submit" class="mail-sr-only">Search</button>
           </form>
         </header>
         <div th:if="${error != null}" class="mail-notice is-error" role="alert" th:text="${error}"></div>
         <div th:if="${success != null}" class="mail-notice" role="status" th:text="${success}"></div>
         <div class="mail-list-scroll" id="mail-list-scroll">
-          <div class="mail-list-empty" th:if="${mailRows.empty}"><i th:attr="data-lucide=${search != null and !search.isBlank() ? 'search' : 'inbox'}"></i><h3 th:text="${search != null and !search.isBlank() ? 'No matching conversations' : 'No conversations here'}">No conversations here</h3><p th:text="${search != null and !search.isBlank() ? 'Try a name, email address, or a few words from the message.' : (folder == 'starred' ? 'Star a conversation to keep it close.' : (folder == 'archive' ? 'Archived conversations will appear here.' : 'Your conversations will appear here.'))}"></p><a th:if="${search != null and !search.isBlank()}" th:href="@{/emails(folder=${folder})}" class="mail-text-link">Clear search</a></div>
+          <div class="mail-list-empty" th:if="${mailRows.empty}"><i th:attr="data-lucide=${search != null and !search.isBlank() ? 'search' : 'inbox'}"></i><h3 th:text="${search != null and !search.isBlank() ? 'No matching conversations' : 'No conversations here'}">No conversations here</h3><p th:text="${search != null and !search.isBlank() ? 'Try a name, email address, or a few words from the message.' : (folder == 'starred' ? 'Star a conversation to keep it close.' : (folder == 'archive' ? 'Archived conversations will appear here.' : 'Your conversations will appear here.'))}"></p><a th:if="${search != null and !search.isBlank()}" th:href="@{/emails(folder=${folder},mailboxAddress=${mailboxAddress})}" class="mail-text-link">Clear search</a></div>
           <article th:each="row : ${mailRows.content}" class="mail-row" th:classappend="${(row.rootId == selectedRootId ? 'is-selected ' : '') + (row.unread ? 'is-unread' : '')}" th:attr="data-thread=${row.rootId}">
-            <a class="mail-row-link" th:href="@{/emails/{id}(id=${row.id},folder=${folder},search=${search},page=${mailRows.number})}" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML" th:attr="aria-current=${row.rootId == selectedRootId ? 'true' : null}">
+            <a class="mail-row-link" th:href="@{/emails/{id}(id=${row.id},folder=${folder},mailboxAddress=${mailboxAddress},search=${search},page=${mailRows.number})}" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML" th:attr="aria-current=${row.rootId == selectedRootId ? 'true' : null}">
               <div class="mail-row-top"><span class="mail-row-contact" th:text="${row.contact}">Contact</span><time class="mail-row-date" th:text="${#temporals.format(row.createdAt, 'MMM d')}" th:title="${#temporals.format(row.createdAt, 'MMM d, yyyy HH:mm')}">Apr 10</time></div>
               <div class="mail-row-subject"><span th:text="${row.subject.isBlank() ? '(No subject)' : row.subject}">Subject</span><span class="mail-thread-count" th:if="${row.messageCount > 1}" th:text="${row.messageCount}">2</span></div>
               <p class="mail-row-preview" th:text="${row.preview}">Message preview</p>
               <span class="mail-row-status" th:if="${row.status == 'failed'}"><i data-lucide="circle-alert"></i>Not sent</span>
             </a>
             <form th:action="@{/emails/{id}/mailbox(id=${row.id})}" method="post" class="mail-star-form" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML">
-              <input type="hidden" name="action" th:value="${row.starred ? 'unstar' : 'star'}"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/>
+              <input type="hidden" name="action" th:value="${row.starred ? 'unstar' : 'star'}"/><input type="hidden" name="mailboxAddress" th:value="${mailboxAddress}"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/>
               <button type="submit" class="mail-icon-button mail-star" th:classappend="${row.starred} ? 'is-starred' : ''" th:attr="aria-label=${row.starred ? 'Unstar conversation' : 'Star conversation'},aria-pressed=${row.starred}"><i data-lucide="star"></i></button>
             </form>
           </article>
         </div>
-        <footer class="mail-list-footer"><span th:text="${mailRows.totalElements == 0 ? '0 conversations' : ((mailRows.number * mailRows.size + 1) + '–' + (mailRows.number * mailRows.size + mailRows.numberOfElements) + ' of ' + mailRows.totalElements)}">0 conversations</span><div><a th:if="${mailRows.hasPrevious()}" th:href="@{/emails(folder=${folder},search=${search},page=${mailRows.number - 1})}" class="mail-icon-button" aria-label="Previous page"><i data-lucide="chevron-left"></i></a><a th:if="${mailRows.hasNext()}" th:href="@{/emails(folder=${folder},search=${search},page=${mailRows.number + 1})}" class="mail-icon-button" aria-label="Next page"><i data-lucide="chevron-right"></i></a></div></footer>
+        <footer class="mail-list-footer"><span th:text="${mailRows.totalElements == 0 ? '0 conversations' : ((mailRows.number * mailRows.size + 1) + '–' + (mailRows.number * mailRows.size + mailRows.numberOfElements) + ' of ' + mailRows.totalElements)}">0 conversations</span><div><a th:if="${mailRows.hasPrevious()}" th:href="@{/emails(folder=${folder},mailboxAddress=${mailboxAddress},search=${search},page=${mailRows.number - 1})}" class="mail-icon-button" aria-label="Previous page"><i data-lucide="chevron-left"></i></a><a th:if="${mailRows.hasNext()}" th:href="@{/emails(folder=${folder},mailboxAddress=${mailboxAddress},search=${search},page=${mailRows.number + 1})}" class="mail-icon-button" aria-label="Next page"><i data-lucide="chevron-right"></i></a></div></footer>
       </section>
 
       <section class="mail-reading-pane" aria-label="Reading pane">
         <th:block th:if="${selectedEmail != null}"><th:block th:replace="~{emails/show :: reader}"></th:block></th:block>
-        <div th:if="${selectedEmail == null}" class="mail-reader-empty"><div class="mail-empty-envelope"><i data-lucide="mail-open"></i></div><h2>No conversation selected</h2><p>Choose a conversation from the list.</p><button type="button" class="mail-secondary-button" hx-get="/emails/new" hx-target="#modal" hx-swap="innerHTML"><i data-lucide="square-pen"></i>Write a message</button><span class="mail-shortcut-hint"><kbd>↑</kbd><kbd>↓</kbd> move through mail <kbd>C</kbd> compose</span></div>
+        <div th:if="${selectedEmail == null}" class="mail-reader-empty"><div class="mail-empty-envelope"><i data-lucide="mail-open"></i></div><h2>No conversation selected</h2><p>Choose a conversation from the list.</p><button type="button" class="mail-secondary-button" th:attr="hx-get=@{/emails/new(mailboxAddress=${mailboxAddress})}" hx-target="#modal" hx-swap="innerHTML"><i data-lucide="square-pen"></i>Write a message</button><span class="mail-shortcut-hint"><kbd>↑</kbd><kbd>↓</kbd> move through mail <kbd>C</kbd> compose</span></div>
       </section>
       <div class="mail-network-error" hidden role="alert">Mail couldn’t load. <button type="button" data-refresh-mail>Try again</button></div>
     </section>

@@ -58,7 +58,8 @@ public class MailboxService {
 
     @Transactional(readOnly = true)
     public MailboxView mailbox(User user, String folder, String search, int page,
-                               String flow, List<String> statuses) {
+                               String flow, List<String> statuses, String mailboxAddress) {
+        String normalizedAddress = normalizeAddress(mailboxAddress);
         String normalizedFolder = normalizeFolder(folder);
         String normalizedSearch = normalizeSearch(search);
         String normalizedFlow = normalizeFlow(flow);
@@ -68,7 +69,7 @@ public class MailboxService {
 
         Page<Email> emailPage = emails.findMailboxConversations(
                 user.getId(), normalizedFolder, normalizedFlow, statusesForQuery, statusesEmpty,
-                normalizedSearch, PageRequest.of(Math.max(page, 0), PAGE_SIZE));
+                normalizedSearch, normalizedAddress, PageRequest.of(Math.max(page, 0), PAGE_SIZE));
 
         List<Long> rootIds = emailPage.stream().map(MailboxService::rootId).distinct().toList();
         Map<Long, ThreadStats> statsByRoot = conversationStats(rootIds);
@@ -86,15 +87,15 @@ public class MailboxService {
         });
 
         EmailRepository.MailboxCountsProjection counts = emails.countMailboxFolders(
-                user.getId(), normalizedFlow, statusesForQuery, statusesEmpty, normalizedSearch);
+                user.getId(), normalizedFlow, statusesForQuery, statusesEmpty, normalizedSearch, normalizedAddress);
         Map<String, Long> folderCounts = new LinkedHashMap<>();
         folderCounts.put("all", counts.getAllCount());
-        folderCounts.put("inbox", counts.getInboxCount());
+        folderCounts.put("inbox", emails.countUnreadInboxConversations(user.getId(), normalizedAddress));
         folderCounts.put("sent", counts.getSentCount());
         folderCounts.put("starred", counts.getStarredCount());
         folderCounts.put("archive", counts.getArchiveCount());
 
-        return new MailboxView(mailRows, folderCounts, normalizedFolder, normalizedSearch);
+        return new MailboxView(mailRows, folderCounts, normalizedFolder, normalizedSearch, normalizedAddress);
     }
 
     @Transactional
@@ -232,6 +233,10 @@ public class MailboxService {
         };
     }
 
+    public static String normalizeAddress(String address) {
+        return address == null ? "" : address.trim().toLowerCase(Locale.ROOT);
+    }
+
     public static String normalizeSearch(String search) {
         return search == null ? "" : search.trim();
     }
@@ -247,7 +252,7 @@ public class MailboxService {
     }
 
     public record MailboxView(Page<MailRow> mailRows, Map<String, Long> folderCounts,
-                              String folder, String search) {}
+                              String folder, String search, String mailboxAddress) {}
 
     public record MailRow(Long id, Long rootId, String subject, String contact, String preview,
                           long messageCount, boolean unread, boolean starred, String status,

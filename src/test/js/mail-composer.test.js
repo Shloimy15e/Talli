@@ -113,3 +113,18 @@ test('signature styles preserve layout values but reject executable CSS', () => 
   assert.equal(composer.safeStyleValue('background', 'url(javascript:alert(1))'), false);
   assert.equal(composer.safeStyleValue('width', 'expression(alert(1))'), false);
 });
+
+
+test('preview sender follows reactive sender identity before the select DOM catches up', () => {
+  const state = windowStub.mailComposer({ dataset: {} });
+  state.$refs = { sender: { options: [
+    { value: 'info@example.test', textContent: 'Business <info@example.test>' },
+    { value: 'billing@example.test', textContent: 'Billing <billing@example.test>' }
+  ], selectedOptions: [{ value: 'info@example.test', textContent: 'Business <info@example.test>' }] } };
+  state.senderEmail = 'billing@example.test';
+  assert.equal(state.senderSummary(), 'Billing <billing@example.test>');
+  state.senderEmail = 'info@example.test';
+  assert.equal(state.senderSummary(), 'Business <info@example.test>');
+  state.senderEmail = 'retired@example.test';
+  assert.equal(state.senderSummary(), 'retired@example.test');
+});

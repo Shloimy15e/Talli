@@ -1,6 +1,8 @@
 package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Email;
+import dev.dynamiq.talli.model.EmailMailboxState;
+import dev.dynamiq.talli.repository.EmailMailboxStateRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,8 +17,11 @@ public class EmailThreadService {
 
     private final EmailRepository emails;
 
-    public EmailThreadService(EmailRepository emails) {
+    private final EmailMailboxStateRepository mailboxStates;
+
+    public EmailThreadService(EmailRepository emails, EmailMailboxStateRepository mailboxStates) {
         this.emails = emails;
+        this.mailboxStates = mailboxStates;
     }
 
     /**
@@ -109,12 +114,58 @@ public class EmailThreadService {
         for (Email child : emails.findByInReplyToAndCopyOfEmailIdIsNull(parent.getMessageId())) {
             Long childRootId = rootId(child);
             if (childRootId == null || childRootId.equals(parentRootId)) continue;
-            for (Email message : emails.findConversation(childRootId)) {
+            List<Email> branch = emails.findConversation(childRootId);
+            mergeMailboxStates(childRootId, parentRootId, branch, emails.findConversation(parentRootId));
+            for (Email message : branch) {
                 message.setThreadRootId(parentRootId);
                 relinked.add(message);
             }
         }
         if (!relinked.isEmpty()) emails.saveAll(relinked);
+    }
+
+    private void mergeMailboxStates(Long sourceRoot, Long targetRoot, List<Email> sourceMessages,
+                                    List<Email> targetMessages) {
+        var statesByUser = mailboxStates.findByThreadRootIdIn(List.of(sourceRoot, targetRoot)).stream()
+                .collect(java.util.stream.Collectors.groupingBy(state -> state.getUser().getId()));
+        for (var userStates : statesByUser.values()) {
+            EmailMailboxState source = userStates.stream().filter(state -> sourceRoot.equals(state.getThreadRootId()))
+                    .findFirst().orElse(null);
+            EmailMailboxState target = userStates.stream().filter(state -> targetRoot.equals(state.getThreadRootId()))
+                    .findFirst().orElse(null);
+            boolean unread = hasUnread(sourceMessages, source) || hasUnread(targetMessages, target);
+            Long lastRead = max(source == null ? null : source.getLastReadEmailId(),
+                    target == null ? null : target.getLastReadEmailId());
+            Long archivedThrough = archivedOrNoInbound(sourceMessages, source) && archivedOrNoInbound(targetMessages, target)
+                    ? max(source == null ? null : source.getArchivedThroughEmailId(),
+                          target == null ? null : target.getArchivedThroughEmailId()) : null;
+            boolean starred = (source != null && source.isStarred()) || (target != null && target.isStarred());
+            EmailMailboxState merged = target == null ? source : target;
+            merged.setThreadRootId(targetRoot);
+            merged.setLastReadEmailId(lastRead);
+            merged.setMarkedUnread(unread);
+            merged.setArchivedThroughEmailId(archivedThrough);
+            merged.setStarred(starred);
+            mailboxStates.save(merged);
+            if (source != null && target != null) mailboxStates.delete(source);
+        }
+    }
+
+    private static boolean hasUnread(List<Email> messages, EmailMailboxState state) {
+        return (state != null && state.isMarkedUnread()) || messages.stream()
+                .filter(message -> "in".equals(message.getDirection()))
+                .anyMatch(message -> state == null || state.getLastReadEmailId() == null
+                        || message.getId() > state.getLastReadEmailId());
+    }
+
+    private static boolean archivedOrNoInbound(List<Email> messages, EmailMailboxState state) {
+        return messages.stream().filter(message -> "in".equals(message.getDirection()))
+                .allMatch(message -> state != null && state.getArchivedThroughEmailId() != null
+                        && message.getId() <= state.getArchivedThroughEmailId());
+    }
+
+    private static Long max(Long first, Long second) {
+        return first == null ? second : second == null ? first : Math.max(first, second);
     }
 
     /** Returns every local message in the conversation in the order it was recorded. */
@@ -181,7 +232,8 @@ public class EmailThreadService {
     }
 
     private static String replySenderHint(Email parent) {
-        return "in".equals(parent.getDirection()) ? parent.getToAddress() : parent.getFromAddress();
+        String address = "in".equals(parent.getDirection()) ? parent.getToAddress() : parent.getFromAddress();
+        return address == null ? null : address.split(",", 2)[0];
     }
 
     private static String normalizeMailbox(String value) {

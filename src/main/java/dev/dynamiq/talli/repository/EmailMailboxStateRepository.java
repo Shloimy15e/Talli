@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public interface EmailMailboxStateRepository extends JpaRepository<EmailMailboxState, Long> {
 
+    List<EmailMailboxState> findByThreadRootIdIn(Collection<Long> threadRootIds);
+
     Optional<EmailMailboxState> findByUserIdAndThreadRootId(Long userId, Long threadRootId);
 
     List<EmailMailboxState> findByUserIdAndThreadRootIdIn(Long userId, Collection<Long> threadRootIds);

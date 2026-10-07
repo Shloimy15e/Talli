@@ -4,6 +4,7 @@ import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.model.EmailMailboxState;
 import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.support.RefreshDatabaseTest;
+import dev.dynamiq.talli.service.EmailThreadService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -23,6 +24,9 @@ class EmailMailboxRepositoryTest {
 
     @Autowired
     private UserRepository users;
+
+    @Autowired
+    private EmailThreadService threads;
 
     @Test
     void groupedQueryReturnsLatestMessageAndNewInboundMailResurfacesAnArchive() {
@@ -50,10 +54,10 @@ class EmailMailboxRepositoryTest {
         reply = emails.saveAndFlush(reply);
 
         var inbox = emails.findMailboxConversations(user.getId(), "inbox", "",
-                List.of("__none__"), true, "", PageRequest.of(0, 25));
+                List.of("__none__"), true, "", "", PageRequest.of(0, 25));
         var search = emails.findMailboxConversations(user.getId(), "all", "",
-                List.of("__none__"), true, "needle", PageRequest.of(0, 25));
-        var counts = emails.countMailboxFolders(user.getId(), "", List.of("__none__"), true, "");
+                List.of("__none__"), true, "needle", "", PageRequest.of(0, 25));
+        var counts = emails.countMailboxFolders(user.getId(), "", List.of("__none__"), true, "", "");
 
         assertThat(inbox.getContent()).extracting(Email::getId).containsExactly(reply.getId());
         assertThat(search.getContent()).extracting(Email::getId).containsExactly(reply.getId());
@@ -126,8 +130,8 @@ class EmailMailboxRepositoryTest {
         emails.saveAndFlush(returningCopy);
 
         var inbox = emails.findMailboxConversations(user.getId(), "inbox", "",
-                List.of("__none__"), true, "", PageRequest.of(0, 25));
-        var counts = emails.countMailboxFolders(user.getId(), "", List.of("__none__"), true, "");
+                List.of("__none__"), true, "", "", PageRequest.of(0, 25));
+        var counts = emails.countMailboxFolders(user.getId(), "", List.of("__none__"), true, "", "");
 
         assertThat(emails.findConversation(outgoing.getId())).extracting(Email::getId)
                 .containsExactly(outgoing.getId());
@@ -136,6 +140,107 @@ class EmailMailboxRepositoryTest {
         assertThat(counts.getInboxCount()).isZero();
         assertThat(counts.getSentCount()).isEqualTo(1);
         assertThat(emails.countUnreadInboxConversations(user.getId())).isZero();
+    }
+
+    @Test
+    void businessInboxMembershipMatchesRecipientTokensAndOutboundSenderWithScopedFolderCounts() {
+        User user = user("inboxes@example.test");
+        Email inbound = threadRoot("in", "Shared recipients");
+        inbound.setToAddress("INFO@dynamiq.dev, sales@dynamiq.dev");
+        inbound.setCc("billing@dynamiq.dev, teammate@example.test");
+        emails.saveAndFlush(inbound);
+        Email latest = reply(inbound, "out", "Shared reply");
+        latest.setFromAddress("sales@dynamiq.dev");
+        emails.saveAndFlush(latest);
+        Email unrelated = threadRoot("in", "Different address");
+        unrelated.setToAddress("otherinfo@dynamiq.dev");
+        emails.saveAndFlush(unrelated);
+        Email sentOnly = threadRoot("out", "Billing outbound");
+        sentOnly.setFromAddress("BILLING@dynamiq.dev");
+        emails.saveAndFlush(sentOnly);
+
+        assertThat(inbox(user, "inbox", "info@dynamiq.dev")).extracting(Email::getId)
+                .containsExactly(latest.getId());
+        assertThat(inbox(user, "inbox", "billing@dynamiq.dev")).extracting(Email::getId)
+                .containsExactly(latest.getId());
+        assertThat(inbox(user, "inbox", "")).hasSize(2);
+        assertThat(inbox(user, "sent", "info@dynamiq.dev")).isEmpty();
+        assertThat(inbox(user, "sent", "billing@dynamiq.dev")).extracting(Email::getId)
+                .containsExactly(sentOnly.getId());
+        assertThat(inbox(user, "sent", "sales@dynamiq.dev")).extracting(Email::getId)
+                .containsExactly(latest.getId());
+        var billingCounts = emails.countMailboxFolders(user.getId(), "", List.of("__none__"), true, "", "billing@dynamiq.dev");
+        assertThat(billingCounts.getAllCount()).isEqualTo(2);
+        assertThat(billingCounts.getInboxCount()).isEqualTo(1);
+        assertThat(billingCounts.getSentCount()).isEqualTo(1);
+
+        EmailMailboxState archived = state(user, inbound.getId());
+        archived.setArchivedThroughEmailId(latest.getId());
+        states.saveAndFlush(archived);
+        assertThat(inbox(user, "inbox", "billing@dynamiq.dev")).isEmpty();
+        assertThat(inbox(user, "archive", "billing@dynamiq.dev")).extracting(Email::getId)
+                .containsExactly(latest.getId());
+    }
+
+    @Test
+    void delayedThreadReconciliationPreservesReadArchiveAndStarStateForEachAccount() {
+        User reader = user("reader@example.test");
+        User other = user("other-reader@example.test");
+        Email parent = threadRoot("out", "Outgoing awaiting metadata");
+        Email branch = threadRoot("in", "Early inbound reply");
+        branch.setInReplyTo("<delayed-parent@example.test>");
+        emails.saveAndFlush(branch);
+        EmailMailboxState read = state(reader, branch.getId());
+        read.setLastReadEmailId(branch.getId());
+        read.setArchivedThroughEmailId(branch.getId());
+        read.setStarred(true);
+        states.saveAndFlush(read);
+
+        parent.setMessageId("<delayed-parent@example.test>");
+        threads.reconcileAfterMessageId(parent);
+        emails.flush();
+        states.flush();
+
+        assertThat(emails.countUnreadInboxConversations(reader.getId())).isZero();
+        assertThat(emails.countUnreadInboxConversations(other.getId())).isEqualTo(1);
+        assertThat(states.findByUserIdAndThreadRootId(reader.getId(), branch.getId())).isEmpty();
+        var moved = states.findByUserIdAndThreadRootId(reader.getId(), parent.getId()).orElseThrow();
+        assertThat(moved.getLastReadEmailId()).isEqualTo(branch.getId());
+        assertThat(moved.getArchivedThroughEmailId()).isEqualTo(branch.getId());
+        assertThat(moved.isStarred()).isTrue();
+    }
+
+    @Test
+    void threadMergePreservesUnreadDestinationEvenWhenReadBranchHasHigherMessageIds() {
+        User reader = user("merge-reader@example.test");
+        Email destination = threadRoot("in", "Still unread destination");
+        Email parent = reply(destination, "out", "Outgoing awaiting metadata");
+        Email branch = threadRoot("in", "Read early reply");
+        branch.setInReplyTo("<merge-parent@example.test>");
+        emails.saveAndFlush(branch);
+        EmailMailboxState branchRead = state(reader, branch.getId());
+        branchRead.setLastReadEmailId(branch.getId());
+        branchRead.setStarred(true);
+        states.saveAndFlush(branchRead);
+        EmailMailboxState destinationUnread = state(reader, destination.getId());
+        states.saveAndFlush(destinationUnread);
+
+        parent.setMessageId("<merge-parent@example.test>");
+        threads.reconcileAfterMessageId(parent);
+        emails.flush();
+        states.flush();
+
+        assertThat(emails.countUnreadInboxConversations(reader.getId())).isEqualTo(1);
+        assertThat(states.findByUserIdAndThreadRootId(reader.getId(), branch.getId())).isEmpty();
+        var merged = states.findByUserIdAndThreadRootId(reader.getId(), destination.getId()).orElseThrow();
+        assertThat(merged.isMarkedUnread()).isTrue();
+        assertThat(merged.isStarred()).isTrue();
+        assertThat(merged.getArchivedThroughEmailId()).isNull();
+    }
+
+    private List<Email> inbox(User user, String folder, String address) {
+        return emails.findMailboxConversations(user.getId(), folder, "", List.of("__none__"), true,
+                "", address, PageRequest.of(0, 25)).getContent();
     }
 
     private User user(String address) {

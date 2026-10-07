@@ -25,6 +25,16 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
                    AND (newer.createdAt > e.createdAt
                         OR (newer.createdAt = e.createdAt AND newer.id > e.id))
              )
+               AND (:mailboxAddress = '' OR EXISTS (
+                   SELECT addressEmail.id FROM Email addressEmail
+                   WHERE COALESCE(addressEmail.threadRootId, addressEmail.id) = COALESCE(e.threadRootId, e.id)
+                     AND addressEmail.copyOfEmailId IS NULL
+                     AND (:mailboxAddress = ''
+                          OR (addressEmail.direction = 'out' AND LOWER(addressEmail.fromAddress) = :mailboxAddress)
+                          OR (addressEmail.direction = 'in' AND (LOCATE(CONCAT(',', :mailboxAddress, ','), CONCAT(',', REPLACE(LOWER(COALESCE(addressEmail.toAddress, '')), ' ', ''), ',')) > 0
+                              OR LOCATE(CONCAT(',', :mailboxAddress, ','), CONCAT(',', REPLACE(LOWER(COALESCE(addressEmail.cc, '')), ' ', ''), ',')) > 0
+                              OR LOCATE(CONCAT(',', :mailboxAddress, ','), CONCAT(',', REPLACE(LOWER(COALESCE(addressEmail.bcc, '')), ' ', ''), ',')) > 0)))
+               ))
                AND (:flow = '' OR EXISTS (
                    SELECT flowEmail.id FROM Email flowEmail
                    WHERE COALESCE(flowEmail.threadRootId, flowEmail.id) = COALESCE(e.threadRootId, e.id)
@@ -55,6 +65,10 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
                            WHERE COALESCE(inboxEmail.threadRootId, inboxEmail.id) = COALESCE(e.threadRootId, e.id)
                              AND inboxEmail.copyOfEmailId IS NULL
                              AND inboxEmail.direction = 'in'
+                             AND (:mailboxAddress = ''
+                                  OR LOCATE(CONCAT(',', :mailboxAddress, ','), CONCAT(',', REPLACE(LOWER(COALESCE(inboxEmail.toAddress, '')), ' ', ''), ',')) > 0
+                                  OR LOCATE(CONCAT(',', :mailboxAddress, ','), CONCAT(',', REPLACE(LOWER(COALESCE(inboxEmail.cc, '')), ' ', ''), ',')) > 0
+                                  OR LOCATE(CONCAT(',', :mailboxAddress, ','), CONCAT(',', REPLACE(LOWER(COALESCE(inboxEmail.bcc, '')), ' ', ''), ',')) > 0)
                        )
                        AND (mailbox.archivedThroughEmailId IS NULL OR EXISTS (
                            SELECT newInboxEmail.id FROM Email newInboxEmail
@@ -68,6 +82,7 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
                        WHERE COALESCE(sentEmail.threadRootId, sentEmail.id) = COALESCE(e.threadRootId, e.id)
                          AND sentEmail.copyOfEmailId IS NULL
                          AND sentEmail.direction = 'out'
+                         AND (:mailboxAddress = '' OR LOWER(sentEmail.fromAddress) = :mailboxAddress)
                    ))
                    OR (:folder = 'starred' AND mailbox.starred = true)
                    OR (:folder = 'archive'
@@ -116,6 +131,7 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
                                          @Param("statuses") List<String> statuses,
                                          @Param("statusesEmpty") boolean statusesEmpty,
                                          @Param("search") String search,
+                                         @Param("mailboxAddress") String mailboxAddress,
                                          Pageable pageable);
 
     @Query("""
@@ -132,10 +148,23 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
             WITH conversation_counts AS (
                 SELECT COALESCE(email.thread_root_id, email.id) AS root_id,
                        MAX(CASE WHEN email.direction = 'in' THEN email.id ELSE 0 END) AS latest_inbound_id,
-                       MAX(CASE WHEN email.direction = 'in' THEN 1 ELSE 0 END) AS has_inbound,
-                       MAX(CASE WHEN email.direction = 'out' THEN 1 ELSE 0 END) AS has_outbound
+                       MAX(CASE WHEN email.direction = 'in' AND (:mailboxAddress = '' OR (
+                           POSITION(CONCAT(',', :mailboxAddress, ',') IN CONCAT(',', REPLACE(LOWER(COALESCE(email.to_address, '')), ' ', ''), ',')) > 0
+                           OR POSITION(CONCAT(',', :mailboxAddress, ',') IN CONCAT(',', REPLACE(LOWER(COALESCE(email.cc, '')), ' ', ''), ',')) > 0
+                           OR POSITION(CONCAT(',', :mailboxAddress, ',') IN CONCAT(',', REPLACE(LOWER(COALESCE(email.bcc, '')), ' ', ''), ',')) > 0)) THEN 1 ELSE 0 END) AS has_inbound,
+                       MAX(CASE WHEN email.direction = 'out' AND (:mailboxAddress = '' OR LOWER(email.from_address) = :mailboxAddress) THEN 1 ELSE 0 END) AS has_outbound
                 FROM emails email
                 WHERE email.copy_of_email_id IS NULL
+                  AND (:mailboxAddress = '' OR EXISTS (
+                    SELECT 1 FROM emails address_email
+                    WHERE COALESCE(address_email.thread_root_id, address_email.id) = COALESCE(email.thread_root_id, email.id)
+                      AND address_email.copy_of_email_id IS NULL
+                      AND (:mailboxAddress = ''
+                       OR (address_email.direction = 'out' AND LOWER(address_email.from_address) = :mailboxAddress)
+                       OR (address_email.direction = 'in' AND (POSITION(CONCAT(',', :mailboxAddress, ',') IN CONCAT(',', REPLACE(LOWER(COALESCE(address_email.to_address, '')), ' ', ''), ',')) > 0
+                           OR POSITION(CONCAT(',', :mailboxAddress, ',') IN CONCAT(',', REPLACE(LOWER(COALESCE(address_email.cc, '')), ' ', ''), ',')) > 0
+                           OR POSITION(CONCAT(',', :mailboxAddress, ',') IN CONCAT(',', REPLACE(LOWER(COALESCE(address_email.bcc, '')), ' ', ''), ',')) > 0)))
+                  ))
                   AND (:flow = '' OR EXISTS (
                     SELECT 1 FROM emails flow_email
                     WHERE COALESCE(flow_email.thread_root_id, flow_email.id) = COALESCE(email.thread_root_id, email.id)
@@ -182,7 +211,8 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
                                                 @Param("flow") String flow,
                                                 @Param("statuses") List<String> statuses,
                                                 @Param("statusesEmpty") boolean statusesEmpty,
-                                                @Param("search") String search);
+                                                @Param("search") String search,
+                                                @Param("mailboxAddress") String mailboxAddress);
 
     @Query(value = """
             WITH inbox_conversations AS (
@@ -190,6 +220,15 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
                        MAX(CASE WHEN email.direction = 'in' THEN email.id ELSE NULL END) AS latest_inbound_id
                 FROM emails email
                 WHERE email.copy_of_email_id IS NULL
+                  AND (:mailboxAddress = '' OR EXISTS (
+                    SELECT 1 FROM emails inbox_email
+                    WHERE COALESCE(inbox_email.thread_root_id, inbox_email.id) = COALESCE(email.thread_root_id, email.id)
+                      AND inbox_email.copy_of_email_id IS NULL
+                      AND inbox_email.direction = 'in'
+                      AND (POSITION(CONCAT(',', :mailboxAddress, ',') IN CONCAT(',', REPLACE(LOWER(COALESCE(inbox_email.to_address, '')), ' ', ''), ',')) > 0
+                           OR POSITION(CONCAT(',', :mailboxAddress, ',') IN CONCAT(',', REPLACE(LOWER(COALESCE(inbox_email.cc, '')), ' ', ''), ',')) > 0
+                           OR POSITION(CONCAT(',', :mailboxAddress, ',') IN CONCAT(',', REPLACE(LOWER(COALESCE(inbox_email.bcc, '')), ' ', ''), ',')) > 0)
+                  ))
                 GROUP BY COALESCE(email.thread_root_id, email.id)
             )
             SELECT COUNT(*)
@@ -204,7 +243,12 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
                    OR mailbox.last_read_email_id IS NULL
                    OR conversations.latest_inbound_id > mailbox.last_read_email_id)
             """, nativeQuery = true)
-    long countUnreadInboxConversations(@Param("userId") Long userId);
+    long countUnreadInboxConversations(@Param("userId") Long userId,
+                                       @Param("mailboxAddress") String mailboxAddress);
+
+    default long countUnreadInboxConversations(Long userId) {
+        return countUnreadInboxConversations(userId, "");
+    }
 
     interface MailboxCountsProjection {
         long getAllCount();

@@ -2,6 +2,7 @@ package dev.dynamiq.talli.service;
 
 import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.repository.EmailRepository;
+import dev.dynamiq.talli.repository.EmailMailboxStateRepository;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,13 +18,13 @@ class EmailThreadServiceTest {
     @Test
     void replyContextUsesParentMessageIdAndKeepsRootAndDirectParentReferences() {
         EmailRepository emails = mock(EmailRepository.class);
-        Email parent = email(9L, "in", "client@example.test", "support@dynamiq.dev",
+        Email parent = email(9L, "in", "client@example.test", "support@dynamiq.dev,sales@dynamiq.dev",
                 "Re: Billing question", "<parent@dynamiq.dev>");
         parent.setThreadRootId(1L);
         parent.setReferencesHeader("<root@dynamiq.dev>");
         when(emails.findById(9L)).thenReturn(Optional.of(parent));
 
-        var context = new EmailThreadService(emails).replyContext(9L);
+        var context = new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)).replyContext(9L);
 
         assertThat(context.threadRootId()).isEqualTo(1L);
         assertThat(context.inReplyTo()).isEqualTo("<parent@dynamiq.dev>");
@@ -44,7 +45,7 @@ class EmailThreadServiceTest {
         parent.setBcc("archive@example.test");
         when(emails.findById(9L)).thenReturn(Optional.of(parent));
 
-        EmailThreadService service = new EmailThreadService(emails);
+        EmailThreadService service = new EmailThreadService(emails, mock(EmailMailboxStateRepository.class));
         var context = service.replyContext(9L);
 
         assertThat(context.providerThreaded()).isFalse();
@@ -77,7 +78,7 @@ class EmailThreadServiceTest {
         when(emails.findById(11L)).thenReturn(Optional.of(returningCopy));
         when(emails.findById(10L)).thenReturn(Optional.of(outgoing));
 
-        var context = new EmailThreadService(emails).replyContext(11L);
+        var context = new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)).replyContext(11L);
 
         assertThat(context.replyToEmailId()).isEqualTo(10L);
         assertThat(context.threadRootId()).isEqualTo(10L);
@@ -98,7 +99,7 @@ class EmailThreadServiceTest {
                 .thenReturn(Optional.of(directParent));
 
         Email incoming = new Email();
-        new EmailThreadService(emails).prepareInbound(incoming, "<reply@client.test>",
+        new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)).prepareInbound(incoming, "<reply@client.test>",
                 "<parent@dynamiq.dev>", "<old@dynamiq.dev> <parent@dynamiq.dev>");
 
         assertThat(incoming.getThreadRootId()).isEqualTo(1L);
@@ -111,7 +112,7 @@ class EmailThreadServiceTest {
         Email legacy = email(1L, "out", "support@dynamiq.dev", "client@example.test", "Hello", null);
         when(emails.findConversation(1L)).thenReturn(List.of());
 
-        assertThat(new EmailThreadService(emails).conversation(legacy)).containsExactly(legacy);
+        assertThat(new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)).conversation(legacy)).containsExactly(legacy);
     }
 
     @Test
@@ -122,7 +123,7 @@ class EmailThreadServiceTest {
         reply.setThreadRootId(1L);
         when(emails.findConversation(1L)).thenReturn(List.of(root, reply));
 
-        assertThat(new EmailThreadService(emails).conversation(reply)).containsExactly(root, reply);
+        assertThat(new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)).conversation(reply)).containsExactly(root, reply);
     }
 
     @Test
@@ -145,7 +146,7 @@ class EmailThreadServiceTest {
                 .thenReturn(List.of(realReply));
         when(emails.findConversation(12L)).thenReturn(List.of(realReply));
 
-        new EmailThreadService(emails).reconcileAfterMessageId(outgoing);
+        new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)).reconcileAfterMessageId(outgoing);
 
         assertThat(returningCopy.getCopyOfEmailId()).isEqualTo(10L);
         assertThat(returningCopy.getThreadRootId()).isEqualTo(10L);
@@ -165,7 +166,7 @@ class EmailThreadServiceTest {
         when(emails.findByInReplyToAndCopyOfEmailIdIsNull("<outgoing@dynamiq.dev>"))
                 .thenReturn(List.of());
 
-        new EmailThreadService(emails).prepareOutgoing(outgoing, null, "<outgoing@dynamiq.dev>");
+        new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)).prepareOutgoing(outgoing, null, "<outgoing@dynamiq.dev>");
 
         assertThat(outgoing.getMessageId()).isEqualTo("<outgoing@dynamiq.dev>");
         verify(emails).save(outgoing);
@@ -190,7 +191,7 @@ class EmailThreadServiceTest {
         when(emails.findByInReplyToAndCopyOfEmailIdIsNull("<outgoing@dynamiq.dev>"))
                 .thenReturn(List.of());
 
-        new EmailThreadService(emails).prepareOutgoing(outgoing, 3L, "<outgoing@dynamiq.dev>");
+        new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)).prepareOutgoing(outgoing, 3L, "<outgoing@dynamiq.dev>");
 
         assertThat(outgoing.getThreadRootId()).isEqualTo(1L);
         verify(emails).save(outgoing);

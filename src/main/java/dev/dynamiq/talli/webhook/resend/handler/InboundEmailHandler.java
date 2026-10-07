@@ -55,7 +55,7 @@ public class InboundEmailHandler implements ResendEventHandler {
 
         // Metadata from the webhook payload.
         String from = extractAddress(data.path("from"));
-        String to = extractAddress(data.path("to"));
+        String to = extractAddresses(data.path("to"));
         String subject = data.path("subject").asText("");
         String messageId = text(data, "message_id");
         String inReplyTo = firstPresent(text(data, "in_reply_to"), header(data.path("headers"), "In-Reply-To"));
@@ -94,6 +94,8 @@ public class InboundEmailHandler implements ResendEventHandler {
         email.setDirection("in");
         email.setFromAddress(from);
         email.setToAddress(to);
+        email.setCc(extractAddresses(data.path("cc")));
+        email.setBcc(extractAddresses(data.path("bcc")));
         email.setSubject(subject);
         email.setBody(text);
         email.setBodyHtml(html);
@@ -129,6 +131,18 @@ public class InboundEmailHandler implements ResendEventHandler {
      * Resend may send the address as a plain string, an object with `email`/`address`/`value`,
      * or an array of either. We pull the first usable email address.
      */
+    private static String extractAddresses(JsonNode node) {
+        if (node != null && node.isArray()) {
+            java.util.LinkedHashSet<String> addresses = new java.util.LinkedHashSet<>();
+            for (JsonNode child : node) {
+                String address = extractAddress(child);
+                if (address != null && !address.isBlank()) addresses.add(address);
+            }
+            return addresses.isEmpty() ? null : String.join(",", addresses);
+        }
+        return extractAddress(node);
+    }
+
     private static String extractAddress(JsonNode node) {
         if (node == null || node.isMissingNode() || node.isNull()) return null;
         if (node.isTextual()) return mailbox(node.asText());
@@ -142,7 +156,7 @@ public class InboundEmailHandler implements ResendEventHandler {
         if (node.isObject()) {
             for (String field : new String[] { "email", "address", "value" }) {
                 JsonNode v = node.get(field);
-                if (v != null && v.isTextual() && !v.asText().isBlank()) return v.asText();
+                if (v != null && v.isTextual() && !v.asText().isBlank()) return mailbox(v.asText());
             }
         }
         return null;

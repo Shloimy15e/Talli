@@ -284,7 +284,8 @@
       },
 
       senderSummary() {
-        const option = this.$refs.sender?.selectedOptions?.[0];
+        const address = this.senderEmail;
+        const option = Array.from(this.$refs.sender?.options || []).find((item) => item.value === address);
         return option ? option.textContent.trim() : this.senderEmail;
       },
 

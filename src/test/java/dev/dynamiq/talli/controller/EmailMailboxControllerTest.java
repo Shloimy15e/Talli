@@ -62,9 +62,9 @@ class EmailMailboxControllerTest {
         latest.setThreadRootId(10L);
         Media attachment = new Media();
         attachment.setId(3L);
-        var view = new MailboxService.MailboxView(Page.empty(), counts(), "all", "");
+        var view = new MailboxService.MailboxView(Page.empty(), counts(), "all", "", "");
         var conversation = new MailboxService.ConversationView(root, List.of(root, latest), 10L, true, false);
-        when(mailbox.mailbox(user, "all", null, 0, null, null)).thenReturn(view);
+        when(mailbox.mailbox(user, "all", null, 0, null, null, null)).thenReturn(view);
         when(mailbox.conversation(user, 10L, true)).thenReturn(conversation);
         when(media.forOwner(root, "attachments")).thenReturn(List.of());
         when(media.forOwner(latest, "attachments")).thenReturn(List.of(attachment));
@@ -74,7 +74,7 @@ class EmailMailboxControllerTest {
                 "Re: Subject", "recipient@example.test", "sender@example.test"));
         var model = new ConcurrentModel();
 
-        String template = controller.show(10L, 0, "all", null, null, null, authentication, model);
+        String template = controller.show(10L, 0, "all", null, null, null, null, authentication, model);
 
         assertThat(template).isEqualTo("emails/index");
         assertThat(model.getAttribute("selectedRootId")).isEqualTo(10L);
@@ -88,7 +88,7 @@ class EmailMailboxControllerTest {
 
     @Test
     void mailboxActionReturnsOnlyToAStaticLocalRouteWithEncodedState() {
-        String redirect = controller.updateMailbox(12L, "star", "inbox", "customer + vip", 3,
+        String redirect = controller.updateMailbox(12L, "star", "inbox", "customer + vip", null, 3,
                 true, authentication);
 
         verify(mailbox).update(user, 12L, "star");

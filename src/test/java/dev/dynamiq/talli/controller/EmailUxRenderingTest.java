@@ -1,8 +1,12 @@
 package dev.dynamiq.talli.controller;
 
 import dev.dynamiq.talli.model.Email;
+import dev.dynamiq.talli.model.User;
 import dev.dynamiq.talli.repository.EmailRepository;
+import dev.dynamiq.talli.repository.UserRepository;
 import dev.dynamiq.talli.service.EmailSenderProfileService;
+import dev.dynamiq.talli.service.EmailService;
+import dev.dynamiq.talli.service.UnreadMailNotificationService;
 import dev.dynamiq.talli.support.RefreshDatabaseTest;
 import io.modelcontextprotocol.server.McpStatelessSyncServer;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +25,8 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,14 +44,14 @@ class EmailUxRenderingTest {
     private EmailSenderProfileService senderProfiles;
 
     @Autowired
-    private dev.dynamiq.talli.repository.UserRepository users;
+    private UserRepository users;
 
     @Autowired
     private McpStatelessSyncServer mcpServer;
 
     @BeforeEach
     void createSenderProfiles() {
-        var admin = new dev.dynamiq.talli.model.User();
+        var admin = new User();
         admin.setEmail("admin@example.test");
         admin.setName("Mail administrator");
         admin.setPassword("unused-in-authenticated-test");
@@ -64,6 +70,67 @@ class EmailUxRenderingTest {
                 .contains("name=\"senderEmail\"", "data-sender=\"billing@dynamiq.dev\"")
                 .contains("value=\"billing@dynamiq.dev\"", "Dynamiq Billing", "Billing desk")
                 .contains("value=\"sales@dynamiq.dev\"", "Dynamiq Sales", "Sales desk");
+    }
+
+    @Test
+    void selectedBusinessInboxFiltersConversationsAndPrefillsComposeIdentity() throws Exception {
+        Email billing = saveEmail("in", "customer@example.test", "billing@dynamiq.dev",
+                "Billing question", "Billing details", "<billing-inbound@example.test>", null);
+        saveEmail("in", "lead@example.test", "sales@dynamiq.dev",
+                "Sales question", "Sales details", "<sales-inbound@example.test>", null);
+        String mailbox = rendered(get("/emails").queryParam("folder", "inbox")
+                .queryParam("mailboxAddress", "BILLING@dynamiq.dev"));
+        assertThat(mailbox).contains("All inboxes", "Select inbox", "Billing question")
+                .doesNotContain("Sales question")
+                .contains("mailboxAddress=billing");
+        String form = rendered(get("/emails/new").queryParam("mailboxAddress", "sales@dynamiq.dev"));
+        assertThat(form).contains("data-sender=\"sales@dynamiq.dev\"");
+        assertThat(inboxBadge(mailbox)).isEqualTo("1");
+        String conversation = rendered(get("/emails/{id}", billing.getId())
+                .queryParam("mailboxAddress", "billing@dynamiq.dev"));
+        assertThat(conversation).contains("customer@example.test", "billing@dynamiq.dev");
+        assertThat(inboxBadge(conversation)).isEqualTo("0");
+        assertThat(conversation).contains("<span>1</span>", " of 1</span>");
+        String sales = rendered(get("/emails").queryParam("mailboxAddress", "sales@dynamiq.dev"));
+        assertThat(inboxBadge(sales)).isEqualTo("1");
+        String unified = rendered(get("/emails"));
+        assertThat(inboxBadge(unified)).isEqualTo("1");
+    }
+
+    @Test
+    void reminderUsesUnreadStateSavedByOpeningMailAndKeepsOtherAccountsIndependent() throws Exception {
+        Email first = saveEmail("in", "first@example.test", "billing@dynamiq.dev",
+                "First unread", "First message", "<first-unread@example.test>", null);
+        Email second = saveEmail("in", "second@example.test", "sales@dynamiq.dev",
+                "Second unread", "Second message", "<second-unread@example.test>", null);
+        var admin = users.findByEmail("admin@example.test").orElseThrow();
+        var other = new User();
+        other.setEmail("other@example.test");
+        other.setName("Other admin");
+        other.setPassword("unused");
+        other = users.saveAndFlush(other);
+        var notificationUsers = mock(UserRepository.class);
+        var delivery = mock(EmailService.class);
+        when(notificationUsers.findEnabledByRoleName("admin")).thenReturn(List.of(admin, other));
+        var reminders = new UnreadMailNotificationService(
+                notificationUsers, emails, delivery, "https://app.example.test");
+
+        assertThat(emails.countUnreadInboxConversations(admin.getId())).isEqualTo(2);
+        rendered(get("/emails/{id}", first.getId()));
+        reminders.notifyUnreadAdmins();
+        verify(delivery).sendPlain(eq("admin@example.test"),
+                anyList(), eq("Talli: 1 unread conversation"),
+                anyString());
+        verify(delivery).sendPlain(eq("other@example.test"),
+                anyList(), eq("Talli: 2 unread conversations"),
+                anyString());
+        rendered(get("/emails/{id}", second.getId()));
+        assertThat(emails.countUnreadInboxConversations(admin.getId())).isZero();
+        clearInvocations(delivery);
+        reminders.notifyUnreadAdmins();
+        verify(delivery, never()).sendPlain(
+                eq("admin@example.test"), anyList(),
+                anyString(), anyString());
     }
 
     @Test
@@ -112,7 +179,7 @@ class EmailUxRenderingTest {
         reply.setReferencesHeader(inbound.getMessageId());
         emails.saveAndFlush(reply);
 
-        String index = rendered(get("/emails"));
+        String index = rendered(get("/emails").queryParam("folder", "all"));
         assertThat(index).contains("Pricing question", "customer@example.test", "Sender profiles");
 
         String show = rendered(get("/emails/{id}", reply.getId()));
@@ -198,6 +265,12 @@ class EmailUxRenderingTest {
                 + "-[0-9a-f]{32}\\.[a-z]+)\"").matcher(html);
         assertThat(matcher.find()).as("rendered content-version URL for %s", basePath).isTrue();
         return matcher.group(1);
+    }
+
+    private static String inboxBadge(String html) {
+        var badge = Pattern.compile("<a[^>]*href=\"[^\"]*folder=inbox[^\"]*\"[^>]*>[\\s\\S]*?<span class=\"mail-folder-count\"[^>]*>([0-9]+)</span>").matcher(html);
+        assertThat(badge.find()).isTrue();
+        return badge.group(1);
     }
 
     private String rendered(org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request)

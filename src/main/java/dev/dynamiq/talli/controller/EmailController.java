@@ -64,14 +64,15 @@ public class EmailController {
 
     @GetMapping
     public String index(@RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "all") String folder,
+                        @RequestParam(defaultValue = "inbox") String folder,
                         @RequestParam(required = false) String flow,
                         @RequestParam(required = false) List<String> status,
                         @RequestParam(required = false) String search,
+                        @RequestParam(required = false) String mailboxAddress,
                         Authentication auth,
                         Model model) {
         var user = mailbox.currentUser(auth);
-        addMailboxModel(model, mailbox.mailbox(user, folder, search, page, flow, status));
+        addMailboxModel(model, mailbox.mailbox(user, folder, search, page, flow, status, mailboxAddress));
         model.addAttribute("selectedEmail", null);
         model.addAttribute("selectedRootId", null);
         return "emails/index";
@@ -80,15 +81,16 @@ public class EmailController {
     @GetMapping("/{id}")
     public String show(@PathVariable Long id,
                        @RequestParam(defaultValue = "0") int page,
-                       @RequestParam(defaultValue = "all") String folder,
+                       @RequestParam(defaultValue = "inbox") String folder,
                        @RequestParam(required = false) String flow,
                        @RequestParam(required = false) List<String> status,
                        @RequestParam(required = false) String search,
+                       @RequestParam(required = false) String mailboxAddress,
                        Authentication auth,
                        Model model) {
         var user = mailbox.currentUser(auth);
         var selected = mailbox.conversation(user, id, true);
-        addMailboxModel(model, mailbox.mailbox(user, folder, search, page, flow, status));
+        addMailboxModel(model, mailbox.mailbox(user, folder, search, page, flow, status, mailboxAddress));
 
         LinkedHashMap<Long, List<dev.dynamiq.talli.model.Media>> attachmentsByEmailId = new LinkedHashMap<>();
         LinkedHashMap<Long, Boolean> canReplyByEmailId = new LinkedHashMap<>();
@@ -122,8 +124,9 @@ public class EmailController {
     @PostMapping("/{id}/mailbox")
     public String updateMailbox(@PathVariable Long id,
                                 @RequestParam String action,
-                                @RequestParam(defaultValue = "all") String folder,
+                                @RequestParam(defaultValue = "inbox") String folder,
                                 @RequestParam(required = false) String search,
+                        @RequestParam(required = false) String mailboxAddress,
                                 @RequestParam(defaultValue = "0") int page,
                                 @RequestParam(defaultValue = "false") boolean returnToConversation,
                                 Authentication auth) {
@@ -132,15 +135,18 @@ public class EmailController {
         UriComponentsBuilder redirect = UriComponentsBuilder.fromPath(path)
                 .queryParam("folder", MailboxService.normalizeFolder(folder))
                 .queryParam("page", Math.max(page, 0));
+        String normalizedAddress = MailboxService.normalizeAddress(mailboxAddress);
+        if (!normalizedAddress.isEmpty()) redirect.queryParam("mailboxAddress", "{mailboxAddress}");
         String normalizedSearch = MailboxService.normalizeSearch(search);
         if (!normalizedSearch.isEmpty()) redirect.queryParam("search", "{search}");
-        return "redirect:" + redirect.encode().buildAndExpand(java.util.Map.of("id", id, "search", normalizedSearch)).toUriString();
+        return "redirect:" + redirect.encode().buildAndExpand(java.util.Map.of("id", id, "search", normalizedSearch, "mailboxAddress", normalizedAddress)).toUriString();
     }
 
     @GetMapping("/new")
-    public String newForm(Authentication auth, @RequestParam(required = false) Long replyToEmailId, Model model) {
+    public String newForm(Authentication auth, @RequestParam(required = false) Long replyToEmailId,
+                          @RequestParam(required = false) String mailboxAddress, Model model) {
         Email draft = new Email();
-        EmailSender sender = senders.resolve(null);
+        EmailSender sender = senders.resolve(mailboxAddress);
         boolean providerThreadedReply = false;
         if (replyToEmailId != null) {
             var reply = threads.replyContext(replyToEmailId);
@@ -150,8 +156,13 @@ public class EmailController {
             draft.setSubject(reply.subject());
             draft.setClient(emailRepository.findById(replyToEmailId).orElseThrow().getClient());
             providerThreadedReply = reply.providerThreaded();
-            try { sender = senders.resolve(reply.senderAddressHint()); }
-            catch (IllegalArgumentException ignored) { /* A retired sender can be replaced by an active profile. */ }
+            if (mailboxAddress == null || mailboxAddress.isBlank()) {
+                for (String address : (reply.senderAddressHint() == null ? "" : reply.senderAddressHint()).split(",")) {
+                    if (address.isBlank()) continue;
+                    try { sender = senders.resolve(address); break; }
+                    catch (IllegalArgumentException ignored) { /* Try the next recipient or retain the active default. */ }
+                }
+            }
         }
         model.addAttribute("email", draft);
         model.addAttribute("replyToEmailId", replyToEmailId);
@@ -309,12 +320,19 @@ public class EmailController {
         addresses.putIfAbsent(trimmed.toLowerCase(java.util.Locale.ROOT), trimmed);
     }
 
-    private static void addMailboxModel(Model model, MailboxService.MailboxView mailbox) {
+    private void addMailboxModel(Model model, MailboxService.MailboxView mailbox) {
         model.addAttribute("mailRows", mailbox.mailRows());
         model.addAttribute("folderCounts", mailbox.folderCounts());
         model.addAttribute("folder", mailbox.folder());
         model.addAttribute("search", mailbox.search());
         model.addAttribute("page", mailbox.mailRows().getNumber());
+        model.addAttribute("mailboxAddress", mailbox.mailboxAddress());
+        var inboxes = senders.options();
+        model.addAttribute("mailboxes", inboxes);
+        model.addAttribute("mailboxLabel", inboxes.stream()
+                .filter(inbox -> inbox.getAddress().equalsIgnoreCase(mailbox.mailboxAddress()))
+                .map(inbox -> inbox.getName() + " <" + inbox.getAddress() + ">")
+                .findFirst().orElse("All inboxes"));
     }
 
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.dynamiq.talli.model.Email;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
+import dev.dynamiq.talli.repository.EmailMailboxStateRepository;
 import dev.dynamiq.talli.service.EmailService;
 import dev.dynamiq.talli.service.EmailThreadService;
 import org.junit.jupiter.api.Test;
@@ -23,12 +24,35 @@ import static org.mockito.Mockito.when;
 class InboundEmailHandlerTest {
 
     @Test
+    void retainsAllBusinessRecipientsAndCopiedMailboxes() throws Exception {
+        EmailRepository emails = mock(EmailRepository.class);
+        InboundEmailHandler handler = new InboundEmailHandler(emails, mock(ClientRepository.class),
+                mock(EmailService.class), new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)));
+        when(emails.save(any(Email.class))).thenAnswer(invocation -> {
+            Email email = invocation.getArgument(0);
+            email.setId(101L);
+            return email;
+        });
+        handler.handle("email.received", new ObjectMapper().readTree("""
+                {"email_id":"multiple-inboxes","from":"Customer <customer@example.test>",
+                 "to":["Info <info@dynamiq.dev>", {"email":"Billing <billing@dynamiq.dev>"}],
+                 "cc":["sales@dynamiq.dev"], "subject":"For the team"}
+                """));
+        ArgumentCaptor<Email> saved = ArgumentCaptor.forClass(Email.class);
+        verify(emails, times(2)).save(saved.capture());
+        Email inbound = saved.getAllValues().getLast();
+        assertThat(inbound.getFromAddress()).isEqualTo("customer@example.test");
+        assertThat(inbound.getToAddress()).isEqualTo("info@dynamiq.dev,billing@dynamiq.dev");
+        assertThat(inbound.getCc()).isEqualTo("sales@dynamiq.dev");
+    }
+
+    @Test
     void skipsReturningCcCopyWhenFetchedMetadataMatchesAnOutgoingMessageId() throws Exception {
         EmailRepository emails = mock(EmailRepository.class);
         ClientRepository clients = mock(ClientRepository.class);
         EmailService emailService = mock(EmailService.class);
         InboundEmailHandler handler = new InboundEmailHandler(emails, clients, emailService,
-                new EmailThreadService(emails));
+                new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)));
 
         Email outgoing = new Email();
         outgoing.setDirection("out");
@@ -56,7 +80,7 @@ class InboundEmailHandlerTest {
         EmailRepository emails = mock(EmailRepository.class);
         ClientRepository clients = mock(ClientRepository.class);
         EmailService emailService = mock(EmailService.class);
-        EmailThreadService threads = new EmailThreadService(emails);
+        EmailThreadService threads = new EmailThreadService(emails, mock(EmailMailboxStateRepository.class));
         InboundEmailHandler handler = new InboundEmailHandler(emails, clients, emailService, threads);
 
         Email parent = new Email();
@@ -103,7 +127,7 @@ class InboundEmailHandlerTest {
         ClientRepository clients = mock(ClientRepository.class);
         EmailService emailService = mock(EmailService.class);
         InboundEmailHandler handler = new InboundEmailHandler(emails, clients, emailService,
-                new EmailThreadService(emails));
+                new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)));
         when(emails.findByResendId("inbound-unknown")).thenReturn(Optional.empty());
         when(emailService.fetchReceivedEmail("inbound-unknown")).thenReturn(new EmailService.ReceivedEmail(
                 "Unknown metadata", null, null, null, null));

@@ -49,20 +49,21 @@ class MailboxServiceTest {
         var counts = mock(EmailRepository.MailboxCountsProjection.class);
 
         when(emails.findMailboxConversations(eq(7L), eq("all"), eq(""), anyList(), eq(true),
-                eq("useful"), any())).thenReturn(new PageImpl<>(List.of(latest)));
+                eq("useful"), eq("billing@dynamiq.dev"), any())).thenReturn(new PageImpl<>(List.of(latest)));
         when(emails.summarizeConversations(List.of(10L)))
                 .thenReturn(List.<Object[]>of(new Object[]{10L, 3L, 12L}));
         when(states.findByUserIdAndThreadRootIdIn(7L, List.of(10L))).thenReturn(List.of(state));
-        when(emails.countMailboxFolders(eq(7L), eq(""), anyList(), eq(true), eq("useful")))
+        when(emails.countMailboxFolders(eq(7L), eq(""), anyList(), eq(true), eq("useful"), eq("billing@dynamiq.dev")))
                 .thenReturn(counts);
         when(counts.getAllCount()).thenReturn(4L);
-        when(counts.getInboxCount()).thenReturn(2L);
+        when(emails.countUnreadInboxConversations(7L, "billing@dynamiq.dev")).thenReturn(2L);
         when(counts.getSentCount()).thenReturn(3L);
         when(counts.getStarredCount()).thenReturn(1L);
         when(counts.getArchiveCount()).thenReturn(1L);
 
-        var result = mailbox.mailbox(user, "all", " useful ", 0, null, null);
+        var result = mailbox.mailbox(user, "all", " useful ", 0, null, null, " BILLING@dynamiq.dev ");
 
+        assertThat(result.mailboxAddress()).isEqualTo("billing@dynamiq.dev");
         assertThat(result.folderCounts()).containsExactly(
                 org.assertj.core.api.Assertions.entry("all", 4L),
                 org.assertj.core.api.Assertions.entry("inbox", 2L),

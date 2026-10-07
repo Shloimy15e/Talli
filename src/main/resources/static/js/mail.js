@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const listPositions = new Map();
-  const mailboxKey = () => new URL(location.href).searchParams.get('folder') + ':' + new URL(location.href).searchParams.get('search');
+  const mailboxKey = () => new URL(location.href).searchParams.get('mailboxAddress') + ':' + new URL(location.href).searchParams.get('folder') + ':' + new URL(location.href).searchParams.get('search');
 
   function fitMessage(frame) {
     // Scripts stay disabled in the sandbox. Same-origin access lets the trusted

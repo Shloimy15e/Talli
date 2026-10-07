@@ -3,22 +3,22 @@
 <body>
   <th:block th:fragment="reader">
     <header class="mail-reader-toolbar">
-      <a th:href="@{/emails(folder=${folder},search=${search},page=${mailRows.number})}" class="mail-icon-button" aria-label="Back to conversations" title="Back to conversations"><i data-lucide="arrow-left"></i></a>
+      <a th:href="@{/emails(folder=${folder},mailboxAddress=${mailboxAddress},search=${search},page=${mailRows.number})}" class="mail-icon-button" aria-label="Back to conversations" title="Back to conversations"><i data-lucide="arrow-left"></i></a>
       <div class="mail-toolbar-actions">
         <form th:action="@{/emails/{id}/mailbox(id=${selectedEmail.id})}" method="post" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML">
-          <input type="hidden" name="action" th:value="${selectedArchived ? 'unarchive' : 'archive'}"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/>
+          <input type="hidden" name="action" th:value="${selectedArchived ? 'unarchive' : 'archive'}"/><input type="hidden" name="mailboxAddress" th:value="${mailboxAddress}"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/>
           <button type="submit" class="mail-icon-button" th:title="${selectedArchived ? 'Move to inbox' : 'Archive conversation'}" th:attr="aria-label=${selectedArchived ? 'Move to inbox' : 'Archive conversation'}"><i th:attr="data-lucide=${selectedArchived ? 'archive-restore' : 'archive'}"></i></button>
         </form>
         <form th:action="@{/emails/{id}/mailbox(id=${selectedEmail.id})}" method="post" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML">
-          <input type="hidden" name="action" value="unread"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/>
+          <input type="hidden" name="action" value="unread"/><input type="hidden" name="mailboxAddress" th:value="${mailboxAddress}"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/>
           <button type="submit" class="mail-icon-button" aria-label="Mark as unread" title="Mark as unread"><i data-lucide="mail"></i></button>
         </form>
         <form th:action="@{/emails/{id}/mailbox(id=${selectedEmail.id})}" method="post" hx-boost="true" hx-target="#mail-workspace" hx-select="#mail-workspace" hx-swap="outerHTML">
-          <input type="hidden" name="action" th:value="${selectedStarred ? 'unstar' : 'star'}"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/><input type="hidden" name="returnToConversation" value="true"/>
+          <input type="hidden" name="action" th:value="${selectedStarred ? 'unstar' : 'star'}"/><input type="hidden" name="mailboxAddress" th:value="${mailboxAddress}"/><input type="hidden" name="folder" th:value="${folder}"/><input type="hidden" name="search" th:value="${search}"/><input type="hidden" name="page" th:value="${mailRows.number}"/><input type="hidden" name="returnToConversation" value="true"/>
           <button type="submit" class="mail-icon-button mail-star" th:classappend="${selectedStarred} ? 'is-starred' : ''" th:attr="aria-label=${selectedStarred ? 'Unstar conversation' : 'Star conversation'},aria-pressed=${selectedStarred}" title="Star conversation"><i data-lucide="star"></i></button>
         </form>
       </div>
-      <button th:if="${replyId != null}" type="button" class="mail-icon-button mail-toolbar-reply" th:attr="hx-get=@{/emails/new(replyToEmailId=${replyId})}" hx-target="#reply-composer" hx-swap="innerHTML" aria-label="Reply to conversation" title="Reply"><i data-lucide="reply"></i></button>
+      <button th:if="${replyId != null}" type="button" class="mail-icon-button mail-toolbar-reply" th:attr="hx-get=@{/emails/new(replyToEmailId=${replyId},mailboxAddress=${mailboxAddress})}" hx-target="#reply-composer" hx-swap="innerHTML" aria-label="Reply to conversation" title="Reply"><i data-lucide="reply"></i></button>
     </header>
     <div class="mail-reader-scroll">
       <div class="mail-conversation-heading">
@@ -44,8 +44,8 @@
       </div>
       <div class="mail-reply-area">
         <div id="reply-composer"></div>
-        <button th:if="${replyId != null}" type="button" class="mail-reply-prompt" th:attr="hx-get=@{/emails/new(replyToEmailId=${replyId})}" hx-target="#reply-composer" hx-swap="innerHTML"><i data-lucide="reply"></i><span>Reply to this conversation</span><kbd>R</kbd></button>
-        <div th:if="${replyId == null}" class="mail-legacy-reply"><p th:text="${replyUnavailableReason}">This saved conversation does not have a valid reply recipient.</p><button type="button" class="mail-secondary-button" hx-get="/emails/new" hx-target="#modal" hx-swap="innerHTML"><i data-lucide="square-pen"></i>Write a new message</button></div>
+        <button th:if="${replyId != null}" type="button" class="mail-reply-prompt" th:attr="hx-get=@{/emails/new(replyToEmailId=${replyId},mailboxAddress=${mailboxAddress})}" hx-target="#reply-composer" hx-swap="innerHTML"><i data-lucide="reply"></i><span>Reply to this conversation</span><kbd>R</kbd></button>
+        <div th:if="${replyId == null}" class="mail-legacy-reply"><p th:text="${replyUnavailableReason}">This saved conversation does not have a valid reply recipient.</p><button type="button" class="mail-secondary-button" th:attr="hx-get=@{/emails/new(mailboxAddress=${mailboxAddress})}" hx-target="#modal" hx-swap="innerHTML"><i data-lucide="square-pen"></i>Write a new message</button></div>
       </div>
     </div>
   </th:block>
