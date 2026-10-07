@@ -100,6 +100,16 @@ body {
   flex: 0 0 32px;
 }
 
+.app-sidebar-brand .app-sidebar-brand-icon {
+  display: none;
+}
+
+.app-sidebar-brand .app-sidebar-brand-wordmark {
+  display: block;
+  width: auto;
+  height: 32px;
+}
+
 .app-sidebar-brand span {
   overflow: hidden;
   font-size: 15px;
@@ -255,6 +265,10 @@ html[data-sidebar-collapsed="true"] .app-sidebar-version {
 
 html[data-sidebar-collapsed="true"] .app-sidebar-brand span {
   display: none;
+}
+
+html[data-sidebar-collapsed="true"] .app-sidebar-brand .app-sidebar-brand-icon {
+  display: block;
 }
 
 html[data-sidebar-collapsed="true"] .app-sidebar-header {
@@ -666,7 +680,7 @@ html[data-sidebar-collapsed="true"] .app-sidebar-attribution {
 
 .auth-shell { width: min(100%, 384px); }
 .auth-brand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 32px; }
-.auth-brand img { width: 36px; height: 36px; }
+.auth-brand img { width: auto; height: 36px; }
 .auth-brand span { font-size: 22px; font-weight: 600; letter-spacing: -.5px; }
 .auth-card { padding: 24px; border: 1px solid var(--ui-line); border-radius: var(--ui-radius-lg); background: var(--ui-surface); }
 .auth-title { margin: 0 0 24px; font-size: 20px; font-weight: 600; letter-spacing: -.4px; }
@@ -916,7 +930,7 @@ body:not(.mail-app) :where(input, textarea)::placeholder {
   }
 
   .app-mobile-brand img {
-    width: 27px;
+    width: auto;
     height: 27px;
   }
 
@@ -955,6 +969,10 @@ body:not(.mail-app) :where(input, textarea)::placeholder {
 
   html[data-sidebar-collapsed="true"] .app-sidebar-brand span {
     display: inline;
+  }
+
+  html[data-sidebar-collapsed="true"] .app-sidebar-brand .app-sidebar-brand-icon {
+    display: none;
   }
 
   html[data-sidebar-collapsed="true"] .app-sidebar-brand {
