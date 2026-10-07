@@ -45,6 +45,10 @@ public class PortalWebsiteController {
             return "portal/error";
         }
 
+        return renderEditor(project, model);
+    }
+
+    String renderEditor(Project project, Model model) {
         model.addAttribute("project", project);
         try {
             model.addAttribute("form", websiteContentService.load(project));

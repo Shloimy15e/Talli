@@ -78,13 +78,18 @@
             <span class="font-semibold">Talli</span>
           </div>
           <div class="flex items-center gap-4">
-            <a href="/portal/statement" class="text-xs text-ui-rail-ink hover:text-white">Download Statement</a>
+            <a th:href="@{${(portalBase ?: '/portal') + '/statement'}}" class="text-xs text-ui-rail-ink hover:text-white">Download Statement</a>
             <form th:action="@{/logout}" method="post">
               <button type="submit" class="text-xs text-ui-rail-ink hover:text-white">Sign out</button>
             </form>
           </div>
         </div>
       </header>
+
+      <div th:if="${portalPreview == true}" class="max-w-7xl mx-auto px-6 pt-5 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500">
+        <span>Portal preview · <span th:text="${previewClient.name}">Client</span> · View only</span>
+        <a th:href="@{/clients/{id}(id=${previewClient.id})}" class="text-ui-accent-ink hover:underline">Back to client</a>
+      </div>
 
       <!-- Content -->
       <main class="ui-surface-content max-w-7xl mx-auto px-6 py-8">

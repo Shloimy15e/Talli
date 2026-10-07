@@ -568,6 +568,10 @@ html[data-sidebar-collapsed="true"] .app-sidebar-attribution {
   text-decoration: none !important;
 }
 
+.app-brand-link-inline {
+  display: inline-block;
+}
+
 .app-brand-link[class*="text-ui-accent-ink"],
 .mail-app .mail-text-link.app-brand-link,
 .mail-app .mail-conversation-context a.app-brand-link {

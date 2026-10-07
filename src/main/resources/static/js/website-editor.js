@@ -54,6 +54,10 @@ function setupFormState(editor, form, history) {
   });
 
   form.addEventListener('submit', event => {
+    if (form.dataset.preview === 'true') {
+      event.preventDefault();
+      return;
+    }
     const issues = collectPublishIssues(form);
     if (issues.length > 0) {
       event.preventDefault();

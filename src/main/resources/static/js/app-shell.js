@@ -23,6 +23,7 @@
       }
       if (!nodes.length) return;
       const style = window.getComputedStyle(label);
+      if (window.getComputedStyle(link).display === 'inline') link.classList.add('app-brand-link-inline');
       link.style.setProperty('--app-link-rest', style.color);
       link.style.setProperty('--app-link-weight', style.fontWeight);
       const length = nodes.reduce((total, node) => total + Array.from(node.textContent.replace(/\s+/g, ' ')).length, 0);

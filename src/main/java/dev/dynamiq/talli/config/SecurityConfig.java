@@ -113,6 +113,7 @@ public class SecurityConfig {
                 .requestMatchers("/admin/migration/**").hasAuthority("manage-users")
 
                 // Clients — POST = write, GET = read
+                .requestMatchers("/clients/*/portal", "/clients/*/portal/**").hasRole("admin")
                 .requestMatchers(HttpMethod.POST, "/clients/*/send-reminder").hasAuthority("send-emails")
                 .requestMatchers(HttpMethod.POST, "/clients", "/clients/*/delete", "/clients/*").hasAuthority("manage-clients")
                 .requestMatchers(HttpMethod.GET, "/clients/**").hasAuthority("view-clients")

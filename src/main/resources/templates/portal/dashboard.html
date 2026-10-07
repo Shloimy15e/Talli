@@ -82,7 +82,7 @@
           <tbody>
             <tr data-row-action th:each="inv : ${invoices}" class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
               <td class="px-6 py-3 font-mono">
-                <a th:href="@{/portal/invoices/{id}(id=${inv.id})}"
+                <a th:href="@{${(portalBase ?: '/portal') + '/invoices/' + inv.id}}"
                    class="text-ui-accent-ink hover:underline" th:text="${inv.reference}" data-row-primary>INV-1001</a>
               </td>
               <td class="px-6 py-3 text-slate-600 tabular-nums" th:text="${#temporals.format(inv.issuedAt, 'MMM d, yyyy')}">—</td>
@@ -130,9 +130,9 @@
                       th:classappend="${p.status == 'active'} ? 'app-status-success' : 'app-status-neutral'"
                       th:text="${p.status}">active</span>
               </td>
-              <td class="px-6 py-3 text-right app-row-actions-cell" style="--app-row-action-count: 1">
-                <a th:if="${p.websiteEnabled and p.githubInstallationId != null}" th:href="@{/portal/projects/{id}/website(id=${p.id})}"
-                   title="Edit website" aria-label="Edit website" class="app-icon-button" data-row-primary><i data-lucide="pencil" aria-hidden="true"></i></a>
+              <td class="px-6 py-3 text-right whitespace-nowrap">
+                <a th:if="${p.websiteEnabled and p.githubInstallationId != null}" th:href="@{${(portalBase ?: '/portal') + '/projects/' + p.id + '/website'}}"
+                   title="Edit website" aria-label="Edit website" class="inline-flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50" data-row-primary><i data-lucide="pencil" class="h-3.5 w-3.5" aria-hidden="true"></i> Edit website</a>
                 <span th:if="${p.websiteEnabled and p.githubInstallationId == null}" class="text-xs text-slate-400">Not ready</span>
                 <span th:unless="${p.websiteEnabled}" class="text-xs text-slate-400">-</span>
               </td>

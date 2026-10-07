@@ -59,6 +59,10 @@ public class PortalController {
             return "portal/error";
         }
 
+        return renderDashboard(client, model);
+    }
+
+    String renderDashboard(Client client, Model model) {
         List<Project> projects = projectRepository.findByClientId(client.getId());
         List<Invoice> invoices = invoiceRepository.findByClientIdOrderByIssuedAtDescIdDesc(client.getId());
 
@@ -84,6 +88,10 @@ public class PortalController {
             model.addAttribute("error", "Invoice not found.");
             return "portal/error";
         }
+        return renderInvoice(invoice, model);
+    }
+
+    String renderInvoice(Invoice invoice, Model model) {
         model.addAttribute("invoice", invoice);
         model.addAttribute("balance", invoice.balance());
         model.addAttribute("mercuryPaymentUrl", invoice.getMercuryPaymentUrl());
@@ -96,6 +104,10 @@ public class PortalController {
         if (client == null) {
             return ResponseEntity.badRequest().build();
         }
+        return renderStatement(client);
+    }
+
+    ResponseEntity<byte[]> renderStatement(Client client) {
         List<Invoice> invoices = invoiceRepository.findByClientIdOrderByIssuedAtDescIdDesc(client.getId());
         byte[] pdf = pdfService.renderStatement(client, invoices, clientService.agingUsd(invoices), "USD");
         return ResponseEntity.ok()
