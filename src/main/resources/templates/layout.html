@@ -5,8 +5,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title th:text="${title}">Talli</title>
-    <link rel="icon" href="/brand/talli-favicon.svg" th:href="@{/brand/talli-favicon.svg}" type="image/svg+xml" sizes="16x16" />
-    <link rel="icon" href="/brand/talli-favicon-stamped.svg" th:href="@{/brand/talli-favicon-stamped.svg}" type="image/svg+xml" sizes="32x32 48x48" />
+    <link rel="shortcut icon" href="/favicon.ico" th:href="@{/favicon.ico}" type="image/x-icon" />
+    <link rel="icon" href="/brand/talli-favicon-48.png" th:href="@{/brand/talli-favicon-48.png}" type="image/png" sizes="48x48" />
+    <link rel="icon" href="/brand/talli-favicon-32.png" th:href="@{/brand/talli-favicon-32.png}" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/brand/talli-favicon-16.png" th:href="@{/brand/talli-favicon-16.png}" type="image/png" sizes="16x16" />
     <script>
       try {
         if (localStorage.getItem('talli.sidebar.collapsed') === 'true') {
