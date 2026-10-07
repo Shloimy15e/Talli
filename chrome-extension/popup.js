@@ -2,23 +2,22 @@
 
 async function apiFetch(path, options = {}) {
   const { serverUrl, apiToken } = await chrome.storage.local.get(['serverUrl', 'apiToken']);
-  if (!serverUrl || !apiToken) {
-    throw new Error('Not configured — set server URL and API token in Settings.');
-  }
-  const res = await fetch(`${serverUrl}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiToken}`,
-      ...(options.headers || {})
-    }
-  });
-  if (res.status === 401) {
-    throw new Error('Invalid API token.');
-  }
-  return res;
+  if (!serverUrl || !apiToken) throw new Error('Connect your Talli server and API token in Settings.');
+  const response = await TalliApi.request(serverUrl, apiToken, path, options);
+  document.getElementById('connectionLabel').textContent = 'Connected';
+  return response;
 }
-
+function showActionError(error) {
+  const feedback = document.getElementById('actionFeedback');
+  feedback.textContent = error.message || String(error);
+  feedback.className = 'feedback error';
+  document.getElementById('connectionLabel').textContent = 'Check connection';
+}
+let timerBusy = false;
+let expenseBusy = false;
+let projectBusy = false;
+let initialized = false;
+let initGeneration = 0;
 // --- State ---
 
 let projects = [];
@@ -43,29 +42,46 @@ document.addEventListener('DOMContentLoaded', () => {
     initApp();
   });
 
+  document.getElementById('refreshBtn').addEventListener('click', () => {
+    if (!timerBusy) initApp();
+  });
+  document.getElementById('recentSearch').addEventListener('input', renderProjectList);
+  document.getElementById('expDate').value = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   initApp();
 });
 
 async function initApp() {
+  if (timerBusy) return;
+  const generation = ++initGeneration;
+  document.getElementById('refreshBtn').disabled = true;
+  document.getElementById('connectionLabel').textContent = 'Refreshing�';
+  if (elapsedInterval) clearInterval(elapsedInterval);
   try {
-    await loadProjects();
-    await loadTimer();
+    await loadProjects(generation);
+    await loadTimer(generation);
+    if (generation !== initGeneration) return;
     document.getElementById('loading').style.display = 'none';
     document.getElementById('errorState').style.display = 'none';
     document.getElementById('app').style.display = 'block';
   } catch (err) {
+    if (generation !== initGeneration) return;
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').style.display = 'none';
     document.getElementById('errorMessage').textContent = String(err.message || err);
     document.getElementById('errorState').style.display = 'flex';
+    document.getElementById('refreshBtn').disabled = false;
     return;
   }
 
+  document.getElementById('refreshBtn').disabled = false;
+  if (!initialized) {
+  initialized = true;
   setupModes();
   setupTimerBar();
   setupProjectPicker();
   setupExpenseForm();
   setupCreateProject();
+  }
   renderProjectList();
 }
 
@@ -84,9 +100,12 @@ function setupModes() {
 
 // --- Projects ---
 
-async function loadProjects() {
+async function loadProjects(generation = initGeneration) {
   const res = await apiFetch('/api/v1/projects');
-  projects = await res.json();
+  const data = await res.json();
+  if (generation !== initGeneration) return;
+  projects = data;
+  if (!Array.isArray(projects)) throw new Error('Talli returned an invalid project list.');
 
   // Populate expense project dropdown (clear first since this runs on retry too)
   const expSelect = document.getElementById('expProject');
@@ -102,6 +121,7 @@ async function loadProjects() {
 async function loadClients() {
   const res = await apiFetch('/api/v1/clients');
   clients = await res.json();
+  if (!Array.isArray(clients)) throw new Error('Talli returned an invalid client list.');
 }
 
 // --- Searchable project picker ---
@@ -115,6 +135,7 @@ function setupProjectPicker() {
     e.stopPropagation();
     const isOpen = dropdown.classList.contains('open');
     dropdown.classList.toggle('open');
+    btn.setAttribute('aria-expanded', String(!isOpen));
     if (!isOpen) {
       search.value = '';
       renderProjectDropdown('');
@@ -129,13 +150,15 @@ function setupProjectPicker() {
   search.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       dropdown.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
     }
   });
 
   // Close on outside click
-  document.addEventListener('click', (e) => {
-    if (!document.getElementById('projectPicker').contains(e.target)) {
+  document.addEventListener('pointerdown', (e) => {
+    if (!document.getElementById('projectPicker').contains(e.target) && !e.target.closest('.ui-select-popup')) {
       dropdown.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
     }
   });
 }
@@ -149,10 +172,10 @@ function renderProjectDropdown(query) {
   );
 
   list.innerHTML = filtered.map(p => `
-    <div class="project-option ${p.id === selectedProjectId ? 'selected' : ''}" data-id="${p.id}">
+    <button type="button" class="project-option ${p.id === selectedProjectId ? 'selected' : ''}" data-id="${p.id}">
       <span class="project-option-name">${escapeHtml(p.name)}</span>
       ${p.clientName ? `<span class="project-option-client">${escapeHtml(p.clientName)}</span>` : ''}
-    </div>
+    </button>
   `).join('');
 
   if (filtered.length === 0) {
@@ -163,6 +186,7 @@ function renderProjectDropdown(query) {
     opt.addEventListener('click', () => {
       selectProject(parseInt(opt.dataset.id));
       document.getElementById('projectDropdown').classList.remove('open');
+      document.getElementById('projectPickerBtn').setAttribute('aria-expanded', 'false');
     });
   });
 }
@@ -177,7 +201,7 @@ function selectProject(projectId) {
     label.textContent = project.name;
     btn.classList.add('has-value');
   } else {
-    label.textContent = 'Project';
+    label.textContent = 'Choose a project';
     btn.classList.remove('has-value');
   }
 }
@@ -190,8 +214,9 @@ function selectProject(projectId) {
 let elapsedBaselineSeconds = 0;
 let elapsedBaselineClientMs = 0;
 
-async function loadTimer() {
+async function loadTimer(generation = initGeneration) {
   const res = await apiFetch('/api/v1/time/current');
+  if (generation !== initGeneration) return;
   if (res.status === 204) {
     currentTimer = null;
     showTimerStopped();
@@ -205,14 +230,17 @@ async function loadTimer() {
 
 function showTimerRunning() {
   document.getElementById('timerStopped').style.display = 'none';
-  document.getElementById('timerRunning').style.display = 'flex';
+  document.getElementById('timerRunning').style.display = 'grid';
   document.getElementById('timerBar').classList.add('running');
 
   const runningDesc = document.getElementById('runningDesc');
   runningDesc.value = currentTimer.description || '';
-  document.getElementById('runningProject').textContent = currentTimer.projectName || '';
+  const project = projects.find(project => project.id === currentTimer.projectId);
+  document.getElementById('runningProject').textContent = currentTimer.projectName || project?.name || 'Project unavailable';
+  document.getElementById('runningClient').textContent = project ? (project.clientName || 'No client assigned') : 'Client details unavailable';
 
   updateElapsed();
+  if (elapsedInterval) clearInterval(elapsedInterval);
   elapsedInterval = setInterval(updateElapsed, 1000);
   renderProjectList();
 }
@@ -223,7 +251,7 @@ function showTimerStopped() {
     elapsedInterval = null;
   }
   document.getElementById('timerRunning').style.display = 'none';
-  document.getElementById('timerStopped').style.display = 'flex';
+  document.getElementById('timerStopped').style.display = 'grid';
   document.getElementById('timerBar').classList.remove('running');
   renderProjectList();
 }
@@ -249,7 +277,8 @@ function setupTimerBar() {
 }
 
 async function saveRunningDescription() {
-  if (!currentTimer) return;
+  if (!currentTimer || timerBusy) return;
+  const timerId = currentTimer.id;
   const next = document.getElementById('runningDesc').value.trim();
   const prev = currentTimer.description || '';
   if (next === prev) return;
@@ -260,12 +289,13 @@ async function saveRunningDescription() {
       body: JSON.stringify({ description: next || null })
     });
     if (res.ok) {
-      currentTimer.description = next;
+      if (currentTimer?.id === timerId) currentTimer.description = next;
     } else {
       document.getElementById('runningDesc').value = prev;
     }
-  } catch {
-    document.getElementById('runningDesc').value = prev;
+  } catch (error) {
+    showActionError(error);
+    if (currentTimer?.id === timerId) document.getElementById('runningDesc').value = prev;
   }
 }
 
@@ -273,7 +303,7 @@ function updateElapsed() {
   if (!currentTimer) return;
   // Server-authoritative baseline + local increment. No clock sync required.
   const localDelta = Math.floor((Date.now() - elapsedBaselineClientMs) / 1000);
-  const diff = elapsedBaselineSeconds + localDelta;
+  const diff = Math.max(0, elapsedBaselineSeconds + localDelta);
   const h = Math.floor(diff / 3600);
   const m = Math.floor((diff % 3600) / 60);
   const s = diff % 60;
@@ -281,6 +311,7 @@ function updateElapsed() {
 }
 
 async function startTimer() {
+  if (timerBusy || currentTimer) return;
   if (!selectedProjectId) {
     // Open the project picker
     document.getElementById('projectPickerBtn').click();
@@ -289,7 +320,8 @@ async function startTimer() {
 
   const description = document.getElementById('timerDesc').value.trim();
   const btn = document.getElementById('startBtn');
-  btn.disabled = true;
+  timerBusy = true;
+  setTimerBusy(true);
 
   try {
     const res = await apiFetch('/api/v1/time/start', {
@@ -306,15 +338,16 @@ async function startTimer() {
       showTimerRunning();
       chrome.runtime.sendMessage({ type: 'timerStarted' });
     }
-  } catch { /* handled */ }
-
-  btn.disabled = false;
+  } catch (error) { showActionError(error); }
+  timerBusy = false;
+  setTimerBusy(false);
 }
 
 async function stopTimer() {
-  if (!currentTimer) return;
+  if (!currentTimer || timerBusy) return;
   const btn = document.getElementById('stopBtn');
-  btn.disabled = true;
+  timerBusy = true;
+  setTimerBusy(true);
 
   try {
     const res = await apiFetch(`/api/v1/time/${currentTimer.id}/stop`, { method: 'POST' });
@@ -323,25 +356,23 @@ async function stopTimer() {
       showTimerStopped();
       chrome.runtime.sendMessage({ type: 'timerStopped' });
     }
-  } catch { /* handled */ }
-
-  btn.disabled = false;
+  } catch (error) { showActionError(error); }
+  timerBusy = false;
+  setTimerBusy(false);
 }
 
 async function quickStart(projectId) {
-  try {
-    const res = await apiFetch('/api/v1/time/start', {
-      method: 'POST',
-      body: JSON.stringify({ projectId, description: null })
-    });
-    if (res.ok) {
-      currentTimer = await res.json();
-      elapsedBaselineSeconds = 0;
-      elapsedBaselineClientMs = Date.now();
-      showTimerRunning();
-      chrome.runtime.sendMessage({ type: 'timerStarted' });
-    }
-  } catch { /* handled */ }
+  if (timerBusy || currentTimer) return;
+  selectProject(projectId);
+  await startTimer();
+}
+function setTimerBusy(busy) {
+  document.querySelectorAll('#startBtn, #stopBtn, .recent-entry-play').forEach(button => {
+    button.disabled = busy || (!!currentTimer && button.dataset.running === 'false');
+  });
+  document.getElementById('runningDesc').disabled = busy;
+  if (busy) document.getElementById('actionFeedback').className = 'feedback';
+  document.getElementById('refreshBtn').disabled = busy;
 }
 
 // --- Project list (timer panel) ---
@@ -364,21 +395,24 @@ function renderProjectList() {
   const playIcon = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>';
   const stopIcon = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>';
 
-  container.innerHTML = projects.map(p => {
+  const query = document.getElementById('recentSearch').value.toLowerCase();
+  const visible = projects.filter(p => `${p.name} ${p.clientName || ''}`.toLowerCase().includes(query));
+  container.innerHTML = visible.map(p => {
     const isRunning = p.id === runningProjectId;
     return `
     <div class="recent-entry" data-project-id="${p.id}">
-      <div class="recent-entry-info">
+      <button type="button" class="recent-entry-info" aria-label="Select ${escapeHtml(p.name)}">
         <div class="recent-entry-name">${escapeHtml(p.name)}</div>
         ${p.clientName ? `<div class="recent-entry-client">${escapeHtml(p.clientName)}</div>` : ''}
-      </div>
-      <button class="recent-entry-play${isRunning ? ' running' : ''}" data-pid="${p.id}" data-running="${isRunning}" title="${isRunning ? 'Stop timer' : 'Start timer'}">
-        ${isRunning ? stopIcon : playIcon}
+      </button>
+      <button type="button" aria-label="${isRunning ? 'Stop timer' : 'Start timer'}: ${escapeHtml(p.name)}" ${currentTimer && !isRunning || timerBusy ? 'disabled' : ''} class="recent-entry-play${isRunning ? ' running' : ''}" data-pid="${p.id}" data-running="${isRunning}" title="${isRunning ? 'Stop timer' : 'Start timer'}">
+        ${isRunning ? 'Stop' : 'Start'}
       </button>
     </div>
     `;
   }).join('');
 
+  if (!visible.length) container.textContent = 'No matching projects.';
   // Play button starts timer, running button stops it
   container.querySelectorAll('.recent-entry-play').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -392,9 +426,9 @@ function renderProjectList() {
   });
 
   // Clicking row selects project in the timer bar and prefills its last description
-  container.querySelectorAll('.recent-entry').forEach(row => {
+  container.querySelectorAll('.recent-entry-info').forEach(row => {
     row.addEventListener('click', () => {
-      const projectId = parseInt(row.dataset.projectId);
+      const projectId = parseInt(row.parentElement.dataset.projectId);
       selectProject(projectId);
       const project = projects.find(p => p.id === projectId);
       const descInput = document.getElementById('timerDesc');
@@ -411,6 +445,7 @@ function renderProjectList() {
 function setupExpenseForm() {
   document.getElementById('expenseForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (expenseBusy) return;
     const feedback = document.getElementById('expenseFeedback');
     const btn = e.target.querySelector('button[type="submit"]');
 
@@ -420,6 +455,12 @@ function setupExpenseForm() {
     const vendor = document.getElementById('expVendor').value;
     const description = document.getElementById('expDescription').value;
 
+    if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+      feedback.textContent = 'Enter an amount greater than zero.';
+      feedback.className = 'feedback error';
+      return;
+    }
+    expenseBusy = true;
     btn.disabled = true;
     btn.textContent = 'Saving...';
 
@@ -430,6 +471,9 @@ function setupExpenseForm() {
           projectId: projectId ? parseInt(projectId) : null,
           amount: parseFloat(amount),
           category,
+          currency: document.getElementById('expCurrency').value,
+          incurredOn: document.getElementById('expDate').value || null,
+          billable: document.getElementById('expBillable').checked,
           vendor: vendor || null,
           description: description || null
         })
@@ -447,13 +491,14 @@ function setupExpenseForm() {
         feedback.textContent = err.error || 'Failed to save';
         feedback.className = 'feedback error';
       }
-    } catch {
-      feedback.textContent = 'Cannot reach server';
+    } catch (error) {
+      feedback.textContent = error.message;
       feedback.className = 'feedback error';
     }
 
+    expenseBusy = false;
     btn.disabled = false;
-    btn.textContent = 'Save Expense';
+    btn.textContent = 'Save expense';
   });
 }
 
@@ -544,6 +589,7 @@ function populateClientDropdown() {
 }
 
 async function submitNewProject() {
+  if (projectBusy) return;
   const name = document.getElementById('newProjectName').value.trim();
   const clientId = document.getElementById('newProjectClient').value;
   const rate = document.getElementById('newProjectRate').value;
@@ -554,10 +600,12 @@ async function submitNewProject() {
 
   if (!name) return showCreateProjectError('Name is required');
   if (!clientId) return showCreateProjectError('Pick a client');
-  if (!rate || parseFloat(rate) <= 0) return showCreateProjectError('Enter a rate');
+  if (!rate || !Number.isFinite(Number(rate)) || Number(rate) < 0) return showCreateProjectError('Enter a rate');
 
   const btn = document.getElementById('submitNewProject');
   btn.disabled = true;
+  document.getElementById('backToList').disabled = true;
+  projectBusy = true;
   btn.textContent = 'Creating...';
 
   try {
@@ -594,6 +642,7 @@ async function submitNewProject() {
       expSelect.appendChild(opt);
       // Close dropdown
       document.getElementById('projectDropdown').classList.remove('open');
+      document.getElementById('projectPickerBtn').setAttribute('aria-expanded', 'false');
       document.getElementById('timerDesc').focus();
     } else {
       const err = await res.json().catch(() => ({}));
@@ -604,7 +653,9 @@ async function submitNewProject() {
   }
 
   btn.disabled = false;
-  btn.textContent = 'Create';
+  projectBusy = false;
+  document.getElementById('backToList').disabled = false;
+  btn.textContent = 'Create project';
 }
 
 function showCreateProjectError(msg) {
@@ -620,6 +671,7 @@ function resetCreateProjectForm() {
   document.getElementById('newProjectRateType').value = 'hourly';
   document.getElementById('newProjectCurrency').value = 'USD';
   document.getElementById('newProjectBillable').checked = true;
+  document.querySelectorAll('#projectCreateView select').forEach(select => select.dispatchEvent(new Event('ui-select:refresh')));
   updateFrequencyOptions('hourly');
   document.getElementById('createProjectFeedback').className = 'feedback-inline';
   document.getElementById('createProjectFeedback').textContent = '';

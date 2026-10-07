@@ -1,21 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <link rel="stylesheet" href="styles.css">
+  <title>Talli - Quick capture</title>
+  <link rel="stylesheet" href="assets/design-tokens.css"><link rel="stylesheet" href="assets/select.css"><link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
   <!-- Header (always visible so Settings is always reachable) -->
   <div class="header">
-    <svg class="header-logo" viewBox="0 0 64 64" width="22" height="22">
-      <g fill="#ea7c28">
-        <rect x="16" y="36" width="8" height="16" rx="2"/>
-        <rect x="28" y="24" width="8" height="28" rx="2"/>
-        <rect x="40" y="12" width="8" height="40" rx="2"/>
-      </g>
-    </svg>
-    <span class="header-title">Talli</span>
+    <img class="header-wordmark" src="assets/wordmark.svg" alt="Talli"><span class="header-title">Quick capture</span>
     <button class="header-btn" id="settingsBtn" title="Settings">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
@@ -36,22 +30,25 @@
     </svg>
     <p class="error-title">Can't reach Talli</p>
     <p class="error-message" id="errorMessage">Check your server URL and API token.</p>
-    <button class="btn btn-primary" id="errorSettingsBtn">Open Settings</button>
+    <button class="btn btn-primary" id="errorSettingsBtn">Open settings</button>
     <button class="btn btn-secondary" id="retryBtn">Retry</button>
   </div>
 
   <!-- Main app -->
   <div id="app" style="display:none">
+    <div class="connection-row"><span class="status-dot"></span><span id="connectionLabel">Connected</span><button type="button" id="refreshBtn" class="text-button">Refresh</button></div>
+    <div id="actionFeedback" class="feedback" role="status" aria-live="polite"></div>
 
     <!-- Timer bar -->
     <div id="timerBar" class="timer-bar">
       <!-- Stopped: description + project picker + play -->
       <div id="timerStopped" class="timer-bar-inner">
+        <label class="timer-caption" for="timerDesc">What are you working on?</label>
         <input type="text" id="timerDesc" class="timer-input" placeholder="What are you working on?" autocomplete="off">
         <div class="project-picker" id="projectPicker">
-          <button type="button" class="project-picker-btn" id="projectPickerBtn">
+          <button type="button" class="project-picker-btn" id="projectPickerBtn" aria-haspopup="true" aria-expanded="false">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            <span id="projectPickerLabel">Project</span>
+            <span id="projectPickerLabel">Choose a project</span>
           </button>
           <div class="project-dropdown" id="projectDropdown">
             <!-- List view -->
@@ -71,26 +68,26 @@
                 </button>
                 <span>New project</span>
               </div>
-              <div id="createProjectFeedback" class="feedback-inline"></div>
+              <div id="createProjectFeedback" class="feedback-inline" role="status" aria-live="polite"></div>
               <div class="project-create-fields">
-                <label class="field-label">Project name</label>
+                <label class="field-label" for="newProjectName">Project name</label>
                 <input type="text" id="newProjectName" placeholder="e.g. Website redesign" autocomplete="off">
 
-                <label class="field-label">Client</label>
-                <select id="newProjectClient"></select>
+                <label class="field-label" for="newProjectClient">Client</label>
+                <select data-ui-select data-ui-select-field id="newProjectClient" data-ui-select-search="Search clients"></select>
 
                 <div class="field-row">
                   <div class="field-col">
-                    <label class="field-label">Rate type</label>
-                    <select id="newProjectRateType">
+                    <label class="field-label" for="newProjectRateType">Rate type</label>
+                    <select data-ui-select data-ui-select-field id="newProjectRateType">
                       <option value="hourly">Hourly</option>
                       <option value="fixed">Fixed</option>
                       <option value="retainer">Retainer</option>
                     </select>
                   </div>
                   <div class="field-col">
-                    <label class="field-label">Currency</label>
-                    <select id="newProjectCurrency">
+                    <label class="field-label" for="newProjectCurrency">Currency</label>
+                    <select data-ui-select data-ui-select-field id="newProjectCurrency">
                       <option value="USD">USD $</option>
                       <option value="ILS">ILS ₪</option>
                       <option value="EUR">EUR €</option>
@@ -98,13 +95,13 @@
                     </select>
                   </div>
                   <div class="field-col">
-                    <label class="field-label">Rate</label>
+                    <label class="field-label" for="newProjectRate">Rate</label>
                     <input type="number" id="newProjectRate" placeholder="0.00" step="0.01" min="0">
                   </div>
                 </div>
 
-                <label class="field-label" id="newProjectFreqLabel">Invoice every</label>
-                <select id="newProjectFrequency">
+                <label class="field-label" id="newProjectFreqLabel" for="newProjectFrequency">Invoice every</label>
+                <select data-ui-select data-ui-select-field id="newProjectFrequency">
                   <!-- Populated dynamically based on rate type -->
                 </select>
 
@@ -113,24 +110,23 @@
                   <span>Billable project</span>
                 </label>
 
-                <button type="button" class="btn btn-primary" id="submitNewProject">Create Project</button>
+                <button type="button" class="btn btn-primary" id="submitNewProject">Create project</button>
               </div>
             </div>
           </div>
         </div>
-        <button id="startBtn" class="timer-btn start" title="Start timer">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>
+        <button id="startBtn" class="timer-btn start" title="Start timer">Start timer
         </button>
       </div>
       <!-- Running: info + elapsed + stop -->
       <div id="timerRunning" class="timer-bar-inner" style="display:none">
         <div class="timer-running-info">
-          <input type="text" id="runningDesc" class="running-desc" placeholder="Add description..." autocomplete="off">
-          <span id="runningProject" class="running-project"></span>
+          <div class="running-context"><div><span class="context-label">Project</span><strong id="runningProject" class="running-project"></strong></div><div><span class="context-label">Client</span><span id="runningClient" class="running-client"></span></div></div>
+          <label for="runningDesc">Task description</label>
+          <input type="text" id="runningDesc" aria-label="Running timer description" class="running-desc" placeholder="Add a description" autocomplete="off">
         </div>
         <span id="elapsed" class="timer-elapsed-compact"></span>
-        <button id="stopBtn" class="timer-btn stop" title="Stop timer">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+        <button id="stopBtn" class="timer-btn stop" title="Stop timer">Stop timer
         </button>
       </div>
     </div>
@@ -150,17 +146,21 @@
 
     <!-- Timer panel -->
     <div id="timerPanel" class="panel">
+      <div class="section-heading"><h2>Recent projects</h2><span>Pick up where you left off</span></div>
+      <input id="recentSearch" type="search" class="project-search" placeholder="Search projects or clients" aria-label="Search recent projects">
       <div id="recentEntries" class="recent-list"></div>
       <div id="noEntries" class="empty-state" style="display:none">
         <p>No projects yet</p>
-        <p class="empty-hint">Create projects in Talli to get started</p>
+        <p class="empty-hint">Choose 'New project' above to get started</p>
       </div>
     </div>
 
     <!-- Expense panel -->
     <div id="expensePanel" class="panel" style="display:none">
-      <div id="expenseFeedback" class="feedback"></div>
+      <div id="expenseFeedback" class="feedback" role="status" aria-live="polite"></div>
       <form id="expenseForm" class="expense-form">
+        <div class="section-heading"><h2>New expense</h2><span>Capture the details while they're fresh</span></div>
+        <div class="expense-row"><div class="expense-field grow"><label for="expDate">Date</label><input type="date" id="expDate"></div><div class="expense-field grow"><label for="expCurrency">Currency</label><select data-ui-select data-ui-select-field id="expCurrency"><option>USD</option><option>ILS</option><option>EUR</option><option>GBP</option></select></div></div>
         <div class="expense-row">
           <div class="expense-field grow">
             <label for="expAmount">Amount</label>
@@ -168,10 +168,11 @@
           </div>
           <div class="expense-field">
             <label for="expCategory">Category</label>
-            <select id="expCategory" required>
+            <select data-ui-select data-ui-select-field id="expCategory" required>
               <option value="software">Software</option>
               <option value="hardware">Hardware</option>
               <option value="travel">Travel</option>
+              <option value="transportation">Transportation</option>
               <option value="meals">Meals</option>
               <option value="contractors">Contractors</option>
               <option value="office">Office</option>
@@ -188,7 +189,7 @@
           </div>
           <div class="expense-field grow">
             <label for="expProject">Project</label>
-            <select id="expProject">
+            <select data-ui-select data-ui-select-field id="expProject" data-ui-select-search="Search projects">
               <option value="">None</option>
             </select>
           </div>
@@ -197,12 +198,14 @@
           <label for="expDescription">Note</label>
           <input type="text" id="expDescription" placeholder="Optional">
         </div>
-        <button type="submit" class="btn btn-primary">Save Expense</button>
+        <label class="field-checkbox"><input type="checkbox" id="expBillable"><span>Billable expense</span></label>
+        <button type="submit" class="btn btn-primary">Save expense</button>
       </form>
     </div>
 
   </div>
 
+  <script src="assets/select.js"></script><script src="api.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>
