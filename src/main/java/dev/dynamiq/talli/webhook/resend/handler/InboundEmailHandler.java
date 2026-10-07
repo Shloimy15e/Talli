@@ -2,14 +2,17 @@ package dev.dynamiq.talli.webhook.resend.handler;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.dynamiq.talli.model.Email;
+import dev.dynamiq.talli.mcp.events.McpEventService;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.service.EmailService;
 import dev.dynamiq.talli.service.EmailThreadService;
 import dev.dynamiq.talli.webhook.resend.ResendEventHandler;
+import dev.dynamiq.talli.webhook.resend.RetryableResendEventException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -27,15 +30,18 @@ public class InboundEmailHandler implements ResendEventHandler {
     private final ClientRepository clientRepository;
     private final EmailService emailService;
     private final EmailThreadService threads;
+    private final McpEventService events;
 
     public InboundEmailHandler(EmailRepository emailRepository,
                                ClientRepository clientRepository,
                                EmailService emailService,
-                               EmailThreadService threads) {
+                               EmailThreadService threads,
+                               McpEventService events) {
         this.emailRepository = emailRepository;
         this.clientRepository = clientRepository;
         this.emailService = emailService;
         this.threads = threads;
+        this.events = events;
     }
 
     @Override
@@ -44,13 +50,21 @@ public class InboundEmailHandler implements ResendEventHandler {
     }
 
     @Override
+    public boolean retryOnFailure() { return true; }
+
+    @Override
+    @Transactional
     public void handle(String type, JsonNode data) {
         String resendId = data.path("email_id").asText(null);
 
-        // Idempotency: if we already stored this inbound event, skip.
-        if (resendId != null && emailRepository.findByResendId(resendId).isPresent()) {
-            log.debug("Skipping duplicate inbound email_id={}", resendId);
-            return;
+        // Repair the durable event queue on retries without storing another email.
+        if (resendId != null) {
+            var existing = emailRepository.findByResendId(resendId);
+            if (existing.isPresent()) {
+                enqueueEvent(existing.get());
+                log.debug("Skipping duplicate inbound email_id={}", resendId);
+                return;
+            }
         }
 
         // Metadata from the webhook payload.
@@ -121,10 +135,19 @@ public class InboundEmailHandler implements ResendEventHandler {
             saved = emailRepository.save(saved);
         } catch (Exception e) {
             log.error("Failed to save inbound email from={}: {}", from, e.getMessage(), e);
-            return;
+            throw new RetryableResendEventException("Inbound email persistence failed", e);
         }
+        enqueueEvent(saved);
         log.info("Saved inbound email id={} from={} to={} subject='{}'", saved.getId(), from, to, subject);
 
+    }
+
+    private void enqueueEvent(Email email) {
+        try {
+            events.enqueue(email);
+        } catch (RuntimeException e) {
+            throw new RetryableResendEventException("Inbound event persistence failed", e);
+        }
     }
 
     /**

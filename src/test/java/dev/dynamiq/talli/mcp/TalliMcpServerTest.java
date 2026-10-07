@@ -114,7 +114,7 @@ class TalliMcpServerTest {
     }
 
     @Test
-    void modernDiscoveryFallsBackToTheSupportedLegacyHandshake() throws Exception {
+    void modernDiscoveryAdvertisesToolsAndKeepsEventsDisabledByDefault() throws Exception {
         String token = tokenForRole("mcp-discovery");
 
         mockMvc.perform(post("/mcp")
@@ -129,11 +129,13 @@ class TalliMcpServerTest {
                                   "params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28"}}
                                 }
                                 """))
-                .andExpect(status().isNotFound())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.jsonrpc").value("2.0"))
                 .andExpect(jsonPath("$.id").value("discover-1"))
-                .andExpect(jsonPath("$.error.code").value(-32601))
-                .andExpect(jsonPath("$.error.message").value("Method not found"));
+                .andExpect(jsonPath("$.result.resultType").value("complete"))
+                .andExpect(jsonPath("$.result.supportedVersions[0]").value("2026-07-28"))
+                .andExpect(jsonPath("$.result.capabilities.tools").isMap())
+                .andExpect(jsonPath("$.result.capabilities.events").doesNotExist());
     }
 
     @Test

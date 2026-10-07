@@ -82,6 +82,34 @@ class ResendWebhookServiceTest {
     }
 
     @Test
+    void commitFailureFromDurableHandlerAlsoRequestsRetry() {
+        when(throwing.retryOnFailure()).thenReturn(true);
+        String body = "{\"type\":\"email.delivered\",\"data\":{\"email_id\":\"msg_1\"}}";
+        String timestamp = String.valueOf(Instant.now().getEpochSecond());
+        assertThatThrownBy(() -> service.process(body, "evt_1", timestamp,
+                sign(SECRET, "evt_1", timestamp, body)))
+                .isInstanceOf(RetryableResendEventException.class);
+        verify(matching).handle(anyString(), any());
+    }
+
+    @Test
+    void durableWriteFailureRetriesAfterDispatchingSiblingHandlers() {
+        doThrow(new RetryableResendEventException("outbox failed", new IllegalStateException()))
+                .when(throwing).handle(anyString(), any());
+        String body = "{\"type\":\"email.delivered\",\"data\":{\"email_id\":\"msg_1\"}}";
+        String timestamp = String.valueOf(Instant.now().getEpochSecond());
+
+        assertThatThrownBy(() -> service.process(body, "evt_1", timestamp,
+                sign(SECRET, "evt_1", timestamp, body)))
+                .isInstanceOf(RetryableResendEventException.class);
+        verify(matching).handle(anyString(), any());
+
+        var response = new ResendWebhookController(service).receive(body, "evt_1", timestamp,
+                sign(SECRET, "evt_1", timestamp, body));
+        org.assertj.core.api.Assertions.assertThat(response.getStatusCode().value()).isEqualTo(500);
+    }
+
+    @Test
     void process_rejectsMalformedJson() {
         String body = "not-json-at-all";
         String id = "evt_1";

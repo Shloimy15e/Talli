@@ -1,10 +1,12 @@
 package dev.dynamiq.talli.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.dynamiq.talli.mcp.events.McpEventService;
 import dev.dynamiq.talli.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -33,9 +35,10 @@ public class SecurityConfig {
     private final ApiTokenAuthenticationFilter apiTokenAuthenticationFilter;
     private final McpLegacyProtocolFilter mcpLegacyProtocolFilter;
 
-    public SecurityConfig(ApiTokenAuthenticationFilter apiTokenAuthenticationFilter, ObjectMapper objectMapper) {
+    public SecurityConfig(ApiTokenAuthenticationFilter apiTokenAuthenticationFilter, ObjectMapper objectMapper,
+                          McpEventService events, Environment environment) {
         this.apiTokenAuthenticationFilter = apiTokenAuthenticationFilter;
-        this.mcpLegacyProtocolFilter = new McpLegacyProtocolFilter(objectMapper);
+        this.mcpLegacyProtocolFilter = new McpLegacyProtocolFilter(objectMapper, events, environment);
     }
 
     /**

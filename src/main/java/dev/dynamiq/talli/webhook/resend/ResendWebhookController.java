@@ -32,6 +32,9 @@ public class ResendWebhookController {
         } catch (ResendWebhookService.InvalidSignatureException e) {
             log.warn("Rejected Resend webhook: {}", e.getMessage());
             return ResponseEntity.status(401).body("{\"error\":\"invalid signature\"}");
+        } catch (RetryableResendEventException e) {
+            log.error("Resend event requires retry: {}", e.getMessage());
+            return ResponseEntity.status(500).body("{\"error\":\"retry required\"}");
         } catch (IllegalStateException e) {
             log.error("Resend webhook misconfigured: {}", e.getMessage());
             return ResponseEntity.status(500).body("{\"error\":\"misconfigured\"}");

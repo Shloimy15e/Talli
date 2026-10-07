@@ -59,16 +59,24 @@ public class ResendWebhookService {
             throw new RuntimeException("Webhook body missing 'type' or 'data'.");
         }
 
+        RetryableResendEventException retryableFailure = null;
         for (ResendEventHandler handler : handlers) {
             if (!handler.supports(type)) continue;
             try {
                 handler.handle(type, data);
+            } catch (RetryableResendEventException e) {
+                retryableFailure = e;
+                log.error("Durable inbound handling failed for event {}", type, e);
             } catch (Exception e) {
-                // One handler's failure shouldn't block the others or fail the webhook —
-                // Resend will retry and we'd double-handle the working ones.
+                if (handler.retryOnFailure()) {
+                    retryableFailure = new RetryableResendEventException("Inbound transaction failed", e);
+                }
+                // Continue sibling handlers; durable failures request a provider retry
+                // after dispatch, while other handler failures remain isolated.
                 log.error("Handler {} threw on event {}: {}",
                         handler.getClass().getSimpleName(), type, e.getMessage(), e);
             }
         }
+        if (retryableFailure != null) throw retryableFailure;
     }
 }

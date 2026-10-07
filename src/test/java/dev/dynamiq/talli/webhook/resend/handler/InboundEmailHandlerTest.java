@@ -2,6 +2,8 @@ package dev.dynamiq.talli.webhook.resend.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.dynamiq.talli.model.Email;
+import dev.dynamiq.talli.mcp.events.McpEventService;
+import dev.dynamiq.talli.webhook.resend.RetryableResendEventException;
 import dev.dynamiq.talli.repository.ClientRepository;
 import dev.dynamiq.talli.repository.EmailRepository;
 import dev.dynamiq.talli.repository.EmailMailboxStateRepository;
@@ -13,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,14 +23,49 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 class InboundEmailHandlerTest {
+
+    @Test
+    void repeatedProviderEventRepairsItsOutboxWithoutSavingAnotherEmail() throws Exception {
+        EmailRepository emails = mock(EmailRepository.class);
+        McpEventService events = mock(McpEventService.class);
+        Email existing = new Email();
+        existing.setId(101L);
+        existing.setDirection("in");
+        existing.setResendId("incoming-theo");
+        when(emails.findByResendId("incoming-theo")).thenReturn(Optional.of(existing));
+        InboundEmailHandler handler = new InboundEmailHandler(emails, mock(ClientRepository.class),
+                mock(EmailService.class), mock(EmailThreadService.class), events);
+
+        handler.handle("email.received", new ObjectMapper().readTree("{\"email_id\":\"incoming-theo\"}"));
+
+        verify(events).enqueue(existing);
+        verify(emails, never()).save(any(Email.class));
+    }
+
+    @Test
+    void outboxFailureRequestsProviderRetry() throws Exception {
+        EmailRepository emails = mock(EmailRepository.class);
+        McpEventService events = mock(McpEventService.class);
+        Email existing = new Email();
+        when(emails.findByResendId("incoming-theo")).thenReturn(Optional.of(existing));
+        doThrow(new IllegalStateException("database unavailable")).when(events).enqueue(existing);
+        InboundEmailHandler handler = new InboundEmailHandler(emails, mock(ClientRepository.class),
+                mock(EmailService.class), mock(EmailThreadService.class), events);
+
+        assertThatThrownBy(() -> handler.handle("email.received",
+                new ObjectMapper().readTree("{\"email_id\":\"incoming-theo\"}")))
+                .isInstanceOf(RetryableResendEventException.class);
+    }
 
     @Test
     void retainsAllBusinessRecipientsAndCopiedMailboxes() throws Exception {
         EmailRepository emails = mock(EmailRepository.class);
         InboundEmailHandler handler = new InboundEmailHandler(emails, mock(ClientRepository.class),
-                mock(EmailService.class), new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)));
+                mock(EmailService.class), new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)),
+                mock(McpEventService.class));
         when(emails.save(any(Email.class))).thenAnswer(invocation -> {
             Email email = invocation.getArgument(0);
             email.setId(101L);
@@ -51,8 +89,9 @@ class InboundEmailHandlerTest {
         EmailRepository emails = mock(EmailRepository.class);
         ClientRepository clients = mock(ClientRepository.class);
         EmailService emailService = mock(EmailService.class);
+        McpEventService events = mock(McpEventService.class);
         InboundEmailHandler handler = new InboundEmailHandler(emails, clients, emailService,
-                new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)));
+                new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)), events);
 
         Email outgoing = new Email();
         outgoing.setDirection("out");
@@ -73,6 +112,7 @@ class InboundEmailHandlerTest {
         verifyNoMoreInteractions(emailService);
         verify(emails, never()).save(any(Email.class));
         verify(clients, never()).findByEmailIgnoreCase(any());
+        verify(events, never()).enqueue(any(Email.class));
     }
 
     @Test
@@ -81,7 +121,8 @@ class InboundEmailHandlerTest {
         ClientRepository clients = mock(ClientRepository.class);
         EmailService emailService = mock(EmailService.class);
         EmailThreadService threads = new EmailThreadService(emails, mock(EmailMailboxStateRepository.class));
-        InboundEmailHandler handler = new InboundEmailHandler(emails, clients, emailService, threads);
+        McpEventService events = mock(McpEventService.class);
+        InboundEmailHandler handler = new InboundEmailHandler(emails, clients, emailService, threads, events);
 
         Email parent = new Email();
         parent.setId(44L);
@@ -117,6 +158,7 @@ class InboundEmailHandlerTest {
         assertThat(inbound.getInReplyTo()).isEqualTo("<outgoing@dynamiq.dev>");
         assertThat(inbound.getReferencesHeader()).isEqualTo("<root@dynamiq.dev> <outgoing@dynamiq.dev>");
         assertThat(inbound.getThreadRootId()).isEqualTo(40L);
+        verify(events).enqueue(inbound);
         verify(emailService).fetchReceivedEmail("inbound-1");
         verifyNoMoreInteractions(emailService);
     }
@@ -127,7 +169,7 @@ class InboundEmailHandlerTest {
         ClientRepository clients = mock(ClientRepository.class);
         EmailService emailService = mock(EmailService.class);
         InboundEmailHandler handler = new InboundEmailHandler(emails, clients, emailService,
-                new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)));
+                new EmailThreadService(emails, mock(EmailMailboxStateRepository.class)), mock(McpEventService.class));
         when(emails.findByResendId("inbound-unknown")).thenReturn(Optional.empty());
         when(emailService.fetchReceivedEmail("inbound-unknown")).thenReturn(new EmailService.ReceivedEmail(
                 "Unknown metadata", null, null, null, null));

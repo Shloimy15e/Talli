@@ -6,6 +6,10 @@ Talli exposes a private, stateless Streamable HTTP MCP server at:
 https://<your-talli-host>/mcp
 ```
 
+## Native discovery and incoming email events
+
+The endpoint supports MCP 2.0 discovery (`2026-07-28`) alongside existing Streamable HTTP tool calls and the legacy initialization handshake. Native `email.received` events can monitor `theo@dynamiq.dev` through a verified, signed webhook subscription. Event delivery is disabled by default; see [MCP Events setup and plugin refresh](docs/mcp-events.md) for configuration, subscription lifecycle, and later dot activation.
+
 ## Connect from ChatGPT
 
 Before deploying, set Railway's `APP_BASE_URL` variable to the exact public HTTPS origin of Talli, without `/mcp` or another path:
@@ -75,7 +79,7 @@ Read tools:
 - `list_email_senders` to list all active sender profiles, their default status, and HTML signatures
 - `find_client_emails` to discover a client's recorded emails with their source, initiating account, provider ID, send status, errors, and delivery-event timestamps
 - `get_email_conversation` to read those audit details and the messages in a conversation before replying
-- `preview_client_email` to render the exact sender, recipient, visible CC, body, template, and signature before sending
+- `preview_client_email` to render the exact sender, recipient, visible CC, body, template, and signature before sending client or standalone email
 
 List tools return up to 100 records per call. Use `offset` to continue through all matching records.
 
@@ -90,7 +94,7 @@ Write tools:
 - `record_payment` for settled transactions from any bank or payment provider
 - `delete_payment` to remove a recorded payment
 - `set_invoice_ach_link` for a validated Mercury ACH payment link
-- `send_client_email` for a previously previewed and explicitly approved client email
+- `send_client_email` for a previously previewed and explicitly approved client or standalone email
 
 There are no invoice-generation or money-movement tools. Each tool checks the matching Talli permission (`view-*`, `manage-*`, or `send-emails`) at execution time; inbox reads and threaded replies additionally retain admin-only access.
 
@@ -104,7 +108,7 @@ Email is a two-step workflow:
 2. Call `preview_client_email`. It sends nothing and returns both the plain and rendered HTML bodies plus a `previewToken` bound to the exact sender, recipients, subject, body, template, signature, reply target, and oversight choice. Set `includeOversightCc=true` only when the owner should receive a visible copy; it defaults to false.
 3. After a human approves that preview, call `send_client_email` with the same inputs, including `includeOversightCc`, its token, and `confirmSend=true`. Changed or unpreviewed content is rejected.
 
-The client must already exist in Talli and have one valid saved email address. The client is the primary **To** recipient. When `includeOversightCc=true`, agent email visibly CCs `${MCP_EMAIL_CC}`, which defaults to `shloimy@dynamiq.dev`, for owner oversight and stores that CC in the email record. Talli omits the oversight CC when the address is already To or From. Threaded replies retain other valid saved CC/BCC recipients regardless of the oversight choice; opting out also removes the configured oversight address from a saved reply envelope. Separately, Talli records `mcp` as the source and the authenticated account email as the initiator before delivery begins, so failed attempts remain attributable without relying on recipient copies.
+For client email, provide `clientId` for an existing client with a valid saved email address. For standalone email, omit `clientId` and provide `toAddress`; no client record is required. An explicit `toAddress` supplied with `clientId` must match that client's saved address. When `includeOversightCc=true`, agent email visibly CCs `${MCP_EMAIL_CC}`, which defaults to `shloimy@dynamiq.dev`, for owner oversight and stores that CC in the email record. Talli omits the oversight CC when the address is already To or From. Threaded replies retain other valid saved CC/BCC recipients regardless of the oversight choice; opting out also removes the configured oversight address from a saved reply envelope. Separately, Talli records `mcp` as the source and the authenticated account email as the initiator before delivery begins, so failed attempts remain attributable without relying on recipient copies.
 
 Admins manage shared sender profiles at **Emails → Sender profiles** (`/emails/senders`). Each profile has an address, display name, HTML signature, active status, and default status. The migration starts with the existing `info@dynamiq.dev` (default), `billing@dynamiq.dev`, `finance@dynamiq.dev`, `support@dynamiq.dev`, and `sales@dynamiq.dev` identities. Admins can edit them and add more; each sending domain must be verified in Resend. Disabling a profile removes it from selection without rewriting historical emails.
 
@@ -132,4 +136,4 @@ The one-time email migration groups existing messages by external contact and no
 - “Show client profit and loss for the last quarter and drill into the largest expenses.”
 - “Draft a signed, branded payment reminder for Acme, show me the preview, and wait for my approval before sending it.”
 
-When `log_time.started_at` is omitted, the entry ends at the current time and starts `duration_minutes` earlier. Expense categories are `software`, `hardware`, `travel`, `meals`, `contractors`, `office`, `marketing`, `taxes`, and `other`.
+Use the camelCase argument names published in each tool schema. When `log_time.startedAt` is omitted, the entry ends at the current time and starts `durationMinutes` earlier. Expense categories are `software`, `hardware`, `travel`, `meals`, `contractors`, `office`, `marketing`, `taxes`, and `other`.

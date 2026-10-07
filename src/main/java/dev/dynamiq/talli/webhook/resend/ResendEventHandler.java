@@ -13,6 +13,9 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public interface ResendEventHandler {
 
+    /** Durable handlers need provider retries when their transaction cannot commit. */
+    default boolean retryOnFailure() { return false; }
+
     /** Return true to receive this event in {@link #handle(String, JsonNode)}. */
     boolean supports(String type);
 
