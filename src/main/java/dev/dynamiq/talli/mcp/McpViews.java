@@ -47,7 +47,8 @@ public final class McpViews {
                 entry.getStartedAt(), entry.getEndedAt(),
                 TimeEntryService.minutesFor(entry, LocalDateTime.now()), entry.isRunning(),
                 entry.getDescription(), entry.getBillable(), entry.getBilled(),
-                entry.getInvoice() != null ? entry.getInvoice().getId() : null);
+                entry.getInvoice() != null ? entry.getInvoice().getId() : null,
+                entry.getRate());
     }
 
     public static ExpenseView expense(Expense expense) {
@@ -140,7 +141,7 @@ public final class McpViews {
                                 Long clientId, String clientName,
                                 LocalDateTime startedAt, LocalDateTime endedAt,
                                 int durationMinutes, boolean running, String description,
-                                Boolean billable, Boolean billed, Long invoiceId) {}
+                                Boolean billable, Boolean billed, Long invoiceId, BigDecimal rate) {}
 
     public record ExpenseView(Long id, Long clientId, String clientName,
                               Long projectId, String projectName,

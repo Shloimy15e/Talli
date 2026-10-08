@@ -89,6 +89,7 @@ class TalliMcpWriteToolsTest {
             TimeEntry entry = new TimeEntry();
             entry.setId(3L);
             entry.setProject(project);
+            entry.setRate(new BigDecimal("120.00"));
             entry.setStartedAt(invocation.getArgument(1));
             entry.setEndedAt(invocation.getArgument(2));
             entry.setDescription(invocation.getArgument(3));
@@ -102,6 +103,7 @@ class TalliMcpWriteToolsTest {
         assertThat(result.startedAt()).isEqualTo(LocalDateTime.of(2020, 1, 2, 9, 15));
         assertThat(result.endedAt()).isEqualTo(LocalDateTime.of(2020, 1, 2, 10, 45));
         assertThat(result.durationMinutes()).isEqualTo(90);
+        assertThat(result.rate()).isEqualByComparingTo("120.00");
         verify(timeEntryService).create(2L,
                 LocalDateTime.of(2020, 1, 2, 9, 15),
                 LocalDateTime.of(2020, 1, 2, 10, 45), "Planning", true);

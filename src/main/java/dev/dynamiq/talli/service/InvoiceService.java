@@ -188,8 +188,8 @@ public class InvoiceService {
 
     /**
      * Generate an invoice for a client covering all eligible billable work across
-     * the client's projects within the given period. One line per project:
-     * - hourly: sum of billable unbilled time entries × project rate
+     * the client's projects within the given period. One line per project and rate:
+     * - hourly: sum of billable unbilled time entries at their captured rate
      * - fixed / retainer: not yet supported, those projects are skipped
      * Marks time entries as billed and links them to their invoice + item.
      * Whole operation is atomic.
@@ -217,14 +217,6 @@ public class InvoiceService {
             if (entries.isEmpty())
                 continue;
 
-            int totalMinutes = entries.stream()
-                    .mapToInt(e -> TimeEntryService.minutesFor(e, now))
-                    .sum();
-            BigDecimal hours = BigDecimal.valueOf(totalMinutes)
-                    .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-            BigDecimal rate = project.getCurrentRate() == null ? BigDecimal.ZERO : project.getCurrentRate();
-            BigDecimal lineTotal = TimeEntryService.valueOf(totalMinutes, rate);
-
             if (currency == null)
                 currency = project.getCurrency();
             else if (!currency.equals(project.getCurrency())) {
@@ -232,7 +224,19 @@ public class InvoiceService {
                         "Projects have mixed currencies; cannot combine on a single invoice.");
             }
 
-            lines.add(new EligibleLine(project, entries, hours, rate, lineTotal));
+            Map<BigDecimal, List<TimeEntry>> entriesByRate = entries.stream()
+                    .collect(Collectors.groupingBy(e -> e.getRate().stripTrailingZeros(),
+                            LinkedHashMap::new, Collectors.toList()));
+            for (var rateGroup : entriesByRate.entrySet()) {
+                int totalMinutes = rateGroup.getValue().stream()
+                        .mapToInt(e -> TimeEntryService.minutesFor(e, now))
+                        .sum();
+                BigDecimal hours = BigDecimal.valueOf(totalMinutes)
+                        .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+                BigDecimal rate = rateGroup.getKey();
+                lines.add(new EligibleLine(project, rateGroup.getValue(), hours, rate,
+                        TimeEntryService.valueOf(totalMinutes, rate)));
+            }
         }
 
         // Billable expenses for this client in the period.

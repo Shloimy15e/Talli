@@ -29,7 +29,7 @@ public class ProjectService {
         BigDecimal billedToDate = invoiceItemRepository.sumTotalByProjectId(projectId);
 
         TimeEntryService.ProjectTimeTotals timeTotals =
-                timeEntryService.totalsForProject(projectId, project.hourlyRate());
+                timeEntryService.totalsForProject(projectId);
         long invoiceCount = invoiceItemRepository.findInvoicesByProjectId(projectId).size();
 
         BigDecimal unbilledValue = null;

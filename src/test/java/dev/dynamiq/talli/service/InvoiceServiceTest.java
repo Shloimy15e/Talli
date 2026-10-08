@@ -235,6 +235,33 @@ class InvoiceServiceTest {
     }
 
     @Test
+    void generateForClient_groupsByCapturedRateAfterProjectRateChanges() {
+        Project p = hourlyProject(10L, "Alpha", "USD", "100");
+        TimeEntry oldRate = entry(p, LocalDateTime.of(2026, 4, 5, 9, 0), 60);
+        p.setCurrentRate(new BigDecimal("150.00"));
+        TimeEntry newRate = entry(p, LocalDateTime.of(2026, 4, 6, 9, 0), 60);
+        TimeEntry sameRate = entry(p, LocalDateTime.of(2026, 4, 7, 9, 0), 30);
+        sameRate.setRate(new BigDecimal("150"));
+        p.setCurrentRate(new BigDecimal("200.00"));
+        when(clientRepository.findById(1L)).thenReturn(Optional.of(client));
+        when(projectRepository.findByClientId(1L)).thenReturn(List.of(p));
+        when(invoiceRepository.findAll()).thenReturn(List.of());
+        stubEntriesFor(p.getId(), List.of(oldRate, newRate, sameRate));
+
+        Invoice invoice = service.generateForClient(1L,
+                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), null);
+
+        assertThat(invoice.getAmount()).isEqualByComparingTo("325.00");
+        var items = org.mockito.ArgumentCaptor.forClass(InvoiceItem.class);
+        verify(invoiceItemRepository, times(2)).save(items.capture());
+        assertThat(items.getAllValues().get(0).getUnitPrice()).isEqualByComparingTo("100");
+        assertThat(items.getAllValues().get(1).getUnitPrice()).isEqualByComparingTo("150");
+        assertThat(oldRate.getInvoiceItem()).isSameAs(items.getAllValues().get(0));
+        assertThat(newRate.getInvoiceItem()).isSameAs(items.getAllValues().get(1));
+        assertThat(sameRate.getInvoiceItem()).isSameAs(items.getAllValues().get(1));
+    }
+
+    @Test
     void generateForClient_setsInvoiceNotes() {
         LocalDate periodStart = LocalDate.of(2026, 4, 1);
         LocalDate periodEnd = LocalDate.of(2026, 4, 30);
@@ -367,6 +394,7 @@ class InvoiceServiceTest {
     private TimeEntry entry(Project project, LocalDateTime startedAt, int durationMinutes) {
         TimeEntry e = new TimeEntry();
         e.setProject(project);
+        e.setRate(project.getCurrentRate());
         e.setStartedAt(startedAt);
         e.setEndedAt(startedAt.plusMinutes(durationMinutes));
         e.setDurationMinutes(durationMinutes);

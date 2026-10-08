@@ -1,6 +1,7 @@
 package dev.dynamiq.talli.model;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,6 +15,9 @@ public class TimeEntry {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
+
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal rate;
 
     @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;
@@ -49,6 +53,9 @@ public class TimeEntry {
 
     @PrePersist
     void onCreate() {
+        if (rate == null && project != null) {
+            rate = project.getCurrentRate();
+        }
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
         if (durationMinutes == null && startedAt != null && endedAt != null) {
@@ -92,6 +99,14 @@ public class TimeEntry {
 
     public void setProject(Project project) {
         this.project = project;
+    }
+
+    public BigDecimal getRate() {
+        return rate;
+    }
+
+    public void setRate(BigDecimal rate) {
+        this.rate = rate;
     }
 
     public LocalDateTime getStartedAt() {

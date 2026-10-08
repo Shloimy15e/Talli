@@ -90,7 +90,8 @@ public class ApiTimeController {
                 toEpochMillisNullable(e.getEndedAt()),
                 e.getDurationMinutes(),
                 e.getDescription(),
-                e.getBillable()
+                e.getBillable(),
+                e.getRate()
         );
     }
 }

@@ -1,5 +1,7 @@
 package dev.dynamiq.talli.controller.api.dto;
 
+import java.math.BigDecimal;
+
 public record TimeEntryResponse(
         Long id,
         Long projectId,
@@ -10,5 +12,6 @@ public record TimeEntryResponse(
         Long endedAt,
         Integer durationMinutes,
         String description,
-        Boolean billable
+        Boolean billable,
+        BigDecimal rate
 ) {}

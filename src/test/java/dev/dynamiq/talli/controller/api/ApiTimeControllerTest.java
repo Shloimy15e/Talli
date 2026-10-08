@@ -90,6 +90,7 @@ class ApiTimeControllerTest {
         assertThat(body.id()).isEqualTo(5L);
         assertThat(body.projectName()).isEqualTo("Website Redesign");
         assertThat(body.description()).isEqualTo("coding");
+        assertThat(body.rate()).isEqualByComparingTo("125.00");
         assertThat(body.endedAt()).isNull();
     }
 
@@ -155,6 +156,7 @@ class ApiTimeControllerTest {
         TimeEntry e = new TimeEntry();
         e.setId(id);
         e.setProject(proj);
+        e.setRate(new java.math.BigDecimal("125.00"));
         e.setStartedAt(start);
         e.setEndedAt(end);
         e.setBillable(true);

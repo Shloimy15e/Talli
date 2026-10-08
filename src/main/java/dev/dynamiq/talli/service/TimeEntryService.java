@@ -82,6 +82,9 @@ public class TimeEntryService {
     private void applyFields(TimeEntry entry, Long projectId, LocalDateTime startedAt,
                              LocalDateTime endedAt, String description, Boolean billable) {
         var project = projectRepository.findById(projectId).orElseThrow();
+        if (entry.getProject() == null || !projectId.equals(entry.getProject().getId())) {
+            entry.setRate(project.getCurrentRate());
+        }
         entry.setProject(project);
         entry.setStartedAt(startedAt);
         entry.setEndedAt(endedAt);
@@ -137,7 +140,7 @@ public class TimeEntryService {
             // by hours produces a meaningless "value". Skip them from the $ tallies.
             if (Boolean.TRUE.equals(e.getBillable()) && e.getProject() != null
                     && e.getProject().isHourly()) {
-                BigDecimal value = valueOf(m, e.getProject().getCurrentRate());
+                BigDecimal value = valueOf(m, e.getRate());
                 String currency = e.getProject().getCurrency();
                 entryValues.put(e.getId(), value);
                 entryCurrencies.put(e.getId(), currency);
@@ -165,7 +168,7 @@ public class TimeEntryService {
                                     && e.getProject() != null
                                     && e.getProject().isHourly())
                             .map(e -> exchangeRateService.toUsdCurrent(
-                                    valueOf(minutesFor(e, now), e.getProject().getCurrentRate()),
+                                    valueOf(minutesFor(e, now), e.getRate()),
                                     e.getProject().getCurrency()))
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
                     return new DayGroup(en.getKey(), en.getValue(), dayMinutes, dayValueUsd);
@@ -179,14 +182,14 @@ public class TimeEntryService {
     /** Unbilled dollar value + entry count for a single project's time entries.
      *  Only hourly projects have meaningful time-based $ value; for fixed/retainer
      *  the caller should use contractAmount/retainerMonthlyFee instead. */
-    public ProjectTimeTotals totalsForProject(Long projectId, BigDecimal rate) {
+    public ProjectTimeTotals totalsForProject(Long projectId) {
         List<TimeEntry> entries = timeEntryRepository.findByProjectIdOrderByStartedAtDesc(projectId);
         LocalDateTime now = LocalDateTime.now();
-        int unbilledMinutes = entries.stream()
+        BigDecimal unbilledValue = entries.stream()
                 .filter(TimeEntry::isUnbilled)
-                .mapToInt(e -> minutesFor(e, now))
-                .sum();
-        return new ProjectTimeTotals(valueOf(unbilledMinutes, rate), entries.size());
+                .map(e -> valueOf(minutesFor(e, now), e.getRate()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new ProjectTimeTotals(unbilledValue, entries.size());
     }
 
     public record ProjectTimeTotals(BigDecimal unbilledValue, long entryCount) {}
