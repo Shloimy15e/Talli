@@ -52,6 +52,7 @@ public class ApiProjectController {
         p.setClient(clientRepository.findById(req.clientId()).orElseThrow());
         p.setRateType(req.rateType() != null ? req.rateType() : "hourly");
         p.setCurrentRate(req.currentRate());
+        p.applyInitialRate();
         p.setCurrency(req.currency() != null ? req.currency() : "USD");
         p.setBillingFrequency(req.billingFrequency());
         p.setBillable(req.billable() != null ? req.billable() : true);

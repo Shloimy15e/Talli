@@ -6,7 +6,7 @@
     <div th:fragment="form(project, action, title, clients, sows)"
          th:replace="~{fragments/modal :: shell(${title}, 'max-w-lg', ~{::#body})}">
       <div id="body"
-           th:attr="x-data='{ rateType: ' + '&quot;' + (${project.rateType} ?: 'hourly') + '&quot;' + ' }'">
+           th:attr="x-data='{ rateType: ' + '&quot;' + (${project.rateType} ?: 'hourly') + '&quot;' + ', newProject: ' + (${project.id == null}) + ', clientDefaultRate: ' + '&quot;&quot;' + ' }'">
         <form
           th:action="@{${action}(_csrf=${_csrf.token})}"
           th:object="${project}"
@@ -24,6 +24,8 @@
             <select
               id="client"
               name="clientId"
+              x-init="clientDefaultRate = $el.selectedOptions[0]?.dataset.defaultHourlyRate || ''"
+              @change="clientDefaultRate = $el.selectedOptions[0]?.dataset.defaultHourlyRate || ''"
               required
               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent"
             >
@@ -33,6 +35,7 @@
               <option
                 th:each="c : ${clients}"
                 th:value="${c.id}"
+                th:attr="data-default-hourly-rate=${c.defaultHourlyRate}"
                 th:text="${c.name}"
                 th:selected="${project.client != null and project.client.id == c.id}"
               >
@@ -106,12 +109,18 @@
                 step="0.01"
                 id="currentRate"
                 th:field="*{currentRate}"
-                required
-                placeholder="0.00"
+                min="0"
+                :required="!newProject || rateType !== 'hourly' || clientDefaultRate === ''"
+                :placeholder="newProject &amp;&amp; rateType === 'hourly' &amp;&amp; clientDefaultRate !== '' ? clientDefaultRate : '0.00'"
                 class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-ui-accent/30 focus:border-ui-accent"
               />
             </div>
           </div>
+
+          <p x-show="newProject &amp;&amp; rateType === 'hourly' &amp;&amp; clientDefaultRate !== ''"
+             x-cloak class="text-[11px] text-slate-400">
+            Leave Rate blank to use the client's default hourly rate in the selected currency.
+          </p>
 
           <!-- Billing — same slot, contents swap without layout jump. -->
           <div class="relative h-[70px]">

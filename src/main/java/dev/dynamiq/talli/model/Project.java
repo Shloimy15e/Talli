@@ -99,6 +99,7 @@ public class Project implements HasMedia {
 
     @PrePersist
     void onCreate() {
+        applyInitialRate();
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
@@ -177,6 +178,21 @@ public class Project implements HasMedia {
 
     public String getNotes() {
         return notes;
+    }
+
+    /** Resolve a new project's rate once, retaining explicit rates including zero. */
+    public void applyInitialRate() {
+        if (currentRate == null && isHourly() && client != null) {
+            currentRate = client.getDefaultHourlyRate();
+        }
+        if (currentRate == null) {
+            throw new IllegalArgumentException(isHourly()
+                    ? "Enter a project rate or set the client's default hourly rate."
+                    : "Enter the project's contract amount or retainer fee.");
+        }
+        if (currentRate.signum() < 0) {
+            throw new IllegalArgumentException("Project rate must be zero or greater.");
+        }
     }
 
     public void setNotes(String notes) {

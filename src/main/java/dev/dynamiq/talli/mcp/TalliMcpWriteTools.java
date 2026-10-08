@@ -84,7 +84,8 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Optional phone number", required = false) String phone,
             @McpToolParam(description = "Optional billing address", required = false) String billingAddress,
             @McpToolParam(description = "Payment terms in days; defaults to 30", required = false) Integer paymentTermsDays,
-            @McpToolParam(description = "Optional internal notes", required = false) String notes) {
+            @McpToolParam(description = "Optional internal notes", required = false) String notes,
+            @McpToolParam(description = "Optional default rate for new hourly projects, zero or greater", required = false) BigDecimal defaultHourlyRate) {
         String clientName = requireText(name, "name");
         clients.findByNameIgnoreCase(clientName).ifPresent(existing -> {
             throw new IllegalArgumentException("Client already exists with ID " + existing.getId());
@@ -95,6 +96,10 @@ public class TalliMcpWriteTools {
         }
 
         Client client = new Client();
+        if (defaultHourlyRate != null && defaultHourlyRate.signum() < 0) {
+            throw new IllegalArgumentException("default_hourly_rate must be zero or greater");
+        }
+        client.setDefaultHourlyRate(defaultHourlyRate);
         client.setName(clientName);
         client.setEmail(emptyToNull(email));
         client.setPhone(emptyToNull(phone));
@@ -118,10 +123,17 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Optional billing address; blank clears it", required = false) String billingAddress,
             @McpToolParam(description = "Optional tax ID; blank clears it", required = false) String taxId,
             @McpToolParam(description = "Optional internal notes; blank clears them", required = false) String notes,
-            @McpToolParam(description = "Optional payment terms in days, 0-365", required = false) Integer paymentTermsDays) {
+            @McpToolParam(description = "Optional payment terms in days, 0-365", required = false) Integer paymentTermsDays,
+            @McpToolParam(description = "Default rate for future hourly projects; omitted keeps it unchanged", required = false) BigDecimal defaultHourlyRate,
+            @McpToolParam(description = "Set true to clear the default hourly rate", required = false) Boolean clearDefaultHourlyRate) {
         if (clientId == null) throw new IllegalArgumentException("client_id is required");
         Client client = clients.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found: " + clientId));
+        if (defaultHourlyRate != null && (defaultHourlyRate.signum() < 0 || Boolean.TRUE.equals(clearDefaultHourlyRate))) {
+            throw new IllegalArgumentException("Supply a nonnegative default_hourly_rate or clear it, separately");
+        }
+        if (Boolean.TRUE.equals(clearDefaultHourlyRate)) client.setDefaultHourlyRate(null);
+        else if (defaultHourlyRate != null) client.setDefaultHourlyRate(defaultHourlyRate);
         if (name != null) {
             String clientName = requireText(name, "name");
             clients.findByNameIgnoreCase(clientName)
@@ -146,7 +158,7 @@ public class TalliMcpWriteTools {
     }
 
     @McpTool(name = "create_project", title = "Create a project",
-            description = "Create an active project for an existing client. rateType must be hourly, fixed, or retainer.",
+            description = "Create an active project for an existing client. rateType must be hourly, fixed, or retainer. Omit currentRate on hourly projects to inherit the client's default hourly rate. Fixed and retainer projects require currentRate.",
             annotations = @McpTool.McpAnnotations(title = "Create a project", readOnlyHint = false,
                     destructiveHint = false, idempotentHint = false, openWorldHint = false))
     @PreAuthorize("hasAuthority('manage-projects')")
@@ -155,7 +167,7 @@ public class TalliMcpWriteTools {
             @McpToolParam(description = "Project name", required = true) String name,
             @McpToolParam(description = "Existing client ID", required = true) Long clientId,
             @McpToolParam(description = "hourly, fixed, or retainer", required = true) String rateType,
-            @McpToolParam(description = "Hourly rate, fixed contract amount, or monthly retainer amount", required = true) BigDecimal currentRate,
+            @McpToolParam(description = "Hourly rate (omit to use client default), fixed contract amount, or monthly retainer amount", required = false) BigDecimal currentRate,
             @McpToolParam(description = "Three-letter currency code; defaults to USD", required = false) String currency,
             @McpToolParam(description = "Optional billing frequency", required = false) String billingFrequency,
             @McpToolParam(description = "Whether work is billable; defaults to true", required = false) Boolean billable,
@@ -171,15 +183,12 @@ public class TalliMcpWriteTools {
         if (!RATE_TYPES.contains(type)) {
             throw new IllegalArgumentException("rate_type must be hourly, fixed, or retainer");
         }
-        if (currentRate == null || currentRate.signum() < 0) {
-            throw new IllegalArgumentException("current_rate must be zero or greater");
-        }
-
         Project project = new Project();
         project.setName(projectName);
         project.setClient(client);
         project.setRateType(type);
         project.setCurrentRate(currentRate);
+        project.applyInitialRate();
         project.setCurrency(currency(currency));
         project.setBillingFrequency(emptyToNull(billingFrequency));
         project.setBillable(billable == null || billable);

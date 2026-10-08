@@ -16,6 +16,8 @@ import dev.dynamiq.talli.service.ClientService;
 import dev.dynamiq.talli.service.PdfService;
 import dev.dynamiq.talli.service.ReminderService;
 import dev.dynamiq.talli.service.TimeEntryService;
+import jakarta.validation.Valid;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -162,14 +164,23 @@ public class ClientController {
 
     // Create
     @PostMapping
-    public String create(@ModelAttribute Client client) {
+    public String create(@Valid @ModelAttribute Client client, BindingResult binding, RedirectAttributes flash) {
+        if (binding.hasErrors()) {
+            flash.addFlashAttribute("error", defaultRateError(binding));
+            return "redirect:/clients";
+        }
         clientRepository.save(client);
         return "redirect:/clients";
     }
 
     // Update
     @PostMapping("/{id}")
-    public String update(@PathVariable Long id, @ModelAttribute Client client) {
+    public String update(@PathVariable Long id, @Valid @ModelAttribute Client client,
+                         BindingResult binding, RedirectAttributes flash) {
+        if (binding.hasErrors()) {
+            flash.addFlashAttribute("error", defaultRateError(binding));
+            return "redirect:/clients";
+        }
         Client existing = clientRepository.findById(id).orElseThrow();
         existing.setName(client.getName());
         existing.setEmail(client.getEmail());
@@ -178,10 +189,20 @@ public class ClientController {
         existing.setTaxId(client.getTaxId());
         existing.setNotes(client.getNotes());
         existing.setPaymentTermsDays(client.getPaymentTermsDays());
+        existing.setDefaultHourlyRate(client.getDefaultHourlyRate());
         existing.setRemindersEnabled(client.getRemindersEnabled() != null ? client.getRemindersEnabled() : true);
         existing.setReminderIntervalDays(client.getReminderIntervalDays());
         clientRepository.save(existing);
         return "redirect:/clients";
+    }
+
+    private String defaultRateError(BindingResult binding) {
+        var error = binding.getFieldError("defaultHourlyRate");
+        if (error == null) {
+            return "Enter valid client details.";
+        }
+        return !error.isBindingFailure() ? error.getDefaultMessage()
+                : "Enter a valid default hourly rate of zero or greater.";
     }
 
     // Statement PDF — streams directly to browser as download.

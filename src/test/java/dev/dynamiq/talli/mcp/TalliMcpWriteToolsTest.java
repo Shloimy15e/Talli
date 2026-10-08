@@ -43,6 +43,38 @@ import static org.mockito.Mockito.when;
 
 class TalliMcpWriteToolsTest {
 
+    @Test
+    void clientDefaultCanBeCreatedUpdatedPreservedAndCleared() {
+        when(clients.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        var created = tools.createClient("Acme", null, null, null, null, null, new BigDecimal("125"));
+        assertThat(created.defaultHourlyRate()).isEqualByComparingTo("125");
+        Client client = client(1L, "Acme");
+        client.setDefaultHourlyRate(new BigDecimal("125"));
+        when(clients.findById(1L)).thenReturn(Optional.of(client));
+        var preserved = tools.updateClient(1L, null, null, null, null, null, null, null, null, null);
+        assertThat(preserved.defaultHourlyRate()).isEqualByComparingTo("125");
+        var updated = tools.updateClient(1L, null, null, null, null, null, null, null, new BigDecimal("150"), null);
+        assertThat(updated.defaultHourlyRate()).isEqualByComparingTo("150");
+        var cleared = tools.updateClient(1L, null, null, null, null, null, null, null, null, true);
+        assertThat(cleared.defaultHourlyRate()).isNull();
+        assertThatThrownBy(() -> tools.createClient("Negative", null, null, null, null, null, new BigDecimal("-1")))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void createProjectInheritsHourlyDefaultAndPreservesExplicitRate() {
+        Client client = client(1L, "Acme");
+        client.setDefaultHourlyRate(new BigDecimal("125"));
+        when(clients.findById(1L)).thenReturn(Optional.of(client));
+        when(projects.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        assertThat(tools.createProject("Inherited", 1L, "hourly", null, null, null, true, null).currentRate())
+                .isEqualByComparingTo("125");
+        assertThat(tools.createProject("Override", 1L, "hourly", BigDecimal.ZERO, null, null, true, null).currentRate())
+                .isEqualByComparingTo("0");
+        assertThatThrownBy(() -> tools.createProject("Fixed", 1L, "fixed", null, null, null, true, null))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     private ClientRepository clients;
     private ProjectRepository projects;
     private TimeEntryRepository timeEntries;

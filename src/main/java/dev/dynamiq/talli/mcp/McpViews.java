@@ -23,7 +23,7 @@ public final class McpViews {
     public static ClientView client(Client client) {
         return new ClientView(client.getId(), client.getName(), client.getEmail(), client.getPhone(),
                 client.getBillingAddress(), client.getPaymentTermsDays(), client.getNotes(),
-                client.getCreatedAt(), client.getUpdatedAt());
+                client.getCreatedAt(), client.getUpdatedAt(), client.getDefaultHourlyRate());
     }
 
     public static ProjectView project(Project project) {
@@ -130,7 +130,7 @@ public final class McpViews {
 
     public record ClientView(Long id, String name, String email, String phone,
                              String billingAddress, Integer paymentTermsDays, String notes,
-                             LocalDateTime createdAt, LocalDateTime updatedAt) {}
+                             LocalDateTime createdAt, LocalDateTime updatedAt, BigDecimal defaultHourlyRate) {}
 
     public record ProjectView(Long id, String name, Long clientId, String clientName,
                               String rateType, BigDecimal currentRate, String currency,

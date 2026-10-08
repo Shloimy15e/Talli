@@ -44,12 +44,13 @@ public class ApiClientController {
         c.setName(req.name());
         c.setEmail(req.email());
         c.setPhone(req.phone());
+        c.setDefaultHourlyRate(req.defaultHourlyRate());
         c.setPaymentTermsDays(req.paymentTermsDays() != null ? req.paymentTermsDays() : 30);
         clientRepository.save(c);
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(c));
     }
 
     private ClientResponse toResponse(Client c) {
-        return new ClientResponse(c.getId(), c.getName(), c.getEmail(), c.getPhone(), c.getPaymentTermsDays());
+        return new ClientResponse(c.getId(), c.getName(), c.getEmail(), c.getPhone(), c.getPaymentTermsDays(), c.getDefaultHourlyRate());
     }
 }

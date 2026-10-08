@@ -116,9 +116,16 @@ public class ProjectController {
     public String create(@ModelAttribute Project project,
                          @RequestParam Long clientId,
                          @RequestParam(required = false) String githubRepoUrl,
-                         @RequestParam(value = "sow", required = false) MultipartFile sow) {
+                         @RequestParam(value = "sow", required = false) MultipartFile sow,
+                         RedirectAttributes flash) {
         Client client = clientRepository.findById(clientId).orElseThrow();
         project.setClient(client);
+        try {
+            project.applyInitialRate();
+        } catch (IllegalArgumentException e) {
+            flash.addFlashAttribute("error", e.getMessage());
+            return "redirect:/projects";
+        }
         project.setWebsiteEnabled(Boolean.TRUE.equals(project.getWebsiteEnabled()));
         websiteProjectService.applySettings(project, project, githubRepoUrl);
         project = projectRepository.save(project);

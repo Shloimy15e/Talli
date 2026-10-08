@@ -14,6 +14,11 @@ import java.util.NoSuchElementException;
 @RestControllerAdvice(basePackages = "dev.dynamiq.talli.controller.api")
 public class ApiExceptionHandler {
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidRequest(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(new ApiErrorResponse(ex.getMessage(), null));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         Map<String, String> fieldErrors = new LinkedHashMap<>();

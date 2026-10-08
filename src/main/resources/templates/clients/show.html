@@ -50,6 +50,9 @@
             <div class="text-right text-sm shrink-0">
                 <p class="text-xs text-slate-400">Payment terms</p>
                 <p class="font-medium" th:text="'Net ' + ${client.paymentTermsDays}">Net 30</p>
+                <p class="text-xs text-slate-400 mt-2">Default hourly rate</p>
+                <p class="font-medium tabular-nums"
+                   th:text="${client.defaultHourlyRate != null ? #numbers.formatDecimal(client.defaultHourlyRate, 1, 'COMMA', 2, 'POINT') + ' / h' : 'Not set'}">Not set</p>
                 <p class="text-xs text-slate-400 mt-2">Client since</p>
                 <p class="tabular-nums">
                   <span th:replace="~{fragments/_time :: datetime(${client.createdAt}, 'date')}"></span>

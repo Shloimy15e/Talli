@@ -85,8 +85,8 @@ List tools return up to 100 records per call. Use `offset` to continue through a
 
 Write tools:
 
-- `create_client`, `update_client`
-- `create_project`, `update_project`
+- `create_client`, `update_client`: accept optional `defaultHourlyRate` for future hourly projects. `update_client` preserves an omitted default; `clearDefaultHourlyRate=true` clears it.
+- `create_project`, `update_project`: `create_project` inherits the client's default hourly rate when `currentRate` is omitted for an hourly project. Explicit rates take precedence; fixed projects and retainers require their own amount. Existing projects retain their rates when the client default changes.
 - `log_time`, `start_timer`, `stop_timer`, `update_time_entry`, `delete_time_entry`
 - `log_expense`, `update_expense`, `delete_expense`
 - `create_subscription`, `update_subscription`, `delete_subscription`, `cancel_subscription`, `reactivate_subscription`

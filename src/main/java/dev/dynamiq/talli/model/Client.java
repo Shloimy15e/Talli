@@ -1,6 +1,8 @@
 package dev.dynamiq.talli.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMin;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -30,6 +32,10 @@ public class Client {
     /** Net-X payment terms in days. Used to compute invoice due date at generation time. */
     @Column(name = "payment_terms_days", nullable = false)
     private Integer paymentTermsDays = 30;
+
+    @DecimalMin(value = "0", message = "Default hourly rate must be zero or greater.")
+    @Column(name = "default_hourly_rate", precision = 10, scale = 2)
+    private BigDecimal defaultHourlyRate;
 
     @Column(name = "reminders_enabled", nullable = false)
     private Boolean remindersEnabled = true;
@@ -117,6 +123,14 @@ public class Client {
 
     public Integer getPaymentTermsDays() {
         return paymentTermsDays;
+    }
+
+    public BigDecimal getDefaultHourlyRate() {
+        return defaultHourlyRate;
+    }
+
+    public void setDefaultHourlyRate(BigDecimal defaultHourlyRate) {
+        this.defaultHourlyRate = defaultHourlyRate;
     }
 
     public Boolean getRemindersEnabled() { return remindersEnabled; }

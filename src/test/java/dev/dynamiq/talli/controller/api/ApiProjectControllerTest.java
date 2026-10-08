@@ -16,6 +16,23 @@ import static org.mockito.Mockito.*;
 
 class ApiProjectControllerTest {
 
+    @Test
+    void createUsesClientDefaultWhenRateOmittedAndAcceptsExplicitOverride() {
+        Client client = new Client();
+        client.setDefaultHourlyRate(new java.math.BigDecimal("125.00"));
+        when(clientRepository.findById(1L)).thenReturn(java.util.Optional.of(client));
+        var captor = org.mockito.ArgumentCaptor.forClass(Project.class);
+
+        controller.create(new dev.dynamiq.talli.controller.api.dto.CreateProjectRequest(
+                "Inherited", 1L, null, null, null, null, true));
+        controller.create(new dev.dynamiq.talli.controller.api.dto.CreateProjectRequest(
+                "Override", 1L, "hourly", java.math.BigDecimal.ZERO, null, null, true));
+
+        verify(projectRepository, times(2)).save(captor.capture());
+        assertThat(captor.getAllValues().get(0).getCurrentRate()).isEqualByComparingTo("125");
+        assertThat(captor.getAllValues().get(1).getCurrentRate()).isEqualByComparingTo("0");
+    }
+
     private ProjectRepository projectRepository;
     private ClientRepository clientRepository;
     private TimeEntryRepository timeEntryRepository;
