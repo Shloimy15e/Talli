@@ -274,7 +274,7 @@
     </thead>
     <tbody>
         <tr th:each="item : ${items}">
-            <td th:text="${item.description ?: '—'}">Description</td>
+            <td th:text="${item.displayDescription ?: '—'}">Description</td>
             <td class="r">
                 <span th:text="${#numbers.formatDecimal(item.unitCount, 1, 'COMMA', 2, 'POINT')}">0.00</span>
                 <span th:if="${item.unit}" class="unit-suffix" th:text="${item.unit}">hr</span>

@@ -2,6 +2,8 @@ package dev.dynamiq.talli.model;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,6 +20,9 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "invoice_items")
 public class InvoiceItem {
+
+    private static final Pattern GENERATED_SCIENTIFIC_RATE = Pattern.compile(
+            "^(.+ — [+-]?\\d+(?:\\.\\d+)?h @ [A-Z]{3} )([+-]?\\d+(?:\\.\\d+)?[Ee][+-]?\\d+)(/hr)$");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -89,6 +94,17 @@ public class InvoiceItem {
 
     public String getDescription() {
         return description;
+    }
+
+    public String getDisplayDescription() {
+        if (description == null) {
+            return null;
+        }
+        Matcher matcher = GENERATED_SCIENTIFIC_RATE.matcher(description);
+        if (!matcher.matches()) {
+            return description;
+        }
+        return matcher.group(1) + new BigDecimal(matcher.group(2)).toPlainString() + matcher.group(3);
     }
 
     public void setDescription(String description) {

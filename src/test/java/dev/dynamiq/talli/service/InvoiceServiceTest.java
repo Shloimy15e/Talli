@@ -235,6 +235,25 @@ class InvoiceServiceTest {
     }
 
     @Test
+    void generateForClient_formatsHourlyRateWithoutScientificNotation() {
+        Project project = hourlyProject(10L, "Alpha", "USD", "80.00");
+        when(clientRepository.findById(1L)).thenReturn(Optional.of(client));
+        when(projectRepository.findByClientId(1L)).thenReturn(List.of(project));
+        when(invoiceRepository.findAll()).thenReturn(List.of());
+        stubEntriesFor(project.getId(),
+                List.of(entry(project, LocalDateTime.of(2026, 4, 5, 9, 0), 90)));
+
+        Invoice invoice = service.generateForClient(1L,
+                LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30), null);
+
+        var items = ArgumentCaptor.forClass(InvoiceItem.class);
+        verify(invoiceItemRepository).save(items.capture());
+        assertThat(items.getValue().getDescription()).isEqualTo("Alpha — 1.5h @ USD 80/hr");
+        assertThat(items.getValue().getUnitPrice()).isEqualByComparingTo("80.00");
+        assertThat(invoice.getAmount()).isEqualByComparingTo("120.00");
+    }
+
+    @Test
     void generateForClient_groupsByCapturedRateAfterProjectRateChanges() {
         Project p = hourlyProject(10L, "Alpha", "USD", "100");
         TimeEntry oldRate = entry(p, LocalDateTime.of(2026, 4, 5, 9, 0), 60);

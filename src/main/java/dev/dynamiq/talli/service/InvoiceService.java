@@ -264,7 +264,7 @@ public class InvoiceService {
             item.setProject(line.project());
             item.setDescription(line.project().getName() + " — "
                     + line.hours().stripTrailingZeros().toPlainString() + "h @ "
-                    + currency + " " + line.rate() + "/hr");
+                    + currency + " " + line.rate().toPlainString() + "/hr");
             item.setUnit("hr");
             item.setUnitCount(line.hours());
             item.setUnitPrice(line.rate());
