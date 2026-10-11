@@ -351,10 +351,10 @@ class AgentEmailServiceTest {
     }
 
     @Test
-    void sendsThreadedPreviewWithExactReplyHeaders() {
+    void sendsThreadedPreviewWithExactSavedSubjectAndReplyHeaders() {
         EmailThreadService.ReplyContext reply = new EmailThreadService.ReplyContext(22L, 1L,
                 "<parent@dynamiq.dev>", "<root@dynamiq.dev> <parent@dynamiq.dev>",
-                "Re: Invoice update", "billing@acme.test", "support@dynamiq.dev");
+                "Invoice update", "billing@acme.test", "support@dynamiq.dev");
         Email target = new Email();
         Client client = new Client();
         client.setId(7L);
@@ -370,10 +370,12 @@ class AgentEmailServiceTest {
 
         verify(threads).prepareOutgoing(any(Email.class), eq(22L), isNull());
         verify(emailService).sendMessage(eq(sender("billing@dynamiq.dev")), eq("billing@acme.test"),
-                eq(List.of("shloimy@dynamiq.dev")), eq(List.of()), eq("Re: Invoice update"),
+                eq(List.of("shloimy@dynamiq.dev")), eq(List.of()), eq("Invoice update"),
                 eq("Reply body"), isNull(), eq(List.of()),
                 eq(Map.of("In-Reply-To", "<parent@dynamiq.dev>",
                         "References", "<root@dynamiq.dev> <parent@dynamiq.dev>")));
+        assertThat(preview.subject()).isEqualTo("Invoice update");
+        assertThat(result.email().getSubject()).isEqualTo("Invoice update");
         assertThat(result.email().getMessageId()).isEqualTo("<message@dynamiq.dev>");
     }
 

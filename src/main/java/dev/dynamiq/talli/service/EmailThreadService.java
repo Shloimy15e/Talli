@@ -54,7 +54,7 @@ public class EmailThreadService {
         String senderHint = normalizeMailbox(replySenderHint(parent));
         return new ReplyContext(parent.getId(), rootId, parentMessageId,
                 parentMessageId == null ? null : appendReference(parent.getReferencesHeader(), parentMessageId),
-                parentMessageId == null ? parent.getSubject() : replySubject(parent.getSubject()), recipient, senderHint,
+                parent.getSubject(), recipient, senderHint,
                 replyAddresses(parent.getCc(), recipient, senderHint),
                 replyAddresses(parent.getBcc(), recipient, senderHint));
     }
@@ -192,12 +192,6 @@ public class EmailThreadService {
 
     private static Long rootId(Email email) {
         return email.getThreadRootId() != null ? email.getThreadRootId() : email.getId();
-    }
-
-    public static String replySubject(String subject) {
-        String value = subject == null ? "" : subject.trim();
-        value = value.replaceFirst("(?i)^(?:re:\\s*)+", "");
-        return value.isBlank() ? "Re:" : "Re: " + value;
     }
 
     public static String normalizeMessageId(String value) {

@@ -16,6 +16,24 @@ import static org.mockito.Mockito.when;
 class EmailThreadServiceTest {
 
     @Test
+    void threadedReplyPreservesTheExactSavedSubject() {
+        EmailRepository emails = mock(EmailRepository.class);
+        EmailThreadService service = new EmailThreadService(emails, mock(EmailMailboxStateRepository.class));
+        for (String subject : new String[]{"Billing question", "Re: Billing question",
+                "  re: RE: Billing question  ", "", null}) {
+            Email parent = email(9L, "in", "client@example.test", "support@dynamiq.dev",
+                    subject, "<parent@dynamiq.dev>");
+            when(emails.findById(9L)).thenReturn(Optional.of(parent));
+
+            var context = service.replyContext(9L);
+
+            assertThat(context.subject()).isEqualTo(subject);
+            assertThat(context.inReplyTo()).isEqualTo("<parent@dynamiq.dev>");
+            assertThat(context.referencesHeader()).isEqualTo("<parent@dynamiq.dev>");
+        }
+    }
+
+    @Test
     void replyContextUsesParentMessageIdAndKeepsRootAndDirectParentReferences() {
         EmailRepository emails = mock(EmailRepository.class);
         Email parent = email(9L, "in", "client@example.test", "support@dynamiq.dev,sales@dynamiq.dev",

@@ -150,14 +150,14 @@ class EmailControllerTest {
         when(emailRepository.findById(10L)).thenReturn(java.util.Optional.of(parent));
         when(threads.replyContext(10L)).thenReturn(new EmailThreadService.ReplyContext(
                 10L, 1L, "<parent@example.com>", "<root@example.com> <parent@example.com>",
-                "Re: Existing subject", "to@example.com", "billing@dynamiq.dev"));
+                "Existing subject", "to@example.com", "billing@dynamiq.dev"));
         when(emailService.sendMessage(any(), any(), any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(new EmailService.Result("", "provider-123", "<reply@provider.test>", sender.address()));
         String view = controller.send(null, null, "to@example.com", "Changed subject", "Reply", null,
                 null, null, null, null, null, null, 10L, new RedirectAttributesModelMap());
         assertThat(view).isEqualTo("redirect:/emails/99");
         verify(emailService).sendMessage(sender, "to@example.com", List.of(), List.of(),
-                "Re: Existing subject", "Reply", null, List.of(),
+                "Existing subject", "Reply", null, List.of(),
                 java.util.Map.of("In-Reply-To", "<parent@example.com>", "References", "<root@example.com> <parent@example.com>"));
         ArgumentCaptor<Email> saved = ArgumentCaptor.forClass(Email.class);
         verify(emailRepository, org.mockito.Mockito.times(2)).save(saved.capture());

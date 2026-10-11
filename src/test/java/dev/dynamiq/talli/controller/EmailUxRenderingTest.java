@@ -142,7 +142,7 @@ class EmailUxRenderingTest {
 
         assertThat(html)
                 .contains("name=\"replyToEmailId\"", "value=\"" + inbound.getId() + "\"")
-                .contains("value=\"customer@example.test\"", "value=\"Re: Pricing question\"")
+                .contains("value=\"customer@example.test\"", "value=\"Pricing question\"")
                 .contains("readonly=\"readonly\"")
                 .contains("data-sender=\"billing@dynamiq.dev\"");
     }
