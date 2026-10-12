@@ -76,7 +76,7 @@ class TalliMcpServerTest {
                 .extracting(tool -> tool.name())
                 .containsExactlyInAnyOrder(
                         "find_clients", "find_client_emails", "get_email_conversation", "find_projects", "find_time_entries", "find_expenses",
-                        "current_timer", "find_invoices", "get_invoice", "find_subscriptions", "run_report",
+                        "current_timer", "find_invoices", "get_invoice", "find_subscriptions", "run_report", "get_report_catalog", "build_report",
                         "create_client", "update_client", "create_project", "update_project",
                         "log_time", "start_timer", "stop_timer", "update_time_entry", "delete_time_entry",
                         "log_expense",
@@ -247,6 +247,39 @@ class TalliMcpServerTest {
         assertThat(saved.getResendId()).isEqualTo("standalone-provider-id");
         assertThat(saved.getThreadRootId()).isEqualTo(emailId);
         assertThat(emails.findConversation(emailId)).extracting(email -> email.getId()).containsExactly(emailId);
+    }
+
+    @Test
+    void structuredReportQueryWorksThroughMcpAndChecksReportPermission() throws Exception {
+        String token = tokenForRole("mcp-reporting");
+        Permission permission = new Permission();
+        permission.setName("view-reports");
+        entityManager.persist(permission);
+        Role role = roles.findByName("mcp-reporting").orElseThrow();
+        role.setPermissions(new java.util.HashSet<>(Set.of(permission)));
+        roles.saveAndFlush(role);
+        String request = """
+                {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"build_report","arguments":{"query":{
+                  "dataset":"invoices","from":"2026-01-01","to":"2026-12-31",
+                  "where":{"match":"all","filters":[{"field":"outstanding","operator":"eq","values":["true"]}],
+                    "groups":[{"match":"any","filters":[{"field":"currency","operator":"eq","values":["USD"]}]}]},
+                  "groupBy":["clientName"],"metrics":[{"field":"balance","function":"sum"}]
+                }}}}
+                """;
+        mockMvc.perform(post("/mcp").header("Authorization", "Bearer " + token)
+                        .header("MCP-Protocol-Version", "2025-06-18")
+                        .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+                        .contentType(MediaType.APPLICATION_JSON).content(request))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString())
+                        .contains("reportUrl", "sum_balance", "xlsxUrl"));
+        String deniedToken = tokenForRole("mcp-reporting-denied");
+        mockMvc.perform(post("/mcp").header("Authorization", "Bearer " + deniedToken)
+                        .header("MCP-Protocol-Version", "2025-06-18")
+                        .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+                        .contentType(MediaType.APPLICATION_JSON).content(request))
+                .andExpect(status().isOk())
+                .andExpect(result -> assertThat(result.getResponse().getContentAsString()).contains("Access Denied"));
     }
 
     private String tokenForRole(String roleName) {

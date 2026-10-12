@@ -1,0 +1,48 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{layout :: head('Report builder')}"></head>
+  <body th:replace="~{layout :: page('reports', ~{::section})}">
+    <section id="report-builder" class="report-builder"
+             th:attr="data-catalog=${reportCatalogJson},data-query=${initialReportQueryJson}">
+      <link rel="stylesheet" href="/css/report-builder.css" th:href="@{/css/report-builder.css}" />
+      <div class="rb-heading">
+        <div><h1 class="text-2xl font-semibold tracking-tight">Reports</h1><p class="text-sm text-slate-500 mt-1">Registers, collections, and summaries for your bookkeeping work.</p></div>
+        <a href="/reports/overview" th:href="@{/reports/overview}">Overview</a>
+      </div>
+      <div class="rb-workspace">
+      <aside class="rb-library" aria-label="Report library"><h2>Report library</h2><nav id="rb-library"></nav></aside>
+      <div class="rb-workbench">
+      <form id="rb-form">
+        <div class="rb-panel">
+          <div class="rb-mobile-picker"><label class="rb-preset">Report <select id="rb-preset"><option value="">Choose a report</option></select></label></div>
+          <div class="rb-report-context"><h2 id="rb-report-title">Custom report</h2><p id="rb-report-description" class="rb-hint">Choose a report from the library or adjust the settings below.</p><div id="rb-periods" class="rb-actions" aria-label="Quick date ranges"></div></div>
+          <div class="rb-setup">
+            <label>Records<select id="rb-dataset" required></select></label>
+            <label>From<input id="rb-from" type="date" /></label>
+            <label>Through<input id="rb-to" type="date" /></label>
+          </div>
+          <div class="rb-refinements">
+          <details><summary>Filters</summary><p class="rb-hint">Match all conditions for AND, or any condition for OR. Add a group to combine them.</p><div id="rb-filters"></div></details>
+          <details><summary>Columns <span id="rb-column-count"></span></summary><p class="rb-hint">Selected columns appear in the order shown below.</p><div id="rb-column-order" class="rb-column-order"></div><div id="rb-columns" class="rb-checkboxes"></div></details>
+          <details id="rb-summary"><summary>Group and summarize</summary><p class="rb-hint">Choose grouping fields and calculations to create a summary. Amounts are kept separate by currency.</p><div id="rb-groupby" class="rb-checkboxes"></div><div id="rb-metrics"></div><button id="rb-add-metric" type="button" class="rb-button">Add calculation</button></details>
+          <details><summary>Sort and page size</summary><div id="rb-sort"></div><button id="rb-add-sort" type="button" class="rb-button">Add sort</button><label class="rb-page-size">Rows per page<select id="rb-limit"><option>25</option><option>50</option><option>100</option><option>200</option></select></label></details>
+          </div>
+          <div class="rb-runbar"><button id="rb-run" type="submit" class="app-button-primary rb-primary">Run report</button><span id="rb-change-status" class="rb-hint">Run your report to view results.</span></div>
+        </div>
+      </form>
+      <p id="rb-error" class="rb-error" role="alert" hidden></p>
+      <div class="rb-panel rb-results" aria-busy="false">
+        <div class="rb-toolbar"><div><h2>Results</h2><p id="rb-result-count" class="rb-hint" aria-live="polite">Your report will appear here.</p></div><div class="rb-actions"><button id="rb-copy" type="button" class="rb-button" disabled>Copy link</button><button id="rb-csv" type="button" class="rb-button" disabled>Export CSV</button><button id="rb-xlsx" type="button" class="rb-button" disabled>Export Excel</button></div></div>
+        <div id="rb-totals" class="rb-totals"></div>
+        <div class="rb-drillbar"><p id="rb-applied" class="rb-hint"></p><button id="rb-back-summary" type="button" class="rb-button" hidden>Back to summary</button></div>
+        <div class="rb-table-wrap" tabindex="0" role="region" aria-label="Report results"><table id="rb-table"><thead></thead><tbody><tr><td class="rb-empty">Choose a report and select Run report.</td></tr></tbody></table></div>
+        <div class="rb-pagination"><button id="rb-previous" type="button" class="rb-button" disabled>Previous</button><span id="rb-page-count" class="rb-hint"></span><button id="rb-next" type="button" class="rb-button" disabled>Next</button></div>
+        <details class="rb-report-notes"><summary>About this report</summary><p id="rb-dataset-note" class="rb-hint"></p><div id="rb-notes" class="rb-notes"></div></details>
+      </div>
+      </div>
+      </div>
+      <noscript><p class="rb-error">Enable JavaScript to use the report builder.</p></noscript>
+      <script defer src="/js/report-builder.js" th:src="@{/js/report-builder.js}"></script>
+    </section>
+  </body>
+</html>

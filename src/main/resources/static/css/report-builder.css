@@ -1,0 +1,44 @@
+/* Report layout uses shared app.css control states, focus, checkboxes, badges, table typography and hover. */
+.report-builder { color:var(--ui-ink);font-size:14px }
+.rb-heading,.rb-toolbar,.rb-runbar,.rb-pagination { display:flex;align-items:center;justify-content:space-between;gap:16px }
+.rb-heading { margin-bottom:24px }.rb-heading a { color:var(--ui-accent-ink);font-size:13px }
+.rb-hint { color:var(--ui-muted);font-size:12px;line-height:1.6 }
+.rb-workspace { display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px;align-items:start }.rb-workbench { min-width:0 }
+.rb-library { position:sticky;top:20px;padding:16px 0 }.rb-library h2 { font-size:14px;font-weight:600;margin:0 12px 20px }.rb-library-group { margin-bottom:24px }.rb-library h3 { font-size:12px;font-weight:600;color:var(--ui-muted);margin:0 12px 8px }
+.rb-library .rb-library-link { display:block;width:100%;margin:3px 0;border:0;background:transparent;font-weight:400;line-height:1.4;text-align:left }.rb-library .rb-library-link:hover:not(:disabled) { background:var(--ui-hover) }.rb-library .rb-library-link.is-selected { background:var(--ui-selected);color:var(--ui-accent-ink);font-weight:600 }
+.rb-panel { overflow:hidden;margin-bottom:16px;border:1px solid var(--ui-line);border-radius:var(--ui-radius-lg);background:var(--ui-surface) }
+.rb-toolbar { padding:12px 16px;border-bottom:1px solid var(--ui-line) }.rb-toolbar h2 { font-size:16px;font-weight:600 }
+.rb-mobile-picker { display:none }.rb-preset { flex-direction:row!important;align-items:center;gap:8px!important }
+.rb-report-context { padding:16px 20px 0 }.rb-report-context h2 { font-size:20px;font-weight:600;letter-spacing:-.4px }.rb-report-context p { margin:4px 0 10px }
+.rb-actions { display:flex;flex-wrap:wrap;gap:8px }.rb-report-context #rb-periods .rb-button { min-height:30px;padding:5px 9px;font-size:12px }
+.rb-setup { display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;padding:12px 20px }
+.report-builder label { display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:500 }
+.report-builder :is(input:not([type=checkbox]),select) { max-width:100%;min-height:38px;padding:8px 10px;border-width:1px;font-size:13px;font-weight:400 }
+.rb-button { display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:8px 12px;border:1px solid var(--ui-line);border-radius:var(--ui-radius-md);background:var(--ui-surface);color:var(--ui-ink);font-size:13px;font-weight:500;cursor:pointer;transition:background-color var(--ui-state-duration) ease,color var(--ui-state-duration) ease,border-color var(--ui-state-duration) ease }
+.rb-button:hover:not(:disabled) { border-color:var(--ui-border-strong);background:var(--ui-hover) }.rb-button:disabled { background:var(--ui-subtle);border-color:var(--ui-line);color:var(--ui-disabled);cursor:not-allowed }
+/* Native primary button animation, with readable small text on the orange fill. */
+.rb-refinements { position:relative;display:flex;flex-wrap:wrap;border-top:1px solid var(--ui-line) }
+.report-builder details { padding:14px 20px;border-top:1px solid var(--ui-line) }.report-builder summary { padding:2px 0;font-size:13px;font-weight:500;cursor:pointer }.report-builder summary:hover { color:var(--ui-accent-ink) }.report-builder details[open]>summary { margin-bottom:12px }
+.rb-refinements>details { padding:10px 16px;border-top:0 }.rb-refinements>details[open] { flex-basis:100%;order:2;border-top:1px solid var(--ui-line);background:var(--ui-canvas) }
+.rb-checkboxes { display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin:12px 0 }.rb-checkboxes label { flex-direction:row;align-items:center;justify-content:flex-start;gap:9px;min-height:38px;padding:7px 0;font-weight:400;cursor:pointer }.rb-checkboxes input { flex:0 0 16px }
+.rb-filter-group { margin:12px 0;padding:12px;border-left:2px solid var(--ui-line);background:var(--ui-canvas) }.rb-filter-group .rb-filter-group { background:var(--ui-surface) }
+.rb-group-toolbar { display:flex;flex-wrap:wrap;align-items:center;gap:8px }.rb-group-toolbar label { flex-direction:row;align-items:center }
+.rb-filter-row,.rb-calculation-row,.rb-sort-row { display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;margin:12px 0 }:is(.rb-filter-row,.rb-calculation-row,.rb-sort-row)>label { flex:1;min-width:140px }
+.rb-values { display:flex;flex:2;flex-wrap:wrap;gap:8px }.rb-values label { flex:1;min-width:130px }.rb-value { display:flex;align-items:flex-end;gap:4px }.rb-value input { width:100% }.rb-remove { padding:9px;font-size:12px;white-space:nowrap }
+.rb-runbar { justify-content:flex-start;padding:10px 20px;border-top:1px solid var(--ui-line) }.rb-page-size { max-width:200px;margin-top:12px }
+.rb-column-order { display:flex;flex-wrap:wrap;gap:8px;margin-top:12px }.rb-column-chip { display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:var(--ui-radius-sm);background:var(--ui-subtle);font-size:12px }.rb-column-chip button { min-height:28px;padding:4px 6px;font-size:12px }
+.rb-error { margin:12px 0;padding:14px 16px;border:1px solid var(--ui-danger-line);border-radius:var(--ui-radius-md);background:var(--ui-danger-surface);color:var(--ui-danger) }
+.rb-table-wrap { overflow:auto;max-height:65vh }.report-builder table { width:max-content;min-width:100%;table-layout:auto;border-collapse:collapse }.report-builder :is(td,th) { min-width:90px;border-bottom:1px solid var(--ui-line);white-space:nowrap;overflow-wrap:normal;word-break:normal }.report-builder th { position:sticky;top:0;z-index:1;text-align:left }.report-builder .rb-number { text-align:right;font-variant-numeric:tabular-nums }.report-builder .rb-name { min-width:170px }.report-builder .rb-date { min-width:110px }.report-builder .rb-description { min-width:240px;max-width:360px;white-space:normal }.report-builder .rb-empty { padding:40px 20px;color:var(--ui-muted);white-space:normal;text-align:center }
+.rb-pagination { justify-content:flex-end;padding:12px 20px }.rb-drillbar { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px 10px }
+.rb-totals { display:flex;flex-wrap:wrap;gap:16px;padding:12px 20px;border-bottom:1px solid var(--ui-line);font-size:12px }.rb-totals:empty,.rb-notes:empty { display:none }.rb-total strong { display:block;margin-top:3px;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums }
+.report-builder .rb-report-notes { padding:10px 16px }.rb-notes { color:var(--ui-muted);font-size:12px;line-height:1.6 }.rb-notes p+p { margin-top:8px }.rb-report-notes #rb-dataset-note { display:none }
+/* Compatibility for original overview until its dedicated surface is integrated. */
+.rb-overview-nav { display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px }.rb-overview-nav a { padding:7px 11px;border:1px solid var(--ui-line);border-radius:var(--ui-radius-sm);background:var(--ui-surface);font-size:12px }.rb-overview-nav a:hover { background:var(--ui-hover) }.rb-overview h2[id] { scroll-margin-top:20px }.rb-overview table { width:100%;min-width:640px }
+@media(max-width:1000px) { .rb-workspace { grid-template-columns:180px minmax(0,1fr);gap:16px } }
+@media(max-width:760px) {
+ .rb-workspace { display:block }.rb-library { display:none }.rb-mobile-picker { display:block;padding:12px 14px;border-bottom:1px solid var(--ui-line) }
+ .rb-heading,.rb-toolbar { flex-direction:column;align-items:flex-start }.rb-preset { width:100% }.rb-preset select { flex:1;min-width:0 }
+ .rb-setup { grid-template-columns:1fr 1fr;padding:12px 14px }.rb-setup>label:first-child { grid-column:1/-1 }.rb-report-context { padding:16px 14px 0 }
+ .rb-button,.rb-report-context #rb-periods .rb-button { min-height:44px }.rb-refinements>details { padding:10px 12px }.rb-filter-group { padding:8px }.rb-filter-row>label { min-width:100% }.rb-values { flex-basis:100% }
+ .rb-runbar { flex-wrap:wrap;padding:10px 14px }.rb-drillbar { flex-direction:column;align-items:flex-start }.rb-pagination { justify-content:space-between;padding:12px 14px }
+}

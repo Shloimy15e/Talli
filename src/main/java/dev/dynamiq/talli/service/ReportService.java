@@ -46,7 +46,9 @@ public class ReportService {
 
     // --- Per-client P&L ---
 
+    /** USD totals; profit is invoiced revenue less expenses, while received includes direct cash only. */
     public List<ClientPL> clientProfitLoss(LocalDate from, LocalDate to) {
+        validateRange(from, to);
         Map<Long, BigDecimal> invoicedByClient = new HashMap<>();
         Map<Long, BigDecimal> receivedByClient = new HashMap<>();
         Map<Long, BigDecimal> expensesByClient = new HashMap<>();
@@ -63,6 +65,7 @@ public class ReportService {
         }
 
         for (Payment p : paymentRepository.findAll()) {
+            if (p.isFromCredit()) continue;
             if (p.getPaidAt() == null || p.getPaidAt().isBefore(from) || p.getPaidAt().isAfter(to)) continue;
             Long cid = p.getInvoice().getClient().getId();
             clientNames.putIfAbsent(cid, p.getInvoice().getClient().getName());
@@ -99,7 +102,9 @@ public class ReportService {
 
     // --- Monthly revenue summary ---
 
+    /** USD totals; net is direct cash received less expenses. */
     public List<MonthSummary> monthlyRevenue(int months) {
+        if (months < 1 || months > 120) throw new IllegalArgumentException("months must be between 1 and 120");
         LocalDate today = LocalDate.now();
         YearMonth startMonth = YearMonth.from(today).minusMonths(months - 1L);
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM yyyy");
@@ -122,6 +127,7 @@ public class ReportService {
         }
 
         for (Payment p : paymentRepository.findAll()) {
+            if (p.isFromCredit()) continue;
             if (p.getPaidAt() == null) continue;
             YearMonth ym = YearMonth.from(p.getPaidAt());
             BigDecimal usd = exchangeRateService.toUsd(p.getAmount(), p.getInvoice().getCurrency(), p.getExchangeRate());
@@ -211,6 +217,7 @@ public class ReportService {
     // --- Time utilization ---
 
     public TimeUtilization timeUtilization(LocalDate from, LocalDate to) {
+        validateRange(from, to);
         LocalDateTime now = LocalDateTime.now();
         int billableMinutes = 0;
         int nonBillableMinutes = 0;
@@ -267,12 +274,21 @@ public class ReportService {
 
     // --- Revenue by project ---
 
+    /** USD billed face value by invoice issue date; write-offs retain their historical billed amount. */
     public List<ProjectRevenue> revenueByProject(LocalDate from, LocalDate to) {
+        validateRange(from, to);
         LocalDateTime now = LocalDateTime.now();
         Map<Long, ProjectRevenue> byProject = new LinkedHashMap<>();
 
         for (Project p : projectRepository.findAll()) {
-            BigDecimal billed = invoiceItemRepository.sumTotalByProjectId(p.getId());
+            BigDecimal billed = invoiceItemRepository.findByProjectIdOrderByIdDesc(p.getId()).stream()
+                    .filter(item -> !"void".equals(item.getInvoice().getStatus()))
+                    .filter(item -> item.getInvoice().getIssuedAt() != null
+                            && !item.getInvoice().getIssuedAt().isBefore(from)
+                            && !item.getInvoice().getIssuedAt().isAfter(to))
+                    .map(item -> exchangeRateService.toUsd(item.getTotal(),
+                            item.getInvoice().getCurrency(), item.getInvoice().getExchangeRate()))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
             List<TimeEntry> entries = timeEntryRepository.findByProjectIdOrderByStartedAtDesc(p.getId());
 
             int totalMinutes = 0;
@@ -295,7 +311,7 @@ public class ReportService {
 
             byProject.put(p.getId(), new ProjectRevenue(
                     p.getId(), p.getName(), p.getClient().getName(),
-                    p.getRateType(), p.getCurrency(),
+                    p.getRateType(), "USD",
                     billed, totalMinutes, billableMinutes, effectiveRate));
         }
 
@@ -307,6 +323,7 @@ public class ReportService {
     // --- Expenses by category ---
 
     public List<CategoryExpense> expensesByCategory(LocalDate from, LocalDate to) {
+        validateRange(from, to);
         Map<String, BigDecimal> byCategory = new LinkedHashMap<>();
         Map<String, Integer> countByCategory = new LinkedHashMap<>();
 
@@ -336,6 +353,7 @@ public class ReportService {
     // --- Payment collection history ---
 
     public List<PaymentLine> paymentHistory(LocalDate from, LocalDate to) {
+        validateRange(from, to);
         return paymentRepository.findAll().stream()
                 .filter(p -> p.getPaidAt() != null && !p.getPaidAt().isBefore(from) && !p.getPaidAt().isAfter(to))
                 .sorted(Comparator.comparing(Payment::getPaidAt).reversed())
@@ -360,6 +378,12 @@ public class ReportService {
                             days, i.getCurrency(), i.getSentAt() != null);
                 })
                 .toList();
+    }
+
+    private static void validateRange(LocalDate from, LocalDate to) {
+        if (from == null || to == null || from.isAfter(to)) {
+            throw new IllegalArgumentException("from and to are required, and from must be on or before to");
+        }
     }
 
     // --- Records ---

@@ -100,6 +100,45 @@ There are no invoice-generation or money-movement tools. Each tool checks the ma
 
 `record_payment` requires a provider slug and that provider's stable transaction ID. Their combination is unique, allowing multiple bank accounts while making retries safe. The supplied currency must match the invoice, and Talli rejects overpayments through its existing payment service.
 
+## Detailed reports
+
+`get_report_catalog` and `build_report` share the Reports workspace's query engine. Both require `view-reports`, which is included in the existing bookkeeper role. The existing `run_report` tool continues to provide operational financial summaries.
+
+1. Discover datasets and fields with `get_report_catalog`.
+2. Call `build_report` with a structured `query`.
+3. Use the returned full-filter totals for summaries, or `nextOffset` to read another page.
+4. Give the user `reportUrl` to open the same editable report, or `csvUrl` / `xlsxUrl` for a full export.
+
+Example: group outstanding invoices by client and currency, sorted by balance:
+
+```json
+{
+  "query": {
+    "dataset": "invoices",
+    "from": "1900-01-01",
+    "to": "2026-10-13",
+    "where": {
+      "match": "all",
+      "filters": [{"field": "outstanding", "operator": "eq", "values": ["true"]}]
+    },
+    "groupBy": ["clientId", "clientName", "currency"],
+    "metrics": [{"field": "balance", "function": "sum"}],
+    "sort": [{"field": "sum_balance", "direction": "desc"}],
+    "limit": 50
+  }
+}
+```
+
+Resolve the desired dates when building a report. Dates are inclusive and default to year to date. Invoice filters apply to issue date; outstanding balances and aging describe the current state of those invoices. A report URL fixes its date range and query while results refresh from current records when opened. Browser and download links require the viewer's own authenticated report access.
+
+Datasets cover invoices, payments, expenses, and time entries. Queries support selected columns, nested `all` / `any` filter groups, grouping, calculations, and ordered sorts. Allowed operators are `eq`, `ne`, `in`, `contains`, `gte`, `lte`, `is_null`, and `is_not_null`. Calculations are `sum`, `count`, `avg`, `min`, and `max`, with result keys such as `sum_balance`. Native monetary calculations retain a currency grouping. The `amountUsd` field converts using stored exchange rates and per-record rounding. Totals cover all filtered records, even when only a page is returned.
+
+Payment `source=direct` represents invoice cash receipts; `source=credit` represents applied credit. This is operational billing data; formal accounting statements and a complete bank ledger require additional accounting records. Invoice/payment project filters select whole invoices containing a matching project, so those project fields are available only as filters. Time values use captured entry rates for completed billable hourly work; project currency and rate type reflect their current values.
+
+Queries allow 50 filters, nesting through three child levels, 30 calculations, and 1–500 rows per page. Shareable queries must fit within a 6,000-character encoded query string. Exports include all matching rows up to 50,000 and reject larger results with a request to narrow the report. Excel includes a frozen/filterable header, numeric cells, and a report-details sheet with dates, query, totals, and calculation notes. CSV preserves Unicode and escapes spreadsheet formula-like text.
+
+The Reports workspace is at `/reports`; `/reports/builder` opens the same workspace, and `/reports/overview` contains the operational overview. UI summary rows can drill into their underlying records while retaining the report's filters.
+
 ## Agent email
 
 Email is a two-step workflow:
