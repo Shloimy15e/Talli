@@ -12,125 +12,123 @@
         html, body { margin: 0; padding: 0; }
         body {
             font-family: Helvetica, Arial, sans-serif;
-            color: #1a1a1a;
+            color: #0f2a44;
             font-size: 10pt;
             line-height: 1.45;
         }
 
         /* Header */
-        .header { display: table; width: 100%; margin-bottom: 36pt; }
+        .header { display: table; width: 100%; margin-bottom: 20pt; }
         .header .left  { display: table-cell; vertical-align: top; width: 50%; }
         .header .right { display: table-cell; vertical-align: top; width: 50%; text-align: right; }
 
         .brand-row { border-collapse: collapse; }
-        .brand-row td { padding: 0; vertical-align: middle; }
-        .brand-row td.logo { padding-right: 8pt; width: 40pt; }
-        .brand-row img { display: block; width: 40pt; height: 40pt; }
+        .brand-row td { padding: 0; vertical-align: top; }
+        .brand-row td.logo { padding-top: 1pt; padding-right: 10pt; width: 34pt; }
+        .brand-row img { display: block; width: 34pt; height: 31pt; }
         .brand-name {
-            font-size: 16pt;
+            font-size: 13pt;
             font-weight: bold;
-            color: #161f30;
-            line-height: 1.1;
+            color: #0f2a44;
+            line-height: 1.2;
         }
         .brand-meta {
-            font-size: 8.5pt;
-            color: #555;
+            font-size: 8pt;
+            color: #6b7280;
+            line-height: 1.35;
             margin-top: 1pt;
         }
 
         .invoice-title {
-            font-size: 26pt;
+            font-size: 22pt;
             font-weight: bold;
-            color: #161f30;
-            letter-spacing: 2pt;
+            color: #0f2a44;
+            letter-spacing: 0.5pt;
             line-height: 1;
         }
         .invoice-ref {
             font-size: 11pt;
-            color: #333;
+            color: #0f2a44;
             margin-top: 6pt;
             font-variant-numeric: tabular-nums;
         }
 
         .pill {
             display: inline-block;
-            margin-top: 8pt;
-            padding: 2pt 10pt;
-            border-radius: 12pt;
+            margin-top: 6pt;
+            padding: 2pt 0;
             font-size: 8.5pt;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5pt;
         }
-        .pill-paid    { background: #dcfce7; color: #166534; }
-        .pill-overdue { background: #fee2e2; color: #991b1b; }
-        .pill-void    { background: #e5e7eb; color: #4b5563; }
-        .pill-unpaid  { background: #fff1e4; color: #ea7c28; }
+        .pill-paid    { color: #386545; }
+        .pill-overdue { color: #9e4033; }
+        .pill-void    { color: #6b7280; }
+        .pill-unpaid  { color: #6b7280; }
 
         /* Parties block */
-        .parties { display: table; width: 100%; margin-bottom: 28pt; border-collapse: collapse; }
+        .parties { display: table; width: 100%; margin-bottom: 16pt; border-collapse: collapse; }
         .parties .col {
             display: table-cell;
             vertical-align: top;
             width: 50%;
-            padding: 14pt 16pt;
+            padding: 6pt 8pt;
         }
-        .parties .col.bill-to { background: #f7f7f5; border-left: 3pt solid #ea7c28; }
-        .parties .col.dates   { padding-left: 20pt; }
+        .parties .col.dates   { padding-left: 16pt; }
 
         .block-label {
             font-size: 8pt;
-            letter-spacing: 1pt;
+            letter-spacing: 0.6pt;
             text-transform: uppercase;
             font-weight: bold;
-            color: #666;
-            margin-bottom: 6pt;
+            color: #6b7280;
+            margin-bottom: 4pt;
         }
         .party-name {
             font-size: 12pt;
             font-weight: bold;
-            color: #161f30;
+            color: #0f2a44;
             margin-bottom: 4pt;
         }
         .party-addr {
             font-size: 9.5pt;
-            color: #333;
+            color: #0f2a44;
             white-space: pre-wrap;
             margin-bottom: 4pt;
             line-height: 1.4;
         }
-        .party-meta { font-size: 9.5pt; color: #444; }
+        .party-meta { font-size: 9.5pt; color: #6b7280; }
 
         table.dates-table { width: 100%; border-collapse: collapse; }
         table.dates-table td {
-            padding: 3pt 0;
+            padding: 2pt 0;
             font-size: 10pt;
             vertical-align: top;
         }
         table.dates-table td.key {
-            color: #666;
+            color: #6b7280;
             width: 90pt;
         }
         table.dates-table td.val {
-            color: #1a1a1a;
+            color: #0f2a44;
             font-variant-numeric: tabular-nums;
         }
 
         /* Line items */
-        table.items { width: 100%; border-collapse: collapse; margin-bottom: 20pt; }
+        table.items { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }
         table.items thead th {
-            background: #161f30;
-            color: #fff;
+            background: #f1f5f9;
+            color: #0f2a44;
             text-align: left;
             font-size: 9pt;
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.6pt;
-            padding: 8pt 10pt;
+            padding: 6pt 8pt;
+            border-bottom: 0.5pt solid #e5e7eb;
         }
         table.items thead th.r { text-align: right; }
         table.items tbody td {
-            padding: 10pt;
+            padding: 7pt 8pt;
             border-bottom: 0.5pt solid #e5e7eb;
             vertical-align: top;
             font-size: 10pt;
@@ -140,20 +138,19 @@
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
         }
-        table.items tbody tr:nth-child(even) td { background: #fafaf9; }
-        .unit-suffix { color: #888; margin-left: 3pt; font-size: 9pt; }
+        .unit-suffix { color: #6b7280; margin-left: 3pt; font-size: 9pt; }
 
         /* Totals */
-        .totals-row { display: table; width: 100%; margin-bottom: 32pt; }
+        .totals-row { display: table; width: 100%; margin-bottom: 18pt; }
         .totals-row .left  { display: table-cell; width: 55%; vertical-align: top; padding-right: 20pt; }
         .totals-row .right { display: table-cell; width: 45%; vertical-align: top; }
 
         table.totals { width: 100%; border-collapse: collapse; }
         table.totals td {
-            padding: 6pt 10pt;
+            padding: 4pt 8pt;
             font-size: 10pt;
         }
-        table.totals td.lbl { text-align: right; color: #555; }
+        table.totals td.lbl { text-align: right; color: #6b7280; }
         table.totals td.val {
             text-align: right;
             font-variant-numeric: tabular-nums;
@@ -161,41 +158,37 @@
             width: 100pt;
         }
         table.totals tr.subtotal td { border-bottom: 0.5pt solid #e5e7eb; }
-        table.totals tr.paid td.val { color: #166534; }
+        table.totals tr.paid td.val { color: #386545; }
         table.totals tr.grand td {
-            background: #161f30;
-            color: #fff;
+            border-top: 0.5pt solid #94a3b8;
+            border-bottom: 0.5pt solid #94a3b8;
+            color: #0f2a44;
             font-weight: bold;
             font-size: 12pt;
-            padding: 10pt;
+            padding: 7pt 8pt;
         }
 
         /* Payment terms + notes */
         .foot-block {
-            padding: 14pt 16pt;
-            background: #f7f7f5;
-            border-radius: 4pt;
-            margin-bottom: 14pt;
+            padding: 8pt;
+            margin-bottom: 10pt;
         }
-        .foot-block p { margin: 0; font-size: 9.5pt; color: #333; line-height: 1.55; white-space: pre-wrap; }
+        .foot-block p { margin: 0; font-size: 9.5pt; color: #0f2a44; line-height: 1.55; white-space: pre-wrap; }
         .foot-block p + p { margin-top: 6pt; }
 
         .payment-block {
-            padding: 16pt;
-            background: #fff7ed;
-            border: 1pt solid #fed7aa;
-            border-left: 4pt solid #ea7c28;
-            margin-bottom: 18pt;
+            padding: 8pt;
+            margin-bottom: 12pt;
         }
-        .payment-block a { color: #c65f17; font-weight: bold; text-decoration: none; }
-        .payment-url { margin-top: 5pt; font-size: 8.5pt; color: #555; word-wrap: break-word; }
+        .payment-block a { color: #0f2a44; font-weight: bold; text-decoration: none; }
+        .payment-url { margin-top: 5pt; font-size: 8.5pt; color: #6b7280; word-wrap: break-word; }
 
         .footer {
-            margin-top: 20pt;
-            padding-top: 10pt;
+            margin-top: 14pt;
+            padding-top: 8pt;
             border-top: 0.5pt solid #e5e7eb;
             font-size: 8.5pt;
-            color: #888;
+            color: #6b7280;
             text-align: center;
         }
     </style>
@@ -208,7 +201,7 @@
         <table class="brand-row">
             <tr>
                 <td class="logo">
-                    <img src="dynamiq-logo.svg" width="40" height="40" alt="Dynamiq" />
+                    <img src="brand/dynamiq-icon.svg" width="34" height="31" alt="Dynamiq" />
                 </td>
                 <td>
                     <div class="brand-name" th:text="${businessName}">Dynamiq Solutions Inc</div>
@@ -283,7 +276,7 @@
             <td class="r" th:text="${#numbers.formatDecimal(item.total, 1, 'COMMA', 2, 'POINT')}">0.00</td>
         </tr>
         <tr th:if="${#lists.isEmpty(items)}">
-            <td colspan="4" style="text-align:center; padding:22pt 0; color:#888; font-style:italic;">No line items.</td>
+            <td colspan="4" style="text-align:center; padding:12pt 0; color:#6b7280; font-style:italic;">No line items.</td>
         </tr>
     </tbody>
 </table>
@@ -299,11 +292,11 @@
             </tr>
             <tr class="paid" th:if="${invoice.amountPaid != null and invoice.amountPaid.signum() > 0}">
                 <td class="lbl">Paid</td>
-                <td class="val" th:text="'− ' + ${#numbers.formatDecimal(invoice.amountPaid, 1, 'COMMA', 2, 'POINT')}">− 0.00</td>
+                <td class="val" th:text="'- ' + ${#numbers.formatDecimal(invoice.amountPaid, 1, 'COMMA', 2, 'POINT')}">- 0.00</td>
             </tr>
             <tr class="paid" th:if="${invoice.amountWrittenOff != null and invoice.amountWrittenOff.signum() > 0}">
                 <td class="lbl">Written off</td>
-                <td class="val" th:text="'− ' + ${#numbers.formatDecimal(invoice.amountWrittenOff, 1, 'COMMA', 2, 'POINT')}">− 0.00</td>
+                <td class="val" th:text="'- ' + ${#numbers.formatDecimal(invoice.amountWrittenOff, 1, 'COMMA', 2, 'POINT')}">- 0.00</td>
             </tr>
             <tr class="grand">
                 <td class="lbl" th:text="${balance.signum() > 0} ? 'Balance due' : 'Total'">Balance due</td>
